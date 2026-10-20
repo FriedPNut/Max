@@ -2,105 +2,105 @@
 
 
 
-\## 1. Visual Theme
+\## 1. Principles
 
-Max is an editorial, tactile, slightly loud app for a close group of friends. Think printed zine or concert poster, not SaaS dashboard. Warm paper background, near-black ink, ONE hot accent color used sparingly. Confident and a little playful, never cute. Big type does most of the design work. If a screen looks like a generic template, it is wrong.
-
-
-
-\## 2. Color Palette (define as CSS variables, map in Tailwind theme)
-
-\- paper:    #F3EFE6  (page background)
-
-\- surface:  #FBF9F4  (cards, inputs)
-
-\- ink:      #15130F  (text, borders, primary buttons)
-
-\- muted:    #6E685C  (secondary text, timestamps)
-
-\- line:     #DCD6C8  (hairline dividers)
-
-\- accent:   #FF4A1C  (primary highlight: active tab, RSVP "going", small marks)
-
-\- accent-ink: #FFFFFF (text on accent)
-
-Rules: accent covers under 8% of any screen. No gradients anywhere. No purple, no blue-to-violet, no pure #000 or #FFF backgrounds. Light theme only for v1.
+Max is a minimal, calm app for a small group of friends. Easy to read at a glance, easy to use with one thumb. Plain over clever. Every element must earn its place. If something is decorative, remove it. When unsure, choose less: fewer colors, fewer sizes, fewer borders, more whitespace.
 
 
 
-\## 3. Typography (load with next/font/google)
+\## 2. Colors (CSS variables, mapped into the Tailwind theme)
 
-\- Display: "Bricolage Grotesque" (700/800). Headlines, event titles, the Max wordmark. Tight tracking (-0.02em to -0.04em), line-height 0.95-1.05.
+\- background: #FAFAF8
 
-\- Body/UI: "Instrument Sans" (400/500/600).
+\- surface:    #FFFFFF
 
-\- Meta: "JetBrains Mono" (400/500), small caps feel, for timestamps, counts, labels like "GOING · 6".
+\- text:       #111111
 
-Scale: 12 / 14 / 16 / 20 / 28 / 44 / 72px. Large display sizes are encouraged on titles. Never use Inter, Roboto, or system-default fonts as the main face. No gradient text.
+\- muted:      #6B6B6B  (secondary text, times, counts)
+
+\- line:       #E8E8E4  (hairline dividers and borders)
+
+\- accent:     #FF4A1C  (used VERY sparingly: active tab, selected RSVP, small status marks)
+
+Rules: no gradients, no shadows, no glass or blur, no dark backgrounds, no extra colors. Text must always have strong contrast.
+
+
+
+\## 3. Typography
+
+One font family only: Instrument Sans (already loaded). Remove any other fonts.
+
+\- Page title: 28px / 600
+
+\- Section heading: 18px / 600
+
+\- Body: 16px / 400, line-height 1.5
+
+\- Secondary text: 14px / 400, muted color
+
+Sentence case everywhere. No uppercase labels, no monospace, no giant display text, no letter-spacing tricks. Keep line lengths short.
 
 
 
 \## 4. Components
 
-\- Buttons: rectangular, radius 4px, 44px min height. Primary = ink fill, paper text, hover swaps to accent. Secondary = 1.5px ink border, transparent. Labels are plain verbs ("Post", "Send", "Join").
+\- Buttons: 44px tall, 8px radius. Primary = text-color fill with white text. Secondary = 1px line border, transparent. Labels are plain verbs ("Post", "Send", "Save"). No hover animations beyond a slight color change.
 
-\- Inputs: surface background, 1.5px ink border, radius 4px, 14px padding, label ABOVE the field in mono 12px uppercase. Focus = 2px accent outline, no glow.
+\- Inputs: white surface, 1px line border, 8px radius, 12px padding. Label above in 14px muted. Focus = 2px text-color outline.
 
-\- Cards: surface fill, 1px line border, radius 6px, NO drop shadows, NO colored left borders. Separation comes from spacing and hairlines.
+\- Lists: simple rows separated by 1px hairlines. Prefer rows over cards. When a card is needed, use surface fill, 1px line border, 8px radius, no shadow.
 
-\- Tab bar (mobile): fixed bottom, paper background, 1px top line, 4 text+icon tabs, active tab marked with an accent underline bar (not a pill, not a blob).
+\- Tab bar (mobile): fixed bottom, white, 1px top line. Each tab is an icon with a small label. Active tab = text color; inactive = muted. A small accent dot or 2px accent line marks active.
 
-\- Avatars: square with 4px radius, ink border, initial letter in display font when no photo.
+\- Avatars: small circles with the first initial, line border.
 
-\- Chat: own messages = ink bubble, paper text; others = surface bubble with line border. Sender name in mono above first message of a run.
+\- Chat: own messages = text-color bubble with white text; others = surface bubble with line border. Name in muted 13px above a run of messages.
 
-\- Photo posts: full-bleed images, 4:5 crop, caption below in body font, meta line in mono.
+\- Photos: full width, rounded 8px, caption below in body text.
+
+\- Empty states: one short sentence in muted text.
 
 
 
 \## 5. Layout
 
-Mobile-first. Content max-width 480px on phones, 720px centered on desktop. 16px side padding. 8px spacing grid. Generous vertical whitespace. Left-aligned text by default; don't center everything. Asymmetry is fine.
+Mobile-first. Content max-width 560px, centered. 16px side padding. 8px spacing grid. Generous vertical spacing between sections (24px+). Left-aligned. One column. Nothing crowded.
 
 
 
-\## 6. Depth and Elevation
+\## 6. Icons
 
-Flat. Use 1px hairlines and background contrast instead of shadows. Only modals/sheets may use one soft shadow (0 8px 30px rgba(21,19,15,0.12)).
+lucide-react, 20px, 1.5px stroke, only where they help navigation (tab bar, back, add). Never use emoji as icons.
 
 
 
 \## 7. Motion
 
-Subtle and quick: 150ms ease-out for hovers and presses, 200ms for sheets. Buttons press down 1px. No bouncing, no parallax, no fade-in-on-scroll on every element.
+Almost none. 150ms color and opacity transitions only. No bouncing, parallax, or scroll animations.
 
 
 
 \## 8. Do's and Don'ts
 
-DO: use real-sounding sample content, strong hierarchy, big confident headings, plenty of whitespace.
+DO: plain language, clear hierarchy, lots of whitespace, consistent spacing, large tap targets.
 
-DON'T: use emoji as icons, glassmorphism/blur, gradient backgrounds or text, rounded-2xl/3xl everything, centered hero blobs, "Welcome back!" or "Unlock/Elevate/Seamless/Supercharge" copy, lorem ipsum, identical card grids, decorative sparkles. Icons: use lucide-react sparingly, 1.5px stroke, only where the label alone isn't enough.
+DON'T: gradients, shadows, blur, multiple fonts, uppercase labels, decorative shapes, colored card borders, rounded-2xl or larger, emoji icons, "Welcome back!" or marketing copy.
 
 
 
-\## 9. Voice and Copy
+\## 9. Voice
 
-Short, direct, warm, a bit dry. Like a text from a friend who is organized.
+Short, friendly, plain. Like a clear text from a friend.
 
 \- Tagline: "Maximum potential. Maximum fun. Maximum productivity."
 
-\- Sign in / Make an account (not "Get started")
-
-\- Empty states: "Nothing planned yet. Make the first move."
+\- Empty events: "Nothing planned yet."
 
 \- Errors: plain and human ("That password doesn't match.")
 
-\- Sentence case everywhere except mono labels (uppercase).
 
 
+\## 10. Agent Guide
 
-\## 10. Agent Prompt Guide
-
-Read this entire file before writing any UI code. Define colors and fonts as CSS variables and Tailwind theme tokens ONCE, then reuse them. Every screen must feel like the same product. When unsure, choose less decoration, bigger type, and more whitespace.
+Read this entire file before writing any UI code. Use the color and font tokens defined once in globals.css and the Tailwind theme. Every screen must follow the same patterns. When in doubt, simplify.
 

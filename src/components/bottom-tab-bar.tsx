@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, MessageSquare, Image, User } from "lucide-react";
+import { Calendar, MessageSquare, SquarePlus, User } from "lucide-react";
 
 const TABS = [
   {
@@ -19,13 +19,13 @@ const TABS = [
     matches: (pathname: string) => pathname.startsWith("/chat"),
   },
   {
-    label: "Feed",
+    label: "Post",
     href: "/feed",
-    icon: Image,
+    icon: SquarePlus,
     matches: (pathname: string) => pathname.startsWith("/feed"),
   },
   {
-    label: "Me",
+    label: "Profile",
     href: "/me",
     icon: User,
     matches: (pathname: string) => pathname.startsWith("/me"),
@@ -38,9 +38,9 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label="Primary navigation"
-      className="fixed bottom-0 inset-x-0 z-40 bg-paper border-t border-line"
+      className="fixed bottom-0 inset-x-0 z-40 bg-surface border-t border-line"
     >
-      <div className="mx-auto w-full max-w-[480px] md:max-w-[720px] px-4">
+      <div className="mx-auto w-full max-w-[560px] px-4">
         <ul className="grid grid-cols-4">
           {TABS.map((tab) => {
             const Icon = tab.icon;
@@ -51,25 +51,24 @@ export function BottomTabBar() {
                 <Link
                   href={tab.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] transition-colors duration-150 ease-out ${
-                    isActive ? "text-ink" : "text-muted hover:text-ink"
+                  className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-1.5 min-h-[56px] text-xs transition-colors duration-150 ease-out ${
+                    isActive ? "text-text" : "text-muted hover:text-text"
                   }`}
                 >
+                  {isActive && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-0 left-1/2 h-[2px] w-6 -translate-x-1/2 bg-accent"
+                    />
+                  )}
+
                   <Icon
-                    size={18}
+                    size={24}
                     strokeWidth={1.5}
                     aria-hidden="true"
                     className="shrink-0"
                   />
-                  <span className="font-mono text-xs uppercase tracking-[0.06em]">
-                    {tab.label}
-                  </span>
-                  {isActive && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute bottom-0 left-3 right-3 h-[2px] bg-accent"
-                    />
-                  )}
+                  <span>{tab.label}</span>
                 </Link>
               </li>
             );

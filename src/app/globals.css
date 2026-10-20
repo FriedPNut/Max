@@ -1,35 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #F3EFE6;
-  --surface: #FBF9F4;
-  --ink: #15130F;
-  --muted: #6E685C;
-  --line: #DCD6C8;
+  --background: #FAFAF8;
+  --surface: #FFFFFF;
+  --text: #111111;
+  --muted: #6B6B6B;
+  --line: #E8E8E4;
   --accent: #FF4A1C;
-  --accent-ink: #FFFFFF;
 }
 
 @theme inline {
-  --color-paper: var(--paper);
+  --color-background: var(--background);
   --color-surface: var(--surface);
-  --color-ink: var(--ink);
+  --color-text: var(--text);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
 
-  --font-display: var(--font-bricolage), sans-serif;
-  --font-sans: var(--font-instrument), sans-serif;
-  --font-mono: var(--font-jetbrains), monospace;
-
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.75rem;
-  --text-2xl: 2.75rem;
-  --text-3xl: 4.5rem;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -38,14 +26,14 @@
 
 html,
 body {
-  background-color: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-instrument), sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  font-family: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
   background-color: var(--accent);
-  color: var(--accent-ink);
+  color: var(--text);
 }
