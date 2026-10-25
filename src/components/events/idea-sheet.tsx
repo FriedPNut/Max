@@ -9,7 +9,7 @@ import {
 import type { IdeaListItem } from "@/lib/events";
 
 const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-line rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
+  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 const labelClass = "block text-sm text-muted mb-2";
 
@@ -159,7 +159,7 @@ export function IdeaSheet({
       <div
         aria-hidden="true"
         onClick={handleClose}
-        className={`fixed inset-0 z-50 bg-text/30 transition-opacity duration-200 ease-out ${
+        className={`fixed inset-0 z-50 bg-scrim/30 transition-opacity duration-200 ease-out ${
           visible ? "opacity-100" : "opacity-0"
         }`}
       />
@@ -168,7 +168,7 @@ export function IdeaSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="idea-sheet-title"
-        className={`fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[560px] rounded-t-lg border-x border-t border-line bg-surface px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] transition-transform duration-200 ease-out ${
+        className={`fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[560px] rounded-t-lg border-x border-t border-border bg-surface px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] transition-transform duration-200 ease-out ${
           visible ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -229,7 +229,7 @@ export function IdeaSheet({
           {error && (
             <div
               role="alert"
-              className="rounded-lg border border-line bg-background px-3.5 py-3 text-sm text-text"
+              className="rounded-lg border border-border bg-background px-3.5 py-3 text-sm text-text"
             >
               {error}
             </div>
@@ -238,7 +238,7 @@ export function IdeaSheet({
           <button
             type="submit"
             disabled={pending}
-            className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             {pending
               ? isEditing

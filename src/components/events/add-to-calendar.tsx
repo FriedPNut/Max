@@ -34,7 +34,7 @@ export function AddToCalendar({
         onClick={() => setOpen((current) => !current)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
       >
         <CalendarPlus size={20} strokeWidth={1.5} aria-hidden="true" />
         Add to calendar
@@ -52,7 +52,7 @@ export function AddToCalendar({
 
           <div
             role="menu"
-            className="absolute left-0 top-12 z-20 w-full min-w-60 rounded-lg border border-line bg-surface py-1"
+            className="absolute left-0 top-12 z-20 w-full min-w-60 rounded-lg border border-border bg-surface py-1"
           >
             <a
               role="menuitem"

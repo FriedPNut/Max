@@ -6,7 +6,8 @@ import {
   saveNotificationTimezone,
   type NotificationPreferenceKey,
 } from "@/app/actions/notifications";
-import { disablePush, enablePush, getPushStatus, type PushStatus } from "@/lib/push-client";
+import { useNotificationSetup } from "@/lib/use-notification-setup";
+import { Switch } from "@/components/ui/switch";
 
 type Preferences = Record<NotificationPreferenceKey, boolean>;
 
@@ -17,8 +18,12 @@ const categories: {
 }[] = [
   { key: "push_reminders", label: "Event reminders", help: "The day before and an hour before events you’re going to" },
   { key: "push_new_events", label: "New events", help: "When a friend adds an event" },
-  { key: "push_friends", label: "Friends", help: "Requests and accepted requests" },
+  { key: "push_friends", label: "Friends", help: "Requests, accepted requests, and trip invites" },
   { key: "push_chat", label: "Chat messages", help: "When someone messages you" },
+  { key: "push_hangs", label: "Hang requests", help: "When a friend is down to hang" },
+  { key: "push_social", label: "Comments", help: "When someone comments on your post" },
+  { key: "push_birthdays", label: "Birthdays", help: "The day before and the day of" },
+  { key: "push_recaps", label: "Recaps", help: "Weekly recap, Max Wrapped, and photo of the month" },
 ];
 
 const defaultPreferences: Preferences = {
@@ -27,24 +32,29 @@ const defaultPreferences: Preferences = {
   push_new_events: true,
   push_friends: true,
   push_chat: true,
+  push_hangs: true,
+  push_social: true,
+  push_birthdays: true,
+  push_recaps: true,
 };
 
-function Switch({ checked, disabled, label, onChange }: { checked: boolean; disabled?: boolean; label: string; onChange: () => void }) {
-  return <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} onClick={onChange} className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors duration-150 ${checked ? "border-text bg-text" : "border-line bg-surface"} ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full border border-line bg-surface transition-transform duration-150 ${checked ? "translate-x-5" : "translate-x-0.5"}`} /></button>;
-}
-
-const primaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-white transition-opacity duration-150 hover:opacity-90 disabled:pointer-events-none disabled:opacity-60";
-const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:pointer-events-none disabled:opacity-60";
+const primaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 hover:opacity-90 disabled:pointer-events-none disabled:opacity-60";
+const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:pointer-events-none disabled:opacity-60";
 
 export function NotificationSettings({ initialPreferences }: { initialPreferences: (Partial<Preferences> & { timezone?: string | null }) | null }) {
   const [preferences, setPreferences] = useState<Preferences>({ ...defaultPreferences, ...initialPreferences });
-  const [pushStatus, setPushStatus] = useState<PushStatus>("unsupported");
   const [error, setError] = useState<string | null>(null);
   const [testPending, setTestPending] = useState(false);
-  const [devicePending, setDevicePending] = useState(false);
+  const {
+    state: deviceState,
+    busy: deviceBusy,
+    error: deviceError,
+    refresh: refreshDevice,
+    turnOn: turnOnDevice,
+    turnOffThisDevice,
+  } = useNotificationSetup();
 
   useEffect(() => {
-    void getPushStatus().then(setPushStatus);
     try {
       const key = "max-notification-timezone-session";
       if (window.sessionStorage.getItem(key)) return;
@@ -71,17 +81,19 @@ export function NotificationSettings({ initialPreferences }: { initialPreference
     if (result.error) {
       setPreferences(previous);
       setError(result.error);
+      return;
     }
+    await refreshDevice();
   }
 
-  async function toggleThisDevice() {
-    if (devicePending) return;
-    setDevicePending(true);
-    setError(null);
-    const result = pushStatus === "enabled" ? await disablePush() : await enablePush();
-    if (result.error) setError(result.error);
-    setPushStatus(await getPushStatus());
-    setDevicePending(false);
+  // Turning the device on while the master switch is off also flips the
+  // switch above, so the two sections never disagree.
+  async function turnOnDeviceAndSync() {
+    const result = await turnOnDevice();
+
+    if (!result?.error) {
+      setPreferences((current) => ({ ...current, push_enabled: true }));
+    }
   }
 
   async function sendTest() {
@@ -107,21 +119,20 @@ export function NotificationSettings({ initialPreferences }: { initialPreference
         <div><h2 className="text-base font-medium text-text">Notifications</h2><p className="mt-1 text-sm text-muted">Allow Max to send updates to your devices.</p></div>
         <Switch checked={preferences.push_enabled} label="Notifications" onChange={() => void toggle("push_enabled")} />
       </div>
-      <div className={preferences.push_enabled ? "" : "opacity-50"}>
-        {categories.map((item) => <div key={item.key} className="flex items-center justify-between gap-4 border-b border-line py-4">
-          <div><h3 className="text-base text-text">{item.label}</h3><p className="mt-1 text-sm text-muted">{item.help}</p></div>
-          <Switch checked={preferences[item.key]} disabled={!preferences.push_enabled} label={item.label} onChange={() => void toggle(item.key)} />
-        </div>)}
-      </div>
+      {categories.map((item) => <div key={item.key} className="flex items-center justify-between gap-4 border-b border-line py-4">
+        <div><h3 className="text-base text-text">{item.label}</h3><p className="mt-1 text-sm text-muted">{item.help}</p></div>
+        <Switch checked={preferences[item.key]} disabled={!preferences.push_enabled} label={item.label} onChange={() => void toggle(item.key)} />
+      </div>)}
     </section>
 
     <section className="space-y-3">
       <h2 className="text-lg font-semibold text-text">This device</h2>
-      {pushStatus === "ios-needs-install" ? <p className="text-sm leading-relaxed text-muted">{iosInstructions}</p> : pushStatus === "blocked" ? <p className="text-sm leading-relaxed text-muted">Notifications are blocked in your browser settings. Allow them for Max in your browser, then come back here.</p> : <p className="text-sm text-muted">{pushStatus === "enabled" ? "Notifications are on for this device." : pushStatus === "unsupported" ? "This browser doesn’t support push notifications." : "Notifications are off for this device."}</p>}
-      {(pushStatus === "not-enabled" || pushStatus === "enabled") && <button type="button" disabled={devicePending} onClick={() => void toggleThisDevice()} className={pushStatus === "enabled" ? secondaryButton : primaryButton}>{devicePending ? "Saving..." : pushStatus === "enabled" ? "Turn off" : "Turn on"}</button>}
-      {pushStatus === "enabled" && <button type="button" disabled={testPending} onClick={() => void sendTest()} className={`${secondaryButton} ml-2`}>{testPending ? "Sending..." : "Send test notification"}</button>}
+      {deviceState === "ios-needs-install" ? <p className="text-sm leading-relaxed text-muted">{iosInstructions}</p> : deviceState === "blocked" ? <p className="text-sm leading-relaxed text-muted">Notifications are blocked in your browser settings. Allow them for Max in your browser, then come back here.</p> : <p className="text-sm text-muted">{deviceState === "ready" ? "Notifications are on for this device." : deviceState === "unsupported" ? "This browser doesn’t support push notifications." : deviceState === "not-configured" ? "Push notifications aren’t configured yet." : deviceState === "loading" ? "Checking this device…" : "Notifications are off for this device."}</p>}
+      {(deviceState === "not-asked" || deviceState === "app-off") && <button type="button" disabled={deviceBusy} onClick={() => void turnOnDeviceAndSync()} className={primaryButton}>{deviceBusy ? "Turning on..." : "Turn on"}</button>}
+      {deviceState === "ready" && <button type="button" disabled={deviceBusy} onClick={() => void turnOffThisDevice()} className={secondaryButton}>{deviceBusy ? "Saving..." : "Turn off"}</button>}
+      {deviceState === "ready" && <button type="button" disabled={testPending} onClick={() => void sendTest()} className={`${secondaryButton} ml-2`}>{testPending ? "Sending..." : "Send test notification"}</button>}
     </section>
 
-    {error && <p role="alert" className="text-sm text-text">{error}</p>}
+    {(error || deviceError) && <p role="alert" className="text-sm text-text">{error ?? deviceError}</p>}
   </div>;
 }

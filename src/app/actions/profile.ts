@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { isValidMonthDay } from "@/lib/birthdays";
 import {
   BIO_MAX_LENGTH,
   DISPLAY_NAME_MAX_LENGTH,
@@ -165,6 +166,45 @@ export async function updateProfileAction(input: {
   revalidatePath("/events");
   revalidatePath(`/u/${username}`);
 
+  return { success: true };
+}
+
+export async function updateBirthdayAction(input: {
+  month: number | null;
+  day: number | null;
+  year: number | null;
+}): Promise<ProfileActionState> {
+  const { supabase, user } = await requireUser();
+  const { month, day, year } = input;
+  const clearing = month === null && day === null && year === null;
+
+  if (!clearing) {
+    if (month === null || day === null || !isValidMonthDay(month, day)) {
+      return { error: "That birthday doesn't look right." };
+    }
+
+    if (year !== null && (!Number.isInteger(year) || year < 1900 || year > new Date().getFullYear())) {
+      return { error: "Use a year that makes sense, or leave it blank." };
+    }
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      birth_month: clearing ? null : month,
+      birth_day: clearing ? null : day,
+      birth_year: clearing ? null : year,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: "Couldn't save your birthday. Try again." };
+  }
+
+  revalidatePath("/me");
+  revalidatePath("/me/edit");
+  revalidatePath("/birthdays");
+  revalidatePath("/events");
   return { success: true };
 }
 

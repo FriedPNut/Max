@@ -15,15 +15,15 @@ import type {
 } from "@/lib/event-plan";
 
 const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-line rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
+  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 const labelClass = "block text-sm text-muted mb-2";
 
 const primaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-white transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
+  "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
 
 const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
+  "inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
 
 const textButton =
   "inline-flex min-h-11 items-center px-1 text-sm text-muted transition-colors duration-150 ease-out hover:text-text cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
@@ -162,7 +162,7 @@ export function BringTab({
         <form
           onSubmit={handleAdd}
           noValidate
-          className="space-y-3 rounded-lg border border-line bg-surface p-4"
+          className="space-y-3 rounded-lg border border-border bg-surface p-4"
         >
           <div>
             <label htmlFor="bring-item-label" className={labelClass}>
@@ -190,7 +190,7 @@ export function BringTab({
           {formError && (
             <div
               role="alert"
-              className="rounded-lg border border-line bg-background px-3.5 py-3 text-sm text-text"
+              className="rounded-lg border border-border bg-background px-3.5 py-3 text-sm text-text"
             >
               {formError}
             </div>

@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendWebPush } from "@/lib/push-server";
-import { formatNotificationBody, type NotificationRecord } from "@/lib/notifications";
+import {
+  formatNotificationBody,
+  isNotificationTypeEnabled,
+  notificationTitle,
+  type NotificationRecord,
+} from "@/lib/notifications";
 
 type PreferenceRow = {
   user_id: string;
@@ -11,6 +16,10 @@ type PreferenceRow = {
   push_new_events: boolean | null;
   push_friends: boolean | null;
   push_chat: boolean | null;
+  push_hangs: boolean | null;
+  push_social: boolean | null;
+  push_birthdays: boolean | null;
+  push_recaps: boolean | null;
 };
 
 type SubscriptionRow = {
@@ -23,22 +32,13 @@ type SubscriptionRow = {
 const MAX_ROWS = 100;
 const MAX_AGE_MS = 3 * 60 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
-const PREFERENCE_FOR_TYPE: Record<string, keyof PreferenceRow> = {
-  event_reminder: "push_reminders",
-  new_event: "push_new_events",
-  friend_request: "push_friends",
-  friend_accepted: "push_friends",
-  chat_message: "push_chat",
-};
+
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
 function isEnabled(preferences: PreferenceRow | undefined, type: string) {
-  if (!preferences) return true;
-  if (preferences.push_enabled === false) return false;
-  const key = PREFERENCE_FOR_TYPE[type];
-  return key ? preferences[key] !== false : false;
+  return isNotificationTypeEnabled(type, preferences);
 }
 
 function pushBody(row: NotificationRecord, timezone: string) {
@@ -97,7 +97,9 @@ export async function POST(request: Request) {
     ? await Promise.all([
         admin
           .from("notification_preferences")
-          .select("user_id,timezone,push_enabled,push_reminders,push_new_events,push_friends,push_chat")
+          .select(
+            "user_id,timezone,push_enabled,push_reminders,push_new_events,push_friends,push_chat,push_hangs,push_social,push_birthdays,push_recaps"
+          )
           .in("user_id", userIds),
         admin
           .from("push_subscriptions")
@@ -160,7 +162,7 @@ export async function POST(request: Request) {
     }
     const body = pushBody(row, timezone);
     const payload = {
-      title: row.title,
+      title: notificationTitle(row),
       body,
       url: safeUrl(row.url, siteUrl),
       tag: notificationTag(row),

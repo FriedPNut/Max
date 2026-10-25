@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { NotificationList } from "@/components/notifications/notification-list";
+import { NotificationSetupBanner } from "@/components/notifications/notification-setup-banner";
 import { createClient } from "@/lib/supabase/server";
 import type { NotificationRecord } from "@/lib/notifications";
 
@@ -21,6 +22,7 @@ export default async function NotificationsPage() {
         <Link href="/events" className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 hover:text-text"><ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />Events</Link>
         <h1 className="text-[28px] font-semibold leading-tight text-text">Notifications</h1>
       </header>
+      <NotificationSetupBanner />
       {notificationsResult.error ? <p className="text-sm text-muted">Couldn’t load notifications. Refresh and try again.</p> : <NotificationList initialNotifications={items} timezone={timezone} />}
     </section>
   </AppShell>;

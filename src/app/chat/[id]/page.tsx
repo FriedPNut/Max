@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { DmActiveStatus } from "@/components/chat/dm-active-status";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 import {
@@ -17,10 +18,14 @@ import {
 
 export default async function ConversationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ m?: string }>;
 }) {
   const { id } = await params;
+  const { m } = await searchParams;
+  const targetMessageId = typeof m === "string" && m ? m : null;
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
 
@@ -146,6 +151,10 @@ export default async function ConversationPage({
               {chatMembers.length === 1 ? "member" : "members"}
             </p>
           )}
+
+          {!conversation.is_group && (
+            <DmActiveStatus userId={otherMember?.user_id ?? null} />
+          )}
         </div>
 
         {messageError ? (
@@ -161,6 +170,8 @@ export default async function ConversationPage({
             members={chatMembers}
             initialMessages={messages}
             initialHasMore={hasMoreMessages}
+            targetMessageId={targetMessageId}
+            dmHeaderUserId={conversation.is_group ? null : otherMember?.user_id ?? null}
           />
         )}
       </section>

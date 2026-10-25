@@ -7,6 +7,13 @@ import { LogoutButton } from "@/components/notifications/logout-button";
 
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
+  // Resolved after mount so the server and client markup match.
+  const [wrappedYear, setWrappedYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    const now = new Date();
+    setWrappedYear(now.getMonth() >= 11 ? now.getFullYear() : null);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -48,8 +55,34 @@ export function ProfileMenu() {
 
           <div
             role="menu"
-            className="absolute right-0 top-11 z-20 w-40 rounded-lg border border-line bg-surface py-1"
+            className="absolute right-0 top-11 z-20 w-40 rounded-lg border border-border bg-surface py-1"
           >
+            <Link
+              href="/recap"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex min-h-11 w-full items-center px-3 text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+            >
+              Weekly recap
+            </Link>
+            {wrappedYear !== null && (
+              <Link
+                href={`/wrapped/${wrappedYear}`}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="flex min-h-11 w-full items-center px-3 text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+              >
+                Max Wrapped
+              </Link>
+            )}
+            <Link
+              href="/settings/appearance"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex min-h-11 w-full items-center px-3 text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+            >
+              Appearance
+            </Link>
             <Link
               href="/settings/notifications"
               role="menuitem"

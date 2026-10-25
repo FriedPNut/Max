@@ -18,7 +18,9 @@ export function EventRow({
         <img
           src={event.coverUrl}
           alt=""
-          className="h-12 w-12 shrink-0 rounded-lg border border-line bg-surface object-cover"
+          loading="lazy"
+          decoding="async"
+          className="h-12 w-12 shrink-0 rounded-lg border border-border bg-surface object-cover"
         />
       )}
 

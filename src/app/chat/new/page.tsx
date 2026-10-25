@@ -93,7 +93,7 @@ export default async function NewChatPage() {
             <p className="text-sm text-muted">No friends yet.</p>
             <Link
               href="/chat/friends"
-              className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
             >
               Find friends
             </Link>

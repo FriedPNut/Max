@@ -31,7 +31,7 @@ export function EventTabs({ tabs }: { tabs: EventTabItem[] }) {
           <div
             role="group"
             aria-label="Event sections"
-            className="flex gap-1 overflow-x-auto rounded-lg border border-line bg-surface p-1"
+            className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1"
           >
             {tabs.map((tab) => {
               const isActive = tab.id === activeId;
@@ -44,7 +44,7 @@ export function EventTabs({ tabs }: { tabs: EventTabItem[] }) {
                   onClick={() => setActiveId(tab.id)}
                   className={`min-h-11 min-w-[72px] shrink-0 rounded-lg px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
                     isActive
-                      ? "bg-text font-medium text-white"
+                      ? "bg-text font-medium text-background"
                       : "text-muted hover:text-text"
                   }`}
                 >

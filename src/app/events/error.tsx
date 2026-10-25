@@ -24,7 +24,7 @@ export default function EventsError({ reset }: { reset: () => void }) {
         <button
           type="button"
           onClick={reset}
-          className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-white transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer"
+          className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer"
         >
           Try again
         </button>

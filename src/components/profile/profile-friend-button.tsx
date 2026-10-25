@@ -54,7 +54,7 @@ export function ProfileFriendButton({
         <button
           type="button"
           disabled
-          className="w-full min-h-11 px-4 py-3 rounded-lg border border-line bg-transparent text-muted font-sans font-medium text-sm cursor-default"
+          className="w-full min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-muted font-sans font-medium text-sm cursor-default"
         >
           Friends
         </button>
@@ -62,7 +62,7 @@ export function ProfileFriendButton({
         <button
           type="button"
           disabled
-          className="w-full min-h-11 px-4 py-3 rounded-lg border border-line bg-transparent text-muted font-sans font-medium text-sm cursor-default"
+          className="w-full min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-muted font-sans font-medium text-sm cursor-default"
         >
           Request sent
         </button>
@@ -71,7 +71,7 @@ export function ProfileFriendButton({
           type="button"
           onClick={handleAdd}
           disabled={pending}
-          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
         >
           {pending ? "Accepting..." : "Accept"}
         </button>
@@ -80,7 +80,7 @@ export function ProfileFriendButton({
           type="button"
           onClick={handleAdd}
           disabled={pending}
-          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
         >
           {pending ? "Adding..." : "Add friend"}
         </button>

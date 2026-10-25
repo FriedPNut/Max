@@ -1,12 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FAFAF8;
-  --surface: #FFFFFF;
-  --text: #111111;
-  --muted: #6B6B6B;
-  --line: #E8E8E4;
-  --accent: #FF4A1C;
+  color-scheme: light;
+
+  --background: #EFEEE9;
+  --surface: #FBFBF8;
+  --text: #1E1E1C;
+  --muted: #5E5E58;
+  --line: #DAD8D0;
+  --border: #BFBCB1;
+  --accent: #E8481F;
+  --on-accent: #FFFFFF;
+  --scrim: #111111;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #0F0F0E;
+  --surface: #1A1A18;
+  --text: #F2F2EE;
+  --muted: #9A9A94;
+  --line: #2A2A27;
+  --border: #2A2A27;
+  --accent: #FF5A2E;
+  --on-accent: #FFFFFF;
+  --scrim: #000000;
 }
 
 @theme inline {
@@ -15,7 +34,10 @@
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-scrim: var(--scrim);
 
   --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
 }
@@ -35,5 +57,24 @@ body {
 
 ::selection {
   background-color: var(--accent);
-  color: var(--text);
+  color: var(--on-accent);
+}
+
+/* Keep browser autofill on the surface token instead of forcing white. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  box-shadow: 0 0 0 1000px var(--surface) inset;
+  caret-color: var(--text);
+}
+
+/* Theme changes apply instantly; existing hover/focus transitions stay. */
+html.theme-changing *,
+html.theme-changing *::before,
+html.theme-changing *::after {
+  transition: none !important;
 }

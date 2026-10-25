@@ -17,6 +17,8 @@ import { loadEventPhotos } from "@/lib/event-photos-data";
 import { NewPostButton } from "@/components/posts/new-post-button";
 import { EventRsvpPanel } from "@/components/event-rsvp-panel";
 import { PollTimePanel } from "@/components/events/poll-time-panel";
+import { ArrivalsPanel } from "@/components/events/arrivals-panel";
+import { isArrivalWindowOpen, type ArrivalRecord } from "@/lib/event-arrivals";
 import { LocalTime } from "@/components/local-time";
 import { buildGoogleCalendarUrl } from "@/lib/event-calendar";
 import { loadEventChat } from "@/lib/event-chat-data";
@@ -99,7 +101,7 @@ export default async function EventDetailPage({
       currentUserId: user.id,
       currentUserName: displayName,
     }),
-    loadEventCosts(supabase, event.id, user.id, displayName),
+    loadEventCosts(supabase, { kind: "event", id: event.id }, user.id, displayName),
     loadEventPhotos(supabase, event.id, user.id, displayName),
     supabase.from("events").select("id,title,starts_at").gte("starts_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()).order("starts_at", { ascending: true }),
   ]);
@@ -133,6 +135,46 @@ export default async function EventDetailPage({
   )}`;
   const isPast =
     !event.poll_open && new Date(event.starts_at).getTime() < Date.now();
+
+  // Arrivals: shown only in the 2h-before to 3h-after window. Everyone signed in can read;
+  // only Going or Maybe people get buttons.
+  const arrivalsVisible = !event.poll_open && isArrivalWindowOpen(event.starts_at);
+  let arrivalsContent = null;
+
+  if (arrivalsVisible) {
+    const sinceIso = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const { data: arrivalRows } = await supabase
+      .from("event_arrivals")
+      .select("event_id,user_id,status,eta_minutes,updated_at")
+      .eq("event_id", event.id)
+      .gte("updated_at", sinceIso);
+    const arrivalRecords = (arrivalRows ?? []) as ArrivalRecord[];
+    const arrivalUserIds = [...new Set(arrivalRecords.map((row) => row.user_id))];
+    const { data: arrivalProfiles } = arrivalUserIds.length
+      ? await supabase.from("profiles").select("id,display_name,username").in("id", arrivalUserIds)
+      : { data: [] };
+    const arrivalPeople = ((arrivalProfiles ?? []) as { id: string; display_name: string | null; username: string | null }[]).map((profile) => ({
+      id: profile.id,
+      name: profile.display_name?.trim() || profile.username?.trim() || "A friend",
+    }));
+    const { data: myRsvp } = await supabase
+      .from("rsvps")
+      .select("status")
+      .eq("event_id", event.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const canAct = myRsvp?.status === "going" || myRsvp?.status === "maybe";
+
+    arrivalsContent = (
+      <ArrivalsPanel
+        eventId={event.id}
+        currentUserId={user.id}
+        canAct={canAct}
+        people={arrivalPeople}
+        initialRows={arrivalRecords}
+      />
+    );
+  }
   const isCreator = event.created_by === user.id;
 
   const detailsContent = (
@@ -141,7 +183,7 @@ export default async function EventDetailPage({
         <img
           src={coverUrl}
           alt={`Cover for ${event.title}`}
-          className="aspect-video w-full rounded-lg border border-line bg-surface object-cover"
+          className="aspect-video w-full rounded-lg border border-border bg-surface object-cover"
         />
       )}
 
@@ -216,6 +258,8 @@ export default async function EventDetailPage({
           />
         </div>
       )}
+
+      {arrivalsContent}
 
       {event.poll_open ? (
         <p className="text-sm text-muted">

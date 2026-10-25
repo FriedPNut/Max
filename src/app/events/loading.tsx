@@ -12,7 +12,7 @@ export default function EventsLoading() {
         aria-busy="true"
         aria-label="Loading events"
       >
-        <section className="overflow-hidden rounded-lg border border-line bg-surface">
+        <section className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="h-5 w-16 rounded bg-line/60" aria-hidden="true" />
             <div className="h-4 w-16 rounded bg-line/40" aria-hidden="true" />
@@ -43,7 +43,7 @@ export default function EventsLoading() {
 
         <section className="space-y-4">
           <div
-            className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-surface p-1"
+            className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-surface p-1"
             aria-hidden="true"
           >
             {[0, 1, 2].map((index) => (

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { PresenceProvider } from "@/components/presence-provider";
 
 export async function getAuthenticatedUser() {
   if (!isSupabaseConfigured()) {
@@ -10,13 +11,20 @@ export async function getAuthenticatedUser() {
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifies the JWT signature and refreshes the cookie when needed,
+  // so rendering the shell no longer waits on a network call to Auth.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
 
-  if (!user) {
+  if (!claims?.sub) {
     redirect("/login");
   }
+
+  const user = {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : null,
+    user_metadata: (claims.user_metadata ?? {}) as Record<string, unknown>,
+  };
 
   const rawDisplayName =
     typeof user.user_metadata?.display_name === "string"
@@ -45,6 +53,7 @@ export async function AppShell({
 }) {
   const activeUserId = userId ?? (await getAuthenticatedUser()).user.id;
   return (
+    <PresenceProvider userId={activeUserId}>
     <div className="min-h-dvh bg-background text-text pb-24">
       <header className="sticky top-0 z-40 border-b border-line bg-background">
         <div className="mx-auto flex h-14 w-full max-w-[560px] items-center justify-between px-4">
@@ -68,5 +77,6 @@ export async function AppShell({
 
       <BottomTabBar />
     </div>
+    </PresenceProvider>
   );
 }

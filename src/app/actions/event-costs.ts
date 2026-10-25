@@ -22,7 +22,7 @@ function clean(value: unknown) {
 }
 
 async function resultFor(supabase: Awaited<ReturnType<typeof createClient>>, eventId: string, userId: string, name: string): Promise<EventCostsActionResult> {
-  const snapshot = await loadEventCosts(supabase, eventId, userId, name);
+  const snapshot = await loadEventCosts(supabase, { kind: "event", id: eventId }, userId, name);
   return snapshot.error ? { error: snapshot.error } : { snapshot };
 }
 
@@ -100,7 +100,7 @@ export async function markEventDebtPaidAction(eventId: string, fromUser: string,
   if (!Number.isSafeInteger(amountCents) || amountCents <= 0 || from === to || (user.id !== from && user.id !== to)) {
     return { error: "That payment can't be recorded." };
   }
-  const snapshot = await loadEventCosts(supabase, id, user.id, displayName);
+  const snapshot = await loadEventCosts(supabase, { kind: "event", id }, user.id, displayName);
   const debt = snapshot.debts.find((item) => item.from.id === from && item.to.id === to && item.amountCents === amountCents);
   if (!debt) return { error: "That balance has changed. Refresh and try again." };
   const { error } = await supabase.from("settlements").insert({ event_id: id, from_user: from, to_user: to, amount_cents: amountCents });

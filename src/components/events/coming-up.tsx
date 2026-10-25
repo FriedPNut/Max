@@ -37,13 +37,19 @@ function LocalDayLabel({ iso }: { iso: string }) {
   return <>{label}</>;
 }
 
-export function ComingUp({ items }: { items: EventListItem[] }) {
+export function ComingUp({
+  items,
+  onWayEtas = {},
+}: {
+  items: EventListItem[];
+  onWayEtas?: Record<string, string>;
+}) {
   if (items.length === 0) return null;
 
   return (
     <section
       aria-labelledby="coming-up-heading"
-      className="rounded-lg border border-line bg-surface p-4"
+      className="rounded-lg border border-border bg-surface p-4"
     >
       <h2 id="coming-up-heading" className="text-lg font-semibold text-text">
         Coming up
@@ -59,8 +65,14 @@ export function ComingUp({ items }: { items: EventListItem[] }) {
                 {event.title}
               </span>
               <span className="shrink-0 text-sm text-muted">
-                <LocalDayLabel iso={event.starts_at} /> at{" "}
-                <LocalTime iso={event.starts_at} format="time" />
+                {onWayEtas[event.id] ? (
+                  <>On my way · {onWayEtas[event.id]}</>
+                ) : (
+                  <>
+                    <LocalDayLabel iso={event.starts_at} /> at{" "}
+                    <LocalTime iso={event.starts_at} format="time" />
+                  </>
+                )}
               </span>
             </Link>
           </li>

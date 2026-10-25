@@ -7,7 +7,7 @@ import {
 } from "@/app/actions/chat";
 
 const inputClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-line rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
+  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 export function RenameGroupForm({
   conversationId,
@@ -24,7 +24,7 @@ export function RenameGroupForm({
   return (
     <form
       action={formAction}
-      className="space-y-3 rounded-lg border border-line bg-surface p-4"
+      className="space-y-3 rounded-lg border border-border bg-surface p-4"
     >
       <div>
         <label htmlFor="group-name" className="block text-sm text-muted mb-2">
@@ -52,7 +52,7 @@ export function RenameGroupForm({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-white transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+        className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
       >
         {pending ? "Saving..." : "Save"}
       </button>

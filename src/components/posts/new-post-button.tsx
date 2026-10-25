@@ -41,7 +41,7 @@ export function NewPostButton({ userId, eventId = "", events = [], buttonLabel =
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="shrink-0 min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer"
+        className="shrink-0 min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer"
       >
         {buttonLabel}
       </button>
@@ -51,14 +51,14 @@ export function NewPostButton({ userId, eventId = "", events = [], buttonLabel =
           <div
             aria-hidden="true"
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-50 bg-text/30"
+            className="fixed inset-0 z-50 bg-scrim/30"
           />
 
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-post-sheet-title"
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[92dvh] w-full max-w-[560px] overflow-y-auto rounded-t-lg border-t border-line bg-background px-4 pb-6 pt-4"
+            className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[92dvh] w-full max-w-[560px] overflow-y-auto rounded-t-lg border-t border-border bg-background px-4 pb-6 pt-4"
           >
             <div className="mb-5 flex items-center justify-between gap-3">
               <h2

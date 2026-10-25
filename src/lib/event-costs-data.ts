@@ -2,6 +2,7 @@ import type { createClient } from "@/lib/supabase/server";
 import {
   calculateEventDebts,
   type CostPerson,
+  type CostScope,
   type EventCostsSnapshot,
   type EventExpense,
   type EventSettlement,
@@ -33,20 +34,26 @@ type RsvpRow = { user_id: string; status: string };
 
 export async function loadEventCosts(
   supabase: ServerClient,
-  eventId: string,
+  scope: CostScope,
   currentUserId: string,
   currentUserName: string
 ): Promise<EventCostsSnapshot> {
+  const scopeColumn = scope.kind === "event" ? "event_id" : "trip_id";
+  // Trips have no RSVPs, so everyone who is a trip member counts as going.
+  const attendeeQuery =
+    scope.kind === "event"
+      ? supabase.from("rsvps").select("user_id,status").eq("event_id", scope.id)
+      : supabase.from("trip_members").select("user_id").eq("trip_id", scope.id);
   const [expenseResult, settlementResult, rsvpResult] = await Promise.all([
     supabase
       .from("expenses")
       .select("id,event_id,paid_by,description,amount_cents")
-      .eq("event_id", eventId),
+      .eq(scopeColumn, scope.id),
     supabase
       .from("settlements")
       .select("id,event_id,from_user,to_user,amount_cents")
-      .eq("event_id", eventId),
-    supabase.from("rsvps").select("user_id,status").eq("event_id", eventId),
+      .eq(scopeColumn, scope.id),
+    attendeeQuery,
   ]);
 
   if (
@@ -64,7 +71,9 @@ export async function loadEventCosts(
 
   const expenseRows = (expenseResult.data ?? []) as ExpenseRow[];
   const settlementRows = (settlementResult.data ?? []) as SettlementRow[];
-  const rsvpRows = (rsvpResult.data ?? []) as RsvpRow[];
+  const rsvpRows = ((rsvpResult.data ?? []) as RsvpRow[]).map((row) =>
+    scope.kind === "event" ? row : { user_id: row.user_id, status: "going" }
+  );
   const expenseIds = expenseRows.map((expense) => expense.id);
   let participantRows: ParticipantRow[] = [];
 

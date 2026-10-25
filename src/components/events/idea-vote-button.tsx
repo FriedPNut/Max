@@ -84,7 +84,7 @@ export function IdeaVoteButton({
         className={`inline-flex min-h-11 min-w-[76px] items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors duration-150 ease-out cursor-pointer disabled:opacity-60 disabled:pointer-events-none ${
           voted
             ? "border-text text-text"
-            : "border-line text-muted hover:text-text"
+            : "border-border text-muted hover:text-text"
         }`}
       >
         Upvote {value}

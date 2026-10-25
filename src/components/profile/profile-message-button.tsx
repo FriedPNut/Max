@@ -19,7 +19,7 @@ export function ProfileMessageButton({ friendId }: { friendId: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
         >
           {pending ? "Opening..." : "Message"}
         </button>

@@ -144,7 +144,7 @@ function CalendarSkeleton() {
     >
       <div
         aria-hidden="true"
-        className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-surface p-1"
+        className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-surface p-1"
       >
         {[0, 1, 2].map((index) => (
           <div key={index} className="h-11 rounded-lg bg-line/50" />
@@ -400,7 +400,7 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
       <div
         role="group"
         aria-label="Calendar view"
-        className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-surface p-1"
+        className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-surface p-1"
       >
         {VIEWS.map((item) => {
           const isActive = view === item.id;
@@ -413,7 +413,7 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
               onClick={() => changeView(item.id)}
               className={`min-h-11 rounded-lg px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
                 isActive
-                  ? "bg-text text-white font-medium"
+                  ? "bg-text text-background font-medium"
                   : "text-muted hover:text-text"
               }`}
             >
@@ -460,8 +460,8 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
             onClick={goToday}
             className={`min-h-11 rounded-lg border bg-transparent px-3 text-sm font-medium transition-colors duration-150 ease-out cursor-pointer ${
               isOnToday
-                ? "border-line text-muted"
-                : "border-line text-text hover:bg-surface"
+                ? "border-border text-muted"
+                : "border-border text-text hover:bg-surface"
             }`}
           >
             Today
@@ -548,13 +548,13 @@ function MonthView({
                 aria-label={formatDayLong(key)}
                 className={`relative flex min-h-11 flex-col items-center justify-center rounded-lg text-sm transition-colors duration-150 ease-out cursor-pointer ${
                   isSelected
-                    ? "bg-text font-medium text-white"
+                    ? "bg-text font-medium text-background"
                     : "text-text hover:bg-surface"
                 }`}
               >
                 <span
                   className={`flex h-7 w-7 items-center justify-center rounded-full ${
-                    isToday ? "bg-text font-medium text-white" : ""
+                    isToday ? "bg-text font-medium text-background" : ""
                   }`}
                 >
                   {Number(key.slice(-2))}
@@ -564,7 +564,7 @@ function MonthView({
                   <span
                     aria-hidden="true"
                     className={`absolute bottom-1 h-1 w-1 rounded-full ${
-                      isSelected ? "bg-white" : "bg-accent"
+                      isSelected ? "bg-background" : "bg-accent"
                     }`}
                   />
                 )}
@@ -760,7 +760,7 @@ function DayView({
                 <Link
                   key={item.event.id}
                   href={`/events/${item.event.id}`}
-                  className="absolute overflow-hidden rounded-lg border border-line bg-surface px-2.5 py-1.5 transition-colors duration-150 ease-out hover:bg-background"
+                  className="absolute overflow-hidden rounded-lg border border-border bg-surface px-2.5 py-1.5 transition-colors duration-150 ease-out hover:bg-background"
                   style={{
                     top,
                     height: HOUR_HEIGHT,

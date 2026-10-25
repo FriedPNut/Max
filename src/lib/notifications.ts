@@ -1,3 +1,81 @@
+export type NotificationPreferenceKey =
+  | "push_enabled"
+  | "push_reminders"
+  | "push_new_events"
+  | "push_friends"
+  | "push_chat"
+  | "push_hangs"
+  | "push_social"
+  | "push_birthdays"
+  | "push_recaps";
+
+// The one place that decides which switch a notification type follows.
+// Types not listed here are never pushed: the dispatcher marks them done.
+export const NOTIFICATION_TYPE_PREFERENCES = {
+  event_reminder: "push_reminders",
+  new_event: "push_new_events",
+  friend_request: "push_friends",
+  friend_accepted: "push_friends",
+  chat_message: "push_chat",
+  hang_now: "push_hangs",
+  post_comment: "push_social",
+  trip_invite: "push_friends",
+  birthday: "push_birthdays",
+  weekly_recap: "push_recaps",
+  wrapped: "push_recaps",
+  best_of_month: "push_recaps",
+} as const satisfies Record<string, NotificationPreferenceKey>;
+
+const NOTIFICATION_TYPE_TITLES: Record<string, string> = {
+  event_reminder: "Event reminder",
+  new_event: "New event",
+  friend_request: "Friend request",
+  friend_accepted: "Friend request accepted",
+  chat_message: "New message",
+  hang_now: "Hang right now",
+  post_comment: "New comment",
+  trip_invite: "Trip invite",
+  birthday: "Birthday",
+  weekly_recap: "Your week",
+  wrapped: "Max Wrapped",
+  best_of_month: "Photo of the month",
+};
+
+export function notificationPreferenceKeyFor(
+  type: string
+): NotificationPreferenceKey | null {
+  const map: Record<string, NotificationPreferenceKey> =
+    NOTIFICATION_TYPE_PREFERENCES;
+
+  return map[type] ?? null;
+}
+
+export type NotificationPreferenceFlags = Partial<
+  Record<NotificationPreferenceKey, boolean | null>
+>;
+
+export function isNotificationTypeEnabled(
+  type: string,
+  preferences?: NotificationPreferenceFlags | null
+) {
+  const key = notificationPreferenceKeyFor(type);
+
+  // Unknown types are never pushed; the dispatcher marks them done.
+  if (!key) return false;
+  if (!preferences) return true;
+  if (preferences.push_enabled === false) return false;
+
+  return preferences[key] !== false;
+}
+
+export function notificationTitle(notification: NotificationRecord) {
+  return (
+    notification.title?.trim() ||
+    NOTIFICATION_TYPE_TITLES[notification.type] ||
+    "Notification"
+  );
+}
+
 export type NotificationRecord = {
   id: string;
   user_id: string;

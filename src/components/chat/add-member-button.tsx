@@ -74,7 +74,7 @@ export function AddMemberButton({
           <button
             type="submit"
             disabled={pending || state.success}
-            className="min-h-11 rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             {state.success ? "Added" : pending ? "Adding..." : "Add"}
           </button>

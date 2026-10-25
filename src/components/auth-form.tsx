@@ -10,7 +10,7 @@ import {
 const initialState: AuthActionState = {};
 
 const inputClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-line rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
+  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 const labelClass = "block text-sm text-muted mb-2";
 
@@ -122,7 +122,7 @@ export function AuthForm() {
         {activeState?.error && (
           <div
             role="alert"
-            className="rounded-lg border border-line bg-surface px-3.5 py-3 text-sm text-text"
+            className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-text"
           >
             {activeState.error}
           </div>
@@ -131,7 +131,7 @@ export function AuthForm() {
         {activeState?.notice && (
           <div
             role="status"
-            className="rounded-lg border border-line bg-surface px-3.5 py-3 text-sm text-text"
+            className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-text"
           >
             {activeState.notice}
           </div>
@@ -141,7 +141,7 @@ export function AuthForm() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             {isPending
               ? isSignUp

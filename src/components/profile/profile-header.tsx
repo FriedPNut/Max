@@ -46,7 +46,7 @@ export function ProfileHeader({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 border-y border-line py-4">
+      <div className="grid grid-cols-3 border-y border-border py-4">
         <Stat value={stats.posts} label="Posts" />
         <Stat value={stats.friends} label="Friends" href={friendsHref} />
         <Stat value={stats.events} label="Events" />

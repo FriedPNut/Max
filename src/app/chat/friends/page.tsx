@@ -18,7 +18,7 @@ import {
 } from "@/lib/chat";
 
 const searchInputClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-line rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
+  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 export default async function FriendsPage({
   searchParams,
@@ -212,7 +212,7 @@ export default async function FriendsPage({
               />
               <button
                 type="submit"
-                className="shrink-0 min-h-11 px-4 py-3 rounded-lg border border-line bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
+                className="shrink-0 min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
               >
                 Search
               </button>

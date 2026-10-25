@@ -4,9 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { markAllNotificationsReadAction } from "@/app/actions/notifications";
 import { markNotificationReadAction } from "@/app/actions/notification-list";
-import { notificationRelativeTime, formatNotificationBody, type NotificationRecord } from "@/lib/notifications";
+import {
+  notificationRelativeTime,
+  notificationTitle,
+  formatNotificationBody,
+  type NotificationRecord,
+} from "@/lib/notifications";
 
-const buttonClass = "inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 py-3 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:pointer-events-none disabled:opacity-60";
+const buttonClass = "inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:pointer-events-none disabled:opacity-60";
 
 export function NotificationList({
   initialNotifications,
@@ -72,7 +77,7 @@ export function NotificationList({
         <button type="button" onClick={() => void openNotification(item)} className="flex min-h-11 w-full items-start gap-3 py-4 text-left">
           <span className="mt-2 w-2 shrink-0">{!item.read_at && <span aria-label="Unread" className="block h-2 w-2 rounded-full bg-accent" />}</span>
           <span className="min-w-0 flex-1">
-            <span className="block text-base font-medium text-text">{item.title}</span>
+            <span className="block text-base font-medium text-text">{notificationTitle(item)}</span>
             {formatNotificationBody(item, timezone) && <span className="mt-1 block text-sm leading-relaxed text-muted">{formatNotificationBody(item, timezone)}</span>}
             <span className="mt-1 block text-sm text-muted">{notificationRelativeTime(item.created_at)}</span>
           </span>

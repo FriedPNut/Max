@@ -40,6 +40,9 @@ export type EventCostsActionResult = {
   snapshot?: EventCostsSnapshot;
 };
 
+// Costs belong to either an event or a trip.
+export type CostScope = { kind: "event" | "trip"; id: string };
+
 export type ExpenseInput = {
   description: string;
   amount: string;

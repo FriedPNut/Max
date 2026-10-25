@@ -73,7 +73,7 @@ export function FeedView({
           type="button"
           onClick={handleLoadMore}
           disabled={pending}
-          className="w-full min-h-11 px-4 py-3 rounded-lg border border-line bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
         >
           {pending ? "Loading..." : "Load more"}
         </button>

@@ -106,8 +106,8 @@ export function EventRsvpPanel({
                 disabled={pending !== null || isPast}
                 className={`w-full min-h-11 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors duration-150 ease-out cursor-pointer disabled:opacity-60 disabled:pointer-events-none ${
                   isSelected
-                    ? "bg-accent border-accent text-text"
-                    : "bg-transparent border-line text-text hover:bg-surface"
+                    ? "bg-accent border-accent text-on-accent"
+                    : "bg-transparent border-border text-text hover:bg-surface"
                 }`}
               >
                 {pending === item ? "Saving..." : RSVP_LABELS[item]}

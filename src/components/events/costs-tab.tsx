@@ -19,10 +19,10 @@ import {
   type ExpenseInput,
 } from "@/lib/event-costs";
 
-const fieldClass = "w-full rounded-lg border border-line bg-surface px-3 py-3 text-base text-text focus:outline-2 focus:outline-text";
+const fieldClass = "w-full rounded-lg border border-border bg-surface px-3 py-3 text-base text-text focus:outline-2 focus:outline-text";
 const labelClass = "mb-2 block text-sm text-muted";
-const primaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-white transition-opacity duration-150 hover:opacity-90 disabled:pointer-events-none disabled:opacity-60";
-const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 py-3 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:pointer-events-none disabled:opacity-60";
+const primaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 hover:opacity-90 disabled:pointer-events-none disabled:opacity-60";
+const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:pointer-events-none disabled:opacity-60";
 const textButton = "inline-flex min-h-11 items-center px-1 text-sm text-muted transition-colors duration-150 hover:text-text disabled:pointer-events-none disabled:opacity-60";
 
 type FormMode = { type: "create" } | { type: "edit"; expense: EventExpense } | null;
@@ -209,7 +209,7 @@ function ExpenseForm({
     }
   }
 
-  return <form onSubmit={handleSubmit} noValidate className="space-y-4 rounded-lg border border-line bg-surface p-4">
+  return <form onSubmit={handleSubmit} noValidate className="space-y-4 rounded-lg border border-border bg-surface p-4">
     <h3 className="text-lg font-semibold text-text">{expense ? "Edit expense" : "Add expense"}</h3>
     <div><label htmlFor="expense-description" className={labelClass}>Description</label><input id="expense-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={120} disabled={busy} placeholder="Groceries" className={fieldClass} /></div>
     <div><label htmlFor="expense-amount" className={labelClass}>Amount in dollars</label><input id="expense-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} disabled={busy} placeholder="24.50" className={fieldClass} /></div>

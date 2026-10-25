@@ -16,7 +16,7 @@ const MAX_DIMENSION = 1600;
 const JPEG_QUALITY = 0.8;
 
 const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-line rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
+  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 const labelClass = "block text-sm text-muted mb-2";
 
@@ -195,7 +195,7 @@ export function PostComposer({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={busy}
-          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="inline-flex min-h-11 items-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
         >
           {previewUrl ? "Choose another photo" : "Choose photo"}
         </button>
@@ -275,7 +275,7 @@ export function PostComposer({
       {error && (
         <div
           role="alert"
-          className="rounded-lg border border-line bg-surface px-3.5 py-3 text-sm text-text"
+          className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-text"
         >
           {error}
         </div>
@@ -285,7 +285,7 @@ export function PostComposer({
         <button
           type="submit"
           disabled={!photo || busy}
-          className="w-full sm:w-auto min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full sm:w-auto min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
         >
           {buttonLabel}
         </button>
@@ -295,7 +295,7 @@ export function PostComposer({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="w-full sm:w-auto min-h-11 px-4 py-3 rounded-lg border border-line bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="w-full sm:w-auto min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             Cancel
           </button>
@@ -308,7 +308,7 @@ export function PostComposer({
                 event.preventDefault();
               }
             }}
-            className={`w-full sm:w-auto text-center min-h-11 px-4 py-3 rounded-lg border border-line bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface ${
+            className={`w-full sm:w-auto text-center min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface ${
               busy ? "pointer-events-none opacity-60" : ""
             }`}
           >

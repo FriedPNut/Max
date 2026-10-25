@@ -138,8 +138,8 @@ export function PollTimePanel({
                         disabled={busy}
                         className={`min-h-11 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors duration-150 ease-out cursor-pointer disabled:opacity-60 disabled:pointer-events-none ${
                           selected
-                            ? "border-accent bg-accent text-text"
-                            : "border-line bg-transparent text-text hover:bg-surface"
+                            ? "border-accent bg-accent text-on-accent"
+                            : "border-border bg-transparent text-text hover:bg-surface"
                         }`}
                       >
                         {isPending
@@ -188,7 +188,7 @@ export function PollTimePanel({
                     <button
                       type="submit"
                       disabled={busy}
-                      className="min-h-11 rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+                      className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
                     >
                       {pickPending && pickingId === option.id
                         ? "Picking..."

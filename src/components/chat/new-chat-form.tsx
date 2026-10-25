@@ -10,7 +10,7 @@ import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import type { FriendListItem } from "@/lib/chat";
 
 const inputClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-line rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
+  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 export function NewChatForm({ friends }: { friends: FriendListItem[] }) {
   const [state, formAction, pending] = useActionState(
@@ -98,7 +98,7 @@ export function NewChatForm({ friends }: { friends: FriendListItem[] }) {
       {state.error && (
         <div
           role="alert"
-          className="rounded-lg border border-line bg-surface px-3.5 py-3 text-sm text-text"
+          className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-text"
         >
           {state.error}
         </div>
@@ -107,7 +107,7 @@ export function NewChatForm({ friends }: { friends: FriendListItem[] }) {
       <button
         type="submit"
         disabled={pending || selectedCount === 0}
-        className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+        className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
       >
         {pending
           ? "Starting..."

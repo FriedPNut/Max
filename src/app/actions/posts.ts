@@ -216,5 +216,8 @@ export async function deletePostAction(
     await supabase.storage.from(POSTS_BUCKET).remove([post.image_path]);
   }
 
+  // The post can be deleted from its own page, so refresh the feed too.
+  revalidatePath("/feed");
+  revalidatePath(`/feed/${cleanPostId}`);
   return {};
 }

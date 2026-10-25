@@ -1,20 +1,23 @@
+import { Suspense } from "react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { FeedView } from "@/components/posts/feed-view";
+import { OnThisDayCard } from "@/components/posts/on-this-day-card";
+import { BestOfBanner } from "@/components/best-of/best-of-banner";
 import { NewPostButton } from "@/components/posts/new-post-button";
 import { createClient } from "@/lib/supabase/server";
 import { loadPostPage } from "@/lib/posts-data";
 
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
 export default async function PostPage() {
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
-  const [page, eventOptionsResult] = await Promise.all([
-    loadPostPage(supabase, user.id, displayName, 0),
-    supabase
-      .from("events")
-      .select("id,title,starts_at")
-      .gte("starts_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-      .order("starts_at", { ascending: true }),
-  ]);
+  const eventOptionsResult = await supabase
+    .from("events")
+    .select("id,title,starts_at")
+    .gte("starts_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(50);
   const eventOptions = (eventOptionsResult.data ?? []).map((event) => ({
     id: String(event.id),
     title: String(event.title),
@@ -22,7 +25,7 @@ export default async function PostPage() {
   }));
 
   return (
-    <AppShell>
+    <AppShell userId={user.id}>
       <section className="space-y-8">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-[28px] font-semibold leading-tight text-text">
@@ -32,16 +35,63 @@ export default async function PostPage() {
           <NewPostButton userId={user.id} events={eventOptions} />
         </div>
 
-        {page.error ? (
-          <p className="text-sm text-muted">{page.error}</p>
-        ) : (
-          <FeedView
-            key={page.posts[0]?.id ?? "empty"}
-            initialPosts={page.posts}
-            initialHasMore={page.hasMore}
+        <BestOfBanner />
+
+        <OnThisDayCard />
+
+        <Suspense fallback={<FeedSkeleton />}>
+          <FeedSection
+            supabase={supabase}
+            userId={user.id}
+            displayName={displayName}
           />
-        )}
+        </Suspense>
       </section>
     </AppShell>
+  );
+}
+
+async function FeedSection({
+  supabase,
+  userId,
+  displayName,
+}: {
+  supabase: ServerClient;
+  userId: string;
+  displayName: string;
+}) {
+  const page = await loadPostPage(supabase, userId, displayName, 0);
+
+  if (page.error) {
+    return <p className="text-sm text-muted">{page.error}</p>;
+  }
+
+  return (
+    <FeedView
+      key={page.posts[0]?.id ?? "empty"}
+      initialPosts={page.posts}
+      initialHasMore={page.hasMore}
+    />
+  );
+}
+
+function FeedSkeleton() {
+  return (
+    <div
+      className="animate-pulse space-y-6"
+      aria-busy="true"
+      aria-label="Loading posts"
+    >
+      {[0, 1].map((index) => (
+        <div key={index} className="space-y-3" aria-hidden="true">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-line/50" />
+            <div className="h-4 w-32 rounded bg-line/50" />
+          </div>
+          <div className="h-64 rounded-lg bg-line/40" />
+          <div className="h-4 w-2/3 rounded bg-line/40" />
+        </div>
+      ))}
+    </div>
   );
 }

@@ -31,7 +31,7 @@ export function FriendRequestActions({
           <button
             type="submit"
             disabled={acceptPending || declinePending}
-            className="min-h-11 px-3 py-2.5 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="min-h-11 px-3 py-2.5 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             {acceptPending ? "Accepting..." : "Accept"}
           </button>
@@ -42,7 +42,7 @@ export function FriendRequestActions({
           <button
             type="submit"
             disabled={acceptPending || declinePending}
-            className="min-h-11 px-3 py-2.5 rounded-lg border border-line bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="min-h-11 px-3 py-2.5 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             {declinePending ? "Declining..." : "Decline"}
           </button>

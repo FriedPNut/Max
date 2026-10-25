@@ -50,7 +50,7 @@ export function DeletePostMenu({
 
           <div
             role="menu"
-            className="absolute right-0 top-11 z-20 w-40 rounded-lg border border-line bg-surface py-1"
+            className="absolute right-0 top-11 z-20 w-40 rounded-lg border border-border bg-surface py-1"
           >
             <button
               type="button"

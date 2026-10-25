@@ -18,10 +18,10 @@ import type {
 } from "@/lib/event-plan";
 
 const primaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-white transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
+  "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
 
 const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
+  "inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
 
 const textButton =
   "inline-flex min-h-11 items-center px-1 text-sm text-muted transition-colors duration-150 ease-out hover:text-text cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
@@ -325,7 +325,7 @@ function RideRow({
 
       {isDriver ? (
         confirmingDelete ? (
-          <div className="mt-3 space-y-3 rounded-lg border border-line bg-surface p-3">
+          <div className="mt-3 space-y-3 rounded-lg border border-border bg-surface p-3">
             <p className="text-sm text-text">
               Delete this ride? Passengers will lose their seats.
             </p>

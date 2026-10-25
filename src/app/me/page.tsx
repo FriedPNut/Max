@@ -62,7 +62,7 @@ export default async function MePage() {
         >
           <Link
             href="/me/edit"
-            className="flex min-h-11 w-full items-center justify-center rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
+            className="flex min-h-11 w-full items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
           >
             Edit profile
           </Link>

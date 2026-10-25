@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ProfileEditForm } from "@/components/profile/profile-edit-form";
+import { BirthdayForm } from "@/components/profile/birthday-form";
 import { createClient } from "@/lib/supabase/server";
 import {
   PROFILE_BUCKET,
@@ -15,7 +16,7 @@ export default async function EditProfilePage() {
 
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
-    .select("id,display_name,avatar_url,username,bio")
+    .select("id,display_name,avatar_url,username,bio,birth_month,birth_day,birth_year")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -64,7 +65,16 @@ export default async function EditProfilePage() {
             Couldn&apos;t load your profile. Refresh and try again.
           </p>
         ) : (
-          <ProfileEditForm profile={profile} avatarUrl={avatarUrl} />
+          <>
+            <ProfileEditForm profile={profile} avatarUrl={avatarUrl} />
+            <BirthdayForm
+              initial={{
+                month: (profileData?.birth_month as number | null) ?? null,
+                day: (profileData?.birth_day as number | null) ?? null,
+                year: (profileData?.birth_year as number | null) ?? null,
+              }}
+            />
+          </>
         )}
       </section>
     </AppShell>

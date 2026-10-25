@@ -73,7 +73,7 @@ export function CopyLinkButton() {
       type="button"
       onClick={copyLink}
       aria-live="polite"
-      className="min-h-11 rounded-lg border border-line bg-transparent px-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
+      className="min-h-11 rounded-lg border border-border bg-transparent px-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
     >
       {label}
     </button>

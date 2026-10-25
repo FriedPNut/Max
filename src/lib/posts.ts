@@ -1,5 +1,7 @@
 export const POSTS_PAGE_SIZE = 10;
 export const POSTS_BUCKET = "photos";
+export const COMMENT_MAX = 1000;
+export const COMMENT_PREVIEW_COUNT = 2;
 
 export type PostRecord = {
   id: string;
@@ -17,6 +19,21 @@ export type PostProfile = {
   username: string | null;
 };
 
+export type PostComment = {
+  id: string;
+  postId: string;
+  body: string;
+  createdAt: string;
+  relativeTime: string;
+  authorId: string;
+  authorName: string;
+  authorInitial: string;
+  authorUsername: string | null;
+  authorAvatarUrl: string | null;
+  // True when I wrote it or I wrote the post it belongs to.
+  canDelete: boolean;
+};
+
 export type FeedPost = {
   id: string;
   imageUrl: string | null;
@@ -32,6 +49,9 @@ export type FeedPost = {
   isOwner: boolean;
   eventId: string | null;
   eventTitle: string | null;
+  commentCount: number;
+  // Latest two comments, oldest first, for the feed preview.
+  previewComments: PostComment[];
 };
 
 export type PostPageResult = {

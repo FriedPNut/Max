@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { OnlineDot } from "@/components/presence-provider";
 import type { ProfileFriend } from "@/lib/profile";
 
 export function ProfileFriendsList({ friends }: { friends: ProfileFriend[] }) {
@@ -14,25 +15,28 @@ export function ProfileFriendsList({ friends }: { friends: ProfileFriend[] }) {
           key={friend.id}
           className="flex items-center gap-3 border-b border-line py-3"
         >
-          {friend.username ? (
-            <Link
-              href={`/u/${encodeURIComponent(friend.username)}`}
-              aria-label={`View ${friend.name}'s profile`}
-              className="shrink-0 transition-opacity duration-150 ease-out hover:opacity-80"
-            >
+          <span className="relative block shrink-0">
+            {friend.username ? (
+              <Link
+                href={`/u/${encodeURIComponent(friend.username)}`}
+                aria-label={`View ${friend.name}'s profile`}
+                className="block transition-opacity duration-150 ease-out hover:opacity-80"
+              >
+                <ProfileAvatar
+                  src={friend.avatarUrl}
+                  initial={friend.initial}
+                  size={40}
+                />
+              </Link>
+            ) : (
               <ProfileAvatar
                 src={friend.avatarUrl}
                 initial={friend.initial}
                 size={40}
               />
-            </Link>
-          ) : (
-            <ProfileAvatar
-              src={friend.avatarUrl}
-              initial={friend.initial}
-              size={40}
-            />
-          )}
+            )}
+            <OnlineDot userId={friend.id} />
+          </span>
 
           <div className="min-w-0 flex-1">
             {friend.username ? (

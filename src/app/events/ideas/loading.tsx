@@ -17,7 +17,7 @@ export default function IdeasLoading() {
           <div className="h-7 w-20 rounded bg-line/60" />
         </div>
 
-        <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface p-1" aria-hidden="true">
+        <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-surface p-1" aria-hidden="true">
           {[0, 1].map((index) => (
             <div key={index} className="h-11 rounded-lg bg-line/40" />
           ))}

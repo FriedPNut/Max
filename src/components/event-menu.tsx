@@ -84,7 +84,7 @@ export function EventMenu({
 
           <div
             role="menu"
-            className="absolute right-0 top-11 z-20 w-44 rounded-lg border border-line bg-surface py-1"
+            className="absolute right-0 top-11 z-20 w-44 rounded-lg border border-border bg-surface py-1"
           >
             <Link
               href={`/events/${eventId}/edit`}
@@ -113,14 +113,14 @@ export function EventMenu({
             <div
               aria-hidden="true"
               onClick={closeDialog}
-              className="fixed inset-0 z-50 bg-text/30"
+              className="fixed inset-0 z-50 bg-scrim/30"
             />
 
             <div
               role="dialog"
               aria-modal="true"
               aria-labelledby="delete-event-title"
-              className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-line bg-surface p-4"
+              className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-surface p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <h2
@@ -186,7 +186,7 @@ export function EventMenu({
                     type="button"
                     onClick={closeDialog}
                     disabled={pending}
-                    className="min-h-11 rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+                    className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
                   >
                     Cancel
                   </button>
@@ -194,7 +194,7 @@ export function EventMenu({
                   <button
                     type="submit"
                     disabled={pending}
-                    className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-white transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+                    className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
                   >
                     {pending ? "Deleting..." : "Delete"}
                   </button>

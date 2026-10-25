@@ -125,7 +125,7 @@ export function IdeaRow({
           {idea.isCreator && isOpen && (
             <Link
               href={`/events/new?idea=${idea.id}`}
-              className="mt-2 inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
+              className="mt-2 inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
             >
               Make it an event
             </Link>
@@ -168,7 +168,7 @@ export function IdeaRow({
 
                   <div
                     role="menu"
-                    className="absolute right-0 top-11 z-20 w-44 rounded-lg border border-line bg-surface py-1"
+                    className="absolute right-0 top-11 z-20 w-44 rounded-lg border border-border bg-surface py-1"
                   >
                     <button
                       type="button"
@@ -221,7 +221,7 @@ export function IdeaRow({
       )}
 
       {confirmingDelete && (
-        <div className="mt-3 space-y-3 rounded-lg border border-line bg-surface p-3">
+        <div className="mt-3 space-y-3 rounded-lg border border-border bg-surface p-3">
           <p className="text-sm text-text">
             Delete this idea? It can&apos;t be undone.
           </p>
@@ -231,7 +231,7 @@ export function IdeaRow({
               type="button"
               onClick={handleDelete}
               disabled={pendingAction !== null}
-              className="min-h-11 px-4 py-3 rounded-lg bg-text text-white font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+              className="min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
             >
               {pendingAction === "delete" ? "Deleting..." : "Delete"}
             </button>
@@ -240,7 +240,7 @@ export function IdeaRow({
               type="button"
               onClick={() => setConfirmingDelete(false)}
               disabled={pendingAction !== null}
-              className="min-h-11 px-4 py-3 rounded-lg border border-line bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+              className="min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
             >
               Cancel
             </button>

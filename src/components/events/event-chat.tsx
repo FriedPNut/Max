@@ -410,8 +410,8 @@ export function EventChat({
                   <div
                     className={`max-w-[78%] whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-base leading-relaxed ${
                       isOwn
-                        ? "bg-text text-white"
-                        : "border border-line bg-surface text-text"
+                        ? "bg-text text-background"
+                        : "border border-border bg-surface text-text"
                     }`}
                   >
                     {message.body}
@@ -449,13 +449,13 @@ export function EventChat({
             aria-label="Message"
             enterKeyHint="send"
             autoComplete="off"
-            className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-3 text-base leading-snug text-text placeholder:text-muted focus:outline-2 focus:outline-offset-0 focus:outline-text"
+            className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-3 text-base leading-snug text-text placeholder:text-muted focus:outline-2 focus:outline-offset-0 focus:outline-text"
           />
 
           <button
             type="submit"
             disabled={sending || body.trim().length === 0}
-            className="min-h-11 shrink-0 rounded-lg bg-text px-4 py-3 text-sm font-medium text-white transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="min-h-11 shrink-0 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             {sending ? "Sending..." : "Send"}
           </button>

@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useState } from "react";
-import { AddIdeaButton } from "@/components/events/add-idea-button";
 import { EventRow } from "@/components/events/event-row";
 import { IdeaRow } from "@/components/events/idea-row";
 import { IdeaSheet } from "@/components/events/idea-sheet";
@@ -95,25 +94,36 @@ export function IdeasPage({
   }
 
   return (
-    <div className="space-y-6 pb-24">
-      <div className="flex items-center gap-2">
-        <Link
-          href="/events"
-          aria-label="Back to events"
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
-        >
-          <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
-        </Link>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/events"
+            aria-label="Back to events"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
+          >
+            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+          </Link>
 
-        <h1 className="text-[28px] font-semibold leading-tight text-text">
-          Ideas
-        </h1>
+          <h1 className="text-[28px] font-semibold leading-tight text-text">
+            Ideas
+          </h1>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSheet({ mode: "create" })}
+          aria-label="Add idea"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+        >
+          <Plus size={20} strokeWidth={1.5} aria-hidden="true" />
+        </button>
       </div>
 
       <div
         role="group"
         aria-label="Ideas sections"
-        className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface p-1"
+        className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-surface p-1"
       >
         <button
           type="button"
@@ -121,7 +131,7 @@ export function IdeasPage({
           onClick={() => setView("ideas")}
           className={`min-h-11 rounded-lg px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
             view === "ideas"
-              ? "bg-text text-white font-medium"
+              ? "bg-text text-background font-medium"
               : "text-muted hover:text-text"
           }`}
         >
@@ -134,7 +144,7 @@ export function IdeasPage({
           onClick={() => setView("events")}
           className={`min-h-11 rounded-lg px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
             view === "events"
-              ? "bg-text text-white font-medium"
+              ? "bg-text text-background font-medium"
               : "text-muted hover:text-text"
           }`}
         >
@@ -161,7 +171,7 @@ export function IdeasPage({
                   className={`min-h-9 rounded-lg border px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
                     isActive
                       ? "border-text text-text font-medium"
-                      : "border-line text-muted hover:text-text"
+                      : "border-border text-muted hover:text-text"
                   }`}
                 >
                   {status === "open" ? "Open" : "Scheduled"}
@@ -195,10 +205,6 @@ export function IdeasPage({
         </div>
       ) : (
         <AllEventsView events={events} nowIso={nowIso} />
-      )}
-
-      {view === "ideas" && (
-        <AddIdeaButton onClick={() => setSheet({ mode: "create" })} />
       )}
 
       {sheet?.mode === "create" && (
