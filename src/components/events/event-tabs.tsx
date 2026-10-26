@@ -27,7 +27,10 @@ export function EventTabs({ tabs }: { tabs: EventTabItem[] }) {
   return (
     <EventTabsContext.Provider value={activeId}>
       <div>
-        <div className="sticky top-14 z-30 -mx-4 bg-background px-4 py-2">
+        <div
+          className="sticky z-30 -mx-4 bg-background px-4 py-2"
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}
+        >
           <div
             role="group"
             aria-label="Event sections"

@@ -9,6 +9,7 @@ import {
   type DeleteEventState,
 } from "@/app/actions/events";
 import { SERIES_SCOPE_OPTIONS } from "@/lib/events";
+import { lockPageScroll } from "@/lib/scroll-lock";
 
 export function EventMenu({
   eventId,
@@ -31,8 +32,7 @@ export function EventMenu({
     }
 
     cancelRef.current?.focus();
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockPageScroll();
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && !pending) {
@@ -43,7 +43,7 @@ export function EventMenu({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlock();
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [confirming, pending]);

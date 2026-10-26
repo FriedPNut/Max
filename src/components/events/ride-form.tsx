@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createEventRideAction,
   updateEventRideAction,
@@ -11,6 +11,7 @@ import {
   type EventPlanSnapshot,
   type EventRide,
 } from "@/lib/event-plan";
+import { useAutofocus } from "@/lib/use-autofocus";
 
 const fieldClass =
   "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text [color-scheme:light]";
@@ -57,6 +58,15 @@ export function RideForm({
   onSaved: (snapshot: EventPlanSnapshot) => void;
 }) {
   const isEditing = mode === "edit";
+  const fromRef = useRef<HTMLInputElement>(null);
+  const autofocus = useAutofocus();
+
+  useEffect(() => {
+    if (autofocus) {
+      fromRef.current?.focus();
+    }
+  }, [autofocus]);
+
   const minimumSeats = ride
     ? Math.max(RIDE_SEATS_MIN, ride.passengers.length)
     : RIDE_SEATS_MIN;
@@ -200,6 +210,7 @@ export function RideForm({
           Departing from
         </label>
         <input
+          ref={fromRef}
           id="ride-from"
           type="text"
           value={departingFrom}
@@ -211,7 +222,6 @@ export function RideForm({
             }
           }}
           disabled={pending}
-          autoFocus
           autoComplete="off"
           placeholder="Rina's place"
           className={fieldClass}

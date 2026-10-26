@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { PostComposer } from "@/components/posts/post-composer";
+import { lockPageScroll } from "@/lib/scroll-lock";
 
 type EventOption = { id: string; title: string; startsAt: string };
 
@@ -18,9 +19,7 @@ export function NewPostButton({ userId, eventId = "", events = [], buttonLabel =
     }
 
     closeRef.current?.focus();
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockPageScroll();
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -31,7 +30,7 @@ export function NewPostButton({ userId, eventId = "", events = [], buttonLabel =
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlock();
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);

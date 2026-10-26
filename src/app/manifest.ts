@@ -6,6 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Max",
     start_url: "/events",
     display: "standalone",
+    orientation: "portrait",
     background_color: "#FAFAF8",
     theme_color: "#111111",
     icons: [

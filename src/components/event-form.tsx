@@ -448,7 +448,7 @@ export function EventForm({
         </span>
 
         {coverPreviewUrl && (
-          <img
+          <img draggable={false}
             src={coverPreviewUrl}
             alt="Event cover preview"
             className="mb-3 aspect-video w-full rounded-lg border border-border bg-surface object-cover"

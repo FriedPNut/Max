@@ -180,7 +180,7 @@ export default async function EventDetailPage({
   const detailsContent = (
     <div className="space-y-8">
       {coverUrl && (
-        <img
+        <img draggable={false}
           src={coverUrl}
           alt={`Cover for ${event.title}`}
           className="aspect-video w-full rounded-lg border border-border bg-surface object-cover"
@@ -233,7 +233,7 @@ export default async function EventDetailPage({
             rel="noreferrer"
             className="mt-1 inline-flex flex-col text-base text-text transition-opacity duration-150 ease-out hover:opacity-80"
           >
-            <span className="break-words whitespace-pre-line">
+            <span className="selectable break-words whitespace-pre-line">
               {event.location}
             </span>
             <span className="mt-1 text-sm text-muted">Open in Maps</span>
@@ -243,7 +243,7 @@ export default async function EventDetailPage({
         {event.description && (
           <div className="border-b border-line py-4">
             <p className="text-sm text-muted">Details</p>
-            <p className="mt-1 text-base text-text leading-relaxed whitespace-pre-line break-words">
+            <p className="selectable mt-1 text-base text-text leading-relaxed whitespace-pre-line break-words">
               {event.description}
             </p>
           </div>

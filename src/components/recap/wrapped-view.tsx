@@ -96,7 +96,7 @@ export function WrappedView({ year }: { year: number }) {
           <article key={card.id} className="w-full shrink-0 snap-center">
             <div className="flex min-h-[360px] flex-col justify-center rounded-lg border border-border bg-surface p-6">
               {card.imageUrl && (
-                <img
+                <img draggable={false}
                   src={card.imageUrl}
                   alt=""
                   className="mb-4 h-24 w-24 rounded-lg border border-border object-cover"

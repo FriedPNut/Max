@@ -250,7 +250,7 @@ export function ProfileEditForm({
 
         <div className="flex items-center gap-4">
           {previewUrl ? (
-            <img
+            <img draggable={false}
               src={previewUrl}
               alt="New avatar preview"
               className="h-[88px] w-[88px] shrink-0 rounded-full border border-border bg-surface object-cover"

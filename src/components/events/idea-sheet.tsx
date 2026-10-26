@@ -6,6 +6,8 @@ import {
   createIdeaAction,
   updateIdeaAction,
 } from "@/app/actions/ideas";
+import { lockPageScroll } from "@/lib/scroll-lock";
+import { useAutofocus } from "@/lib/use-autofocus";
 import type { IdeaListItem } from "@/lib/events";
 
 const fieldClass =
@@ -38,6 +40,7 @@ export function IdeaSheet({
   const [visible, setVisible] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const autofocus = useAutofocus();
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setVisible(true));
@@ -45,16 +48,12 @@ export function IdeaSheet({
   }, []);
 
   useEffect(() => {
-    titleRef.current?.focus();
-  }, []);
+    if (autofocus) {
+      titleRef.current?.focus();
+    }
+  }, [autofocus]);
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
+  useEffect(() => lockPageScroll(), []);
 
   useEffect(() => {
     return () => {
@@ -204,7 +203,6 @@ export function IdeaSheet({
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               disabled={pending}
-              autoFocus
               autoComplete="off"
               placeholder="Rooftop movie night"
               className={fieldClass}

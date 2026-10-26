@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { LocalTime } from "@/components/local-time";
+import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 import { createClient } from "@/lib/supabase/client";
 import {
   MESSAGE_SELECT,
@@ -44,6 +45,9 @@ function MessageMenu({
   isOwn,
   onEdit,
   onDelete,
+  hasBody,
+  copied,
+  onCopy,
 }: {
   open: boolean;
   onToggle: () => void;
@@ -52,9 +56,12 @@ function MessageMenu({
   isOwn: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  hasBody: boolean;
+  copied: boolean;
+  onCopy: () => void;
 }) {
   return (
-    <div className="relative">
+    <div className="relative" data-message-menu>
       <button
         type="button"
         onClick={onToggle}
@@ -65,7 +72,19 @@ function MessageMenu({
         ...
       </button>
       {open && (
-        <div className="absolute bottom-full right-0 z-20 mb-1 min-w-[140px] rounded-lg border border-border bg-surface py-1">
+        <div
+          data-message-menu
+          className="absolute bottom-full right-0 z-20 mb-1 min-w-[140px] rounded-lg border border-border bg-surface py-1"
+        >
+          {hasBody && (
+            <button
+              type="button"
+              onClick={onCopy}
+              className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-background cursor-pointer"
+            >
+              {copied ? "Copied" : "Copy"}
+            </button>
+          )}
           <button
             type="button"
             onClick={onPin}
@@ -154,6 +173,7 @@ export function ChatRoom({
   const [pinsOpen, setPinsOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [fullscreenUrl, setFullscreenUrl] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -184,6 +204,41 @@ export function ChatRoom({
   const holdTimer = useRef<number | null>(null);
   const holdStart = useRef<{ x: number; y: number } | null>(null);
   const holdFired = useRef(false);
+  const copyTimer = useRef<number | null>(null);
+  const roomRef = useRef<HTMLDivElement>(null);
+  const keyboardInset = useKeyboardInset();
+
+  // The app shell scrolls `main` instead of the window, so measure that node.
+  function getScroller() {
+    return roomRef.current?.closest("main") ?? null;
+  }
+
+  function pageScrollHeight() {
+    const scroller = getScroller();
+    return scroller
+      ? scroller.scrollHeight
+      : document.documentElement.scrollHeight;
+  }
+
+  function pageScrollTop() {
+    const scroller = getScroller();
+    return scroller ? scroller.scrollTop : window.scrollY;
+  }
+
+  function pageViewportHeight() {
+    const scroller = getScroller();
+    return scroller ? scroller.clientHeight : window.innerHeight;
+  }
+
+  function setPageScrollTop(top: number) {
+    const scroller = getScroller();
+
+    if (scroller) {
+      scroller.scrollTop = top;
+    } else {
+      window.scrollTo({ top });
+    }
+  }
 
   const namesById = useMemo(() => {
     return new Map(members.map((member) => [member.id, member.name]));
@@ -296,8 +351,8 @@ export function ChatRoom({
         (payload) => {
           const message = payload.new as MessageRecord;
           const nearBottom =
-            window.scrollY + window.innerHeight >=
-            document.documentElement.scrollHeight - 160;
+            pageScrollTop() + pageViewportHeight() >=
+            pageScrollHeight() - 160;
 
           if (nearBottom) {
             shouldScrollToBottom.current = true;
@@ -506,7 +561,7 @@ export function ChatRoom({
 
   // Tap anywhere else to close the bar or the who-reacted line.
   useEffect(() => {
-    if (!reactionBarId && !whoReacted) {
+    if (!reactionBarId && !whoReacted && !menuId) {
       return;
     }
 
@@ -515,19 +570,22 @@ export function ChatRoom({
 
       if (
         target?.closest("[data-reaction-ui]") ||
-        target?.closest("[data-reaction-trigger]")
+        target?.closest("[data-reaction-trigger]") ||
+        target?.closest("[data-message-menu]")
       ) {
         return;
       }
 
       setReactionBarId(null);
       setWhoReacted(null);
+      setMenuId(null);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setReactionBarId(null);
         setWhoReacted(null);
+        setMenuId(null);
       }
     }
 
@@ -538,12 +596,16 @@ export function ChatRoom({
       window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [reactionBarId, whoReacted]);
+  }, [reactionBarId, whoReacted, menuId]);
 
   useEffect(() => {
     return () => {
       if (holdTimer.current !== null) {
         window.clearTimeout(holdTimer.current);
+      }
+
+      if (copyTimer.current !== null) {
+        window.clearTimeout(copyTimer.current);
       }
     };
   }, []);
@@ -592,6 +654,49 @@ export function ChatRoom({
     }
   }
 
+  async function copyMessage(message: MessageRecord) {
+    const text = message.body ?? "";
+
+    if (!text) {
+      return;
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+
+        if (!copied) {
+          throw new Error("Copy failed");
+        }
+      }
+    } catch {
+      setError("Couldn't copy that message.");
+      return;
+    }
+
+    setCopiedId(message.id);
+
+    if (copyTimer.current !== null) {
+      window.clearTimeout(copyTimer.current);
+    }
+
+    copyTimer.current = window.setTimeout(() => {
+      copyTimer.current = null;
+      setCopiedId(null);
+      setMenuId(null);
+    }, 1_500);
+  }
+
   function clearMessageHold() {
     if (holdTimer.current !== null) {
       window.clearTimeout(holdTimer.current);
@@ -599,7 +704,8 @@ export function ChatRoom({
     }
   }
 
-  // Long-press a bubble on touch to open the reaction bar. Scrolling cancels it.
+  // Long-press a bubble on touch to open the reaction bar and message menu.
+  // Scrolling cancels it.
   function startMessageHold(
     messageId: string,
     event: React.TouchEvent<HTMLElement>
@@ -611,8 +717,8 @@ export function ChatRoom({
     holdTimer.current = window.setTimeout(() => {
       holdTimer.current = null;
       holdFired.current = true;
-      setMenuId(null);
       setReactionBarId(messageId);
+      setMenuId(messageId);
     }, 450);
   }
 
@@ -785,11 +891,10 @@ export function ChatRoom({
 
     if (snapshot) {
       prependSnapshot.current = null;
-      const difference =
-        document.documentElement.scrollHeight - snapshot.height;
+      const difference = pageScrollHeight() - snapshot.height;
 
       if (difference > 0) {
-        window.scrollTo({ top: snapshot.top + difference });
+        setPageScrollTop(snapshot.top + difference);
       }
 
       return;
@@ -836,8 +941,8 @@ export function ChatRoom({
 
     if (older.length > 0) {
       prependSnapshot.current = {
-        height: document.documentElement.scrollHeight,
-        top: window.scrollY,
+        height: pageScrollHeight(),
+        top: pageScrollTop(),
       };
 
       setMessages((current) => {
@@ -926,7 +1031,7 @@ export function ChatRoom({
   }
 
   return (
-    <div>
+    <div ref={roomRef}>
       <div className="mb-3 flex justify-end">
         <button
           type="button"
@@ -1105,6 +1210,9 @@ export function ChatRoom({
                         isOwn={isOwn}
                         onEdit={() => startEdit(message)}
                         onDelete={() => void removeMessage(message)}
+                        hasBody={Boolean(message.body)}
+                        copied={copiedId === message.id}
+                        onCopy={() => void copyMessage(message)}
                       />
                     )}
                     {!message.deleted_at && (
@@ -1169,7 +1277,7 @@ export function ChatRoom({
                           {message.image_path && (
                             imageUrls[message.image_path] ? (
                               <button type="button" onClick={() => setFullscreenUrl(imageUrls[message.image_path as string])} aria-label="Open photo" className="block cursor-pointer">
-                                <img src={imageUrls[message.image_path]} alt={message.body ?? "Photo"} loading="lazy" className="max-h-[320px] w-auto max-w-full rounded-lg object-cover" />
+                                <img draggable={false} src={imageUrls[message.image_path]} alt={message.body ?? "Photo"} loading="lazy" className="max-h-[320px] w-auto max-w-full rounded-lg object-cover" />
                               </button>
                             ) : (
                               <span className="block h-40 w-40 animate-pulse rounded-lg bg-line" aria-label="Loading photo" />
@@ -1257,13 +1365,21 @@ export function ChatRoom({
           <button type="button" onClick={() => setFullscreenUrl(null)} aria-label="Close photo" className="absolute right-4 top-4 min-h-11 min-w-11 rounded-lg text-text cursor-pointer">
             <X size={20} strokeWidth={1.5} aria-hidden="true" />
           </button>
-          <img src={fullscreenUrl} alt="" className="max-h-full max-w-full object-contain" />
+          <img draggable={false} src={fullscreenUrl} alt="" className="max-h-full max-w-full object-contain" />
         </div>
       )}
 
       <div ref={bottomRef} className="h-36" aria-hidden="true" />
 
-      <div className="fixed inset-x-0 bottom-14 z-30 border-t border-line bg-background">
+      <div
+        className="fixed inset-x-0 z-30 border-t border-line bg-background"
+        style={{
+          bottom:
+            keyboardInset > 0
+              ? keyboardInset
+              : "calc(56px + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
         {mentionQuery !== null && (
           <ul aria-label="Mention someone" className="mx-auto max-w-[560px] border-b border-line bg-surface px-2">
             {members

@@ -216,7 +216,7 @@ export function ListDetailView({
                 />
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-base font-medium text-text">{item.title}</p>
-                  {item.note && <p className="text-sm text-muted break-words">{item.note}</p>}
+                  {item.note && <p className="selectable text-sm text-muted break-words">{item.note}</p>}
                   <p className="text-sm text-muted">
                     Added by {item.addedByName}
                     {item.url && (

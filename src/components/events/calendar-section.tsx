@@ -697,14 +697,23 @@ function DayView({
       return;
     }
 
-    const lineTop =
-      lineRef.current.getBoundingClientRect().top + window.scrollY;
-    const targetViewportY = window.innerHeight / 2 - HOUR_HEIGHT;
+    const scroller = lineRef.current.closest("main");
+    const scrollerTop = scroller?.getBoundingClientRect().top ?? 0;
+    // The page scrolls inside `main`, so measure against its content box.
+    const lineTop = scroller
+      ? lineRef.current.getBoundingClientRect().top -
+        scrollerTop +
+        scroller.scrollTop
+      : lineRef.current.getBoundingClientRect().top + window.scrollY;
+    const targetViewportY =
+      (scroller?.clientHeight ?? window.innerHeight) / 2 - HOUR_HEIGHT;
+    const top = Math.max(0, lineTop - Math.max(0, targetViewportY));
 
-    window.scrollTo({
-      top: Math.max(0, lineTop - Math.max(0, targetViewportY)),
-      behavior: "auto",
-    });
+    if (scroller) {
+      scroller.scrollTo({ top, behavior: "auto" });
+    } else {
+      window.scrollTo({ top, behavior: "auto" });
+    }
   }, [dayKey, today, scrollSignal]);
 
   if (dayEvents.length === 0) {

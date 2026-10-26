@@ -136,7 +136,7 @@ export function PostCard({
       )}
 
       {post.imageUrl && !imageFailed ? (
-        <img
+        <img draggable={false}
           src={post.imageUrl}
           alt={alt}
           loading="lazy"

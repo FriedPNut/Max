@@ -54,8 +54,11 @@ export async function AppShell({
   const activeUserId = userId ?? (await getAuthenticatedUser()).user.id;
   return (
     <PresenceProvider userId={activeUserId}>
-    <div className="min-h-dvh bg-background text-text pb-24">
-      <header className="sticky top-0 z-40 border-b border-line bg-background">
+    <div className="min-h-dvh bg-background text-text">
+      <header
+        className="fixed inset-x-0 top-0 z-40 border-b border-line bg-background"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
         <div className="mx-auto flex h-14 w-full max-w-[560px] items-center justify-between px-4">
           <Link
             href="/events"
@@ -71,9 +74,17 @@ export async function AppShell({
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-[560px] px-4 pt-6">
-        <main>{children}</main>
-      </div>
+      {/* The main column is the only scroll area, so the chrome never moves. */}
+      <main
+        className="w-full overflow-x-hidden overflow-y-auto"
+        style={{
+          height: "100dvh",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 56px + 24px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 56px + 24px)",
+        }}
+      >
+        <div className="mx-auto w-full max-w-[560px] px-4">{children}</div>
+      </main>
 
       <BottomTabBar />
     </div>

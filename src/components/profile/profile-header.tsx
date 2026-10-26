@@ -39,7 +39,7 @@ export function ProfileHeader({
           )}
 
           {profile.bio && (
-            <p className="mt-3 whitespace-pre-wrap break-words text-base text-text">
+            <p className="selectable mt-3 whitespace-pre-wrap break-words text-base text-text">
               {profile.bio}
             </p>
           )}

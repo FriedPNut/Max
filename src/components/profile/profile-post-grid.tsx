@@ -40,7 +40,7 @@ export function ProfilePostGrid({ posts }: { posts: ProfilePost[] }) {
             className="aspect-square overflow-hidden rounded-lg bg-surface p-0 cursor-pointer"
           >
             {post.imageUrl ? (
-              <img
+              <img draggable={false}
                 src={post.imageUrl}
                 alt=""
                 loading="lazy"
@@ -72,7 +72,7 @@ export function ProfilePostGrid({ posts }: { posts: ProfilePost[] }) {
 
             <div className="flex min-h-0 flex-1 items-center justify-center py-2">
               {selected.imageUrl ? (
-                <img
+                <img draggable={false}
                   src={selected.imageUrl}
                   alt={selected.caption || "Post photo"}
                   className="max-h-full max-w-full rounded-lg object-contain"

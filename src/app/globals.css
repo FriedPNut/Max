@@ -46,6 +46,14 @@ html[data-theme="dark"] {
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
 html,
 body {
   background-color: var(--background);
@@ -53,6 +61,83 @@ body {
   font-family: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+/*
+ * Native-app feel: no text selection, long-press callout or tap highlight
+ * outside real text fields. `.selectable` re-opts text that people copy.
+ */
+html,
+body,
+body * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* iOS zooms the page when a focused field is under 16px. */
+input,
+textarea,
+select {
+  font-size: max(16px, 1em);
+}
+
+/* Long presses on images and links belong to the app, not the browser. */
+img,
+svg,
+a {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+
+/* Inner scroll areas never chain their rubber-band to the page behind. */
+main,
+[class*="overflow-y-auto"],
+[class*="overflow-x-auto"] {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* A pointer cursor is a desktop affordance. */
+@media (hover: none) {
+  .cursor-pointer {
+    cursor: default;
+  }
+}
+
+@media (hover: hover) {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  select,
+  summary {
+    cursor: pointer;
+  }
+}
+
+/* Taps get a quiet pressed state instead of the browser's blue highlight. */
+button:active,
+[role="button"]:active,
+a:active {
+  opacity: 0.7;
+  transition-duration: 100ms;
 }
 
 ::selection {

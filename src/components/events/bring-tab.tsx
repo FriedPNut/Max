@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   addEventItemAction,
   claimEventItemAction,
@@ -9,6 +9,7 @@ import {
   unclaimEventItemAction,
 } from "@/app/actions/event-plan";
 import { PersonName } from "@/components/events/person-name";
+import { useAutofocus } from "@/lib/use-autofocus";
 import type {
   EventPlanActionResult,
   EventPlanSnapshot,
@@ -48,6 +49,14 @@ export function BringTab({
   const [itemErrors, setItemErrors] = useState<Record<string, string | null>>(
     {}
   );
+  const itemInputRef = useRef<HTMLInputElement>(null);
+  const autofocus = useAutofocus();
+
+  useEffect(() => {
+    if (formOpen && autofocus) {
+      itemInputRef.current?.focus();
+    }
+  }, [formOpen, autofocus]);
 
   const items = snapshot.items;
   const claimedCount = items.filter((item) => item.claimedBy).length;
@@ -169,6 +178,7 @@ export function BringTab({
               Item
             </label>
             <input
+              ref={itemInputRef}
               id="bring-item-label"
               type="text"
               value={label}
@@ -180,7 +190,6 @@ export function BringTab({
                 }
               }}
               disabled={addPending}
-              autoFocus
               autoComplete="off"
               placeholder="Ice"
               className={fieldClass}

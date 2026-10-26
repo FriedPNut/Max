@@ -15,7 +15,7 @@ export function EventRow({
       className="flex items-center gap-3 border-b border-line py-4 transition-colors duration-150 ease-out hover:bg-surface"
     >
       {event.coverUrl && (
-        <img
+        <img draggable={false}
           src={event.coverUrl}
           alt=""
           loading="lazy"

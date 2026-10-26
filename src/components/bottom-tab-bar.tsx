@@ -39,6 +39,11 @@ export function BottomTabBar() {
     <nav
       aria-label="Primary navigation"
       className="fixed bottom-0 inset-x-0 z-40 bg-surface border-t border-line"
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+      }}
     >
       <div className="mx-auto w-full max-w-[560px] px-4">
         <ul className="grid grid-cols-4">

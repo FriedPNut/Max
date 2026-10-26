@@ -22,11 +22,11 @@ export function PhotosTab({ photos, error }: { photos: EventPhoto[]; error?: str
 
   return <>
     <div className="grid grid-cols-3 gap-1 border-t border-line pt-3">
-      {photos.map((photo) => <button key={photo.id} type="button" onClick={() => setSelected(photo)} aria-label={`View photo by ${photo.authorName}`} className="aspect-square overflow-hidden rounded-lg bg-surface focus:outline-2 focus:outline-text"><img src={photo.imageUrl} alt={photo.caption || `Photo by ${photo.authorName}`} loading="lazy" className="h-full w-full object-cover" /></button>)}
+      {photos.map((photo) => <button key={photo.id} type="button" onClick={() => setSelected(photo)} aria-label={`View photo by ${photo.authorName}`} className="aspect-square overflow-hidden rounded-lg bg-surface focus:outline-2 focus:outline-text"><img draggable={false} src={photo.imageUrl} alt={photo.caption || `Photo by ${photo.authorName}`} loading="lazy" className="h-full w-full object-cover" /></button>)}
     </div>
     {selected && <div role="dialog" aria-modal="true" aria-label="Event photo" className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 p-4" onClick={() => setSelected(null)}>
       <div className="max-h-full w-full max-w-[560px] overflow-y-auto rounded-lg border border-border bg-background" onClick={(event) => event.stopPropagation()}>
-        <img src={selected.imageUrl} alt={selected.caption || `Photo by ${selected.authorName}`} className="max-h-[70dvh] w-full bg-surface object-contain" />
+        <img draggable={false} src={selected.imageUrl} alt={selected.caption || `Photo by ${selected.authorName}`} className="max-h-[70dvh] w-full bg-surface object-contain" />
         <div className="p-4">
           <div className="flex items-center gap-3">
             <ProfileAvatar src={selected.authorAvatarUrl} initial={selected.authorInitial} size={36} />

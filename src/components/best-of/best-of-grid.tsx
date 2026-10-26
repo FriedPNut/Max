@@ -139,7 +139,7 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
               >
                 <span className="w-4 shrink-0 text-sm text-muted">{index + 1}</span>
                 {post.imageUrl ? (
-                  <img
+                  <img draggable={false}
                     src={post.imageUrl}
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover"
@@ -173,7 +173,7 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
           {posts.map((post) => (
             <li key={post.id}>
               {post.imageUrl ? (
-                <img
+                <img draggable={false}
                   src={post.imageUrl}
                   alt={post.caption ?? ""}
                   loading="lazy"

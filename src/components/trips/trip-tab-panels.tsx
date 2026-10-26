@@ -162,7 +162,7 @@ export function LinksPanel({ tripId, links }: { tripId: string; links: TripLink[
             <ul className="border-t border-line">
               {group.map((link) => (
                 <li key={link.id} className={rowClass}>
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate text-base text-text underline">{link.title}</a>
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="selectable min-w-0 truncate text-base text-text underline">{link.title}</a>
                   <button type="button" disabled={pending} onClick={() => void run(() => deleteTripLinkAction(tripId, link.id))} className="min-h-11 px-2 text-sm text-muted hover:text-text cursor-pointer">Delete</button>
                 </li>
               ))}

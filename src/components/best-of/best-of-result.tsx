@@ -161,7 +161,7 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
         <>
           <article className="space-y-3">
             {winner.imageUrl && (
-              <img
+              <img draggable={false}
                 src={winner.imageUrl}
                 alt={winner.caption ?? ""}
                 className="w-full rounded-lg border border-border bg-surface object-cover"
@@ -193,7 +193,7 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
                     className="flex items-center gap-3 border-b border-line py-3"
                   >
                     {post.imageUrl ? (
-                      <img
+                      <img draggable={false}
                         src={post.imageUrl}
                         alt=""
                         className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover"

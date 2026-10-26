@@ -12,23 +12,38 @@ export function AppShellSkeleton({
   label?: string;
 }) {
   return (
-    <div className="min-h-dvh bg-background text-text pb-24">
-      <header className="sticky top-0 z-40 border-b border-line bg-background">
+    <div className="min-h-dvh bg-background text-text">
+      <header
+        className="fixed inset-x-0 top-0 z-40 border-b border-line bg-background"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
         <div className="mx-auto flex h-14 w-full max-w-[560px] items-center justify-between px-4">
           <div className="h-5 w-12 rounded bg-line/60" aria-hidden="true" />
           <div className="h-9 w-9 rounded-lg bg-line/40" aria-hidden="true" />
         </div>
       </header>
 
-      <div
-        className="mx-auto w-full max-w-[560px] px-4 pt-6"
-        aria-busy="true"
-        aria-label={label}
+      <main
+        className="w-full overflow-x-hidden overflow-y-auto"
+        style={{
+          height: "100dvh",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 56px + 24px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 56px + 24px)",
+        }}
       >
-        <div className="animate-pulse space-y-6">{children}</div>
-      </div>
+        <div
+          className="mx-auto w-full max-w-[560px] px-4"
+          aria-busy="true"
+          aria-label={label}
+        >
+          <div className="animate-pulse space-y-6">{children}</div>
+        </div>
+      </main>
 
-      <div className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-surface">
+      <div
+        className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-surface"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         <div className="mx-auto w-full max-w-[560px] px-4">
           <div className="grid grid-cols-4">
             {[0, 1, 2, 3].map((index) => (

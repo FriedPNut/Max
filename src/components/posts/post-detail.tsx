@@ -298,7 +298,10 @@ export function PostDetail({
 
       <div className="h-24" aria-hidden="true" />
 
-      <div className="fixed inset-x-0 bottom-14 z-30 border-t border-line bg-background">
+      <div
+        className="fixed inset-x-0 z-30 border-t border-line bg-background"
+        style={{ bottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <form
           onSubmit={handleSubmit}
           className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-3"

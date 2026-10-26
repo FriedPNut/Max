@@ -25,7 +25,7 @@ export function ProfileAvatar({
   }
 
   return (
-    <img
+    <img draggable={false}
       src={src}
       alt=""
       loading="lazy"

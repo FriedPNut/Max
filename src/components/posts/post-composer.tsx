@@ -215,7 +215,7 @@ export function PostComposer({
       )}
 
       {previewUrl && (
-        <img
+        <img draggable={false}
           src={previewUrl}
           alt="Selected photo preview"
           className="w-full max-h-[360px] object-contain rounded-lg bg-surface"

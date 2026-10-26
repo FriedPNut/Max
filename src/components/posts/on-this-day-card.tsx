@@ -107,7 +107,7 @@ export function OnThisDayCard({ currentYear }: { currentYear?: number }) {
                   className="flex items-center gap-3 rounded-lg transition-colors duration-150 ease-out hover:bg-background"
                 >
                   {post.imageUrl ? (
-                    <img
+                    <img draggable={false}
                       src={post.imageUrl}
                       alt={post.caption || "Your photo"}
                       loading="lazy"

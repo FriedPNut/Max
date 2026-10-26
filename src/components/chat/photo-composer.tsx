@@ -153,7 +153,7 @@ export function PhotoComposer({
   return (
     <div className="w-full space-y-2 rounded-lg border border-border bg-surface p-3">
       <div className="flex items-start justify-between gap-2">
-        <img src={preview} alt="Photo to send" className="max-h-48 rounded-lg object-contain" />
+        <img draggable={false} src={preview} alt="Photo to send" className="max-h-48 rounded-lg object-contain" />
         <button type="button" aria-label="Remove photo" onClick={clear} disabled={busy} className="inline-flex h-11 w-11 items-center justify-center text-muted hover:text-text cursor-pointer">
           <X size={20} strokeWidth={1.5} aria-hidden="true" />
         </button>

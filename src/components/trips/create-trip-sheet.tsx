@@ -215,7 +215,7 @@ export function CreateTripSheet({
 
         <div>
           <span className={labelClass}>Cover photo (optional)</span>
-          {coverPreview && <img src={coverPreview} alt="Cover preview" className="mb-3 aspect-video w-full rounded-lg border border-border object-cover" />}
+          {coverPreview && <img draggable={false} src={coverPreview} alt="Cover preview" className="mb-3 aspect-video w-full rounded-lg border border-border object-cover" />}
           <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="min-h-11 rounded-lg border border-border px-4 py-3 text-sm text-text hover:bg-surface cursor-pointer disabled:opacity-60">
             {cover ? "Change cover" : "Choose cover"}
           </button>

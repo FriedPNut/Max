@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { useActiveEventTab } from "@/components/events/event-tabs";
+import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 import { createClient } from "@/lib/supabase/client";
 import {
   EVENT_CHAT_PAGE_SIZE,
@@ -89,6 +90,40 @@ export function EventChat({
   const shouldScrollToBottom = useRef(true);
   const prependSnapshot = useRef<{ height: number; top: number } | null>(null);
   const wasActive = useRef(false);
+  const chatRef = useRef<HTMLDivElement>(null);
+  const keyboardInset = useKeyboardInset();
+
+  // The app shell scrolls `main` instead of the window, so measure that node.
+  function getScroller() {
+    return chatRef.current?.closest("main") ?? null;
+  }
+
+  function pageScrollHeight() {
+    const scroller = getScroller();
+    return scroller
+      ? scroller.scrollHeight
+      : document.documentElement.scrollHeight;
+  }
+
+  function pageScrollTop() {
+    const scroller = getScroller();
+    return scroller ? scroller.scrollTop : window.scrollY;
+  }
+
+  function pageViewportHeight() {
+    const scroller = getScroller();
+    return scroller ? scroller.clientHeight : window.innerHeight;
+  }
+
+  function setPageScrollTop(top: number) {
+    const scroller = getScroller();
+
+    if (scroller) {
+      scroller.scrollTop = top;
+    } else {
+      window.scrollTo({ top });
+    }
+  }
 
   useEffect(() => {
     activeRef.current = isActive;
@@ -163,8 +198,8 @@ export function EventChat({
 
           if (activeRef.current) {
             const nearBottom =
-              window.scrollY + window.innerHeight >=
-              document.documentElement.scrollHeight - 180;
+              pageScrollTop() + pageViewportHeight() >=
+              pageScrollHeight() - 180;
 
             if (nearBottom) {
               shouldScrollToBottom.current = true;
@@ -200,11 +235,10 @@ export function EventChat({
 
     if (snapshot) {
       prependSnapshot.current = null;
-      const difference =
-        document.documentElement.scrollHeight - snapshot.height;
+      const difference = pageScrollHeight() - snapshot.height;
 
       if (difference > 0) {
-        window.scrollTo({ top: snapshot.top + difference });
+        setPageScrollTop(snapshot.top + difference);
       }
 
       return;
@@ -251,8 +285,8 @@ export function EventChat({
 
     if (older.length > 0) {
       prependSnapshot.current = {
-        height: document.documentElement.scrollHeight,
-        top: window.scrollY,
+        height: pageScrollHeight(),
+        top: pageScrollTop(),
       };
 
       setMessages((current) => mergeMessages(current, older));
@@ -355,7 +389,7 @@ export function EventChat({
   }
 
   return (
-    <div>
+    <div ref={chatRef}>
       <div ref={topRef} className="h-px" aria-hidden="true" />
 
       {loadingOlder && (
@@ -436,7 +470,15 @@ export function EventChat({
 
       <div ref={bottomRef} className="h-44" aria-hidden="true" />
 
-      <div className="fixed inset-x-0 bottom-14 z-30 border-t border-line bg-background">
+      <div
+        className="fixed inset-x-0 z-30 border-t border-line bg-background"
+        style={{
+          bottom:
+            keyboardInset > 0
+              ? keyboardInset
+              : "calc(56px + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
         <form
           onSubmit={handleSend}
           className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-3"

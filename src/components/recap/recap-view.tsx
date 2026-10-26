@@ -168,7 +168,7 @@ export function RecapView() {
             className="flex items-center gap-3"
           >
             {data.topPost.imageUrl ? (
-              <img
+              <img draggable={false}
                 src={data.topPost.imageUrl}
                 alt=""
                 className="h-14 w-14 shrink-0 rounded-lg border border-border bg-surface object-cover"
