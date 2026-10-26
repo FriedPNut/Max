@@ -21,6 +21,8 @@ export type ProfilePost = {
   caption: string | null;
   createdAt: string;
   likeCount: number;
+  // Posts currently store one photo; the grid can badge future carousels.
+  imageCount?: number;
 };
 
 export type ProfileFriend = {

@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AppShellSkeleton,
   SkeletonList,
@@ -8,10 +9,10 @@ export default function HangLoading() {
   return (
     <AppShellSkeleton label="Loading hangs">
       <div className="space-y-1">
-        <div className="h-4 w-20 rounded bg-line/40" aria-hidden="true" />
+        <Skeleton className="h-4 w-20 rounded" />
         <SkeletonTitle width="w-44" />
       </div>
-      <div className="h-11 w-full rounded-lg bg-line/60" aria-hidden="true" />
+      <Skeleton className="h-11 w-full rounded-lg" />
       <SkeletonList rows={3} />
     </AppShellSkeleton>
   );

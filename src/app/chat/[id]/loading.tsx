@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AppShellSkeleton,
   SkeletonList,
@@ -6,9 +7,9 @@ import {
 
 export default function ConversationLoading() {
   return (
-    <AppShellSkeleton label="Loading messages">
+    <AppShellSkeleton noIsland label="Loading messages">
       <div className="space-y-3">
-        <div className="h-4 w-16 rounded bg-line/40" aria-hidden="true" />
+        <Skeleton className="h-4 w-16 rounded" />
         <SkeletonTitle width="w-40" />
       </div>
       <SkeletonList rows={5} />

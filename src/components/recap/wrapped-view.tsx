@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { loadWrappedAction } from "@/app/actions/recap";
+import { Button, Card } from "@/components/ui";
 import { WrappedSkeleton } from "@/components/recap/skeletons";
 import { useViewerTimeZone } from "@/components/recap/use-viewer-time-zone";
 import type { WrappedYear } from "@/lib/recap";
@@ -80,7 +81,7 @@ export function WrappedView({ year }: { year: number }) {
     <section className="space-y-6">
       <div className="space-y-2">
         <BackLink />
-        <h1 className="text-[28px] font-semibold leading-tight text-text">
+        <h1 className="text-[22px] font-bold leading-tight text-text">
           Max Wrapped
         </h1>
         <p className="text-sm text-muted">{year}</p>
@@ -91,15 +92,16 @@ export function WrappedView({ year }: { year: number }) {
         onScroll={handleScroll}
         aria-label={`Max Wrapped ${year}`}
         className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-no-swipe
       >
         {data.cards.map((card) => (
           <article key={card.id} className="w-full shrink-0 snap-center">
-            <div className="flex min-h-[360px] flex-col justify-center rounded-lg border border-border bg-surface p-6">
+            <Card className="flex min-h-[360px] flex-col justify-center p-6">
               {card.imageUrl && (
                 <img draggable={false}
                   src={card.imageUrl}
                   alt=""
-                  className="mb-4 h-24 w-24 rounded-lg border border-border object-cover"
+                  className="mb-4 h-24 w-24 rounded-[10px] bg-surface-2 object-cover"
                 />
               )}
 
@@ -113,15 +115,14 @@ export function WrappedView({ year }: { year: number }) {
               )}
 
               {card.closing && (
-                <button
-                  type="button"
+                <Button
                   onClick={() => void copyLink()}
-                  className="mt-6 min-h-11 w-full rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer"
+                  className="mt-6 w-full"
                 >
                   {copied ? "Link copied" : "Share"}
-                </button>
+                </Button>
               )}
-            </div>
+            </Card>
           </article>
         ))}
       </div>
@@ -131,7 +132,7 @@ export function WrappedView({ year }: { year: number }) {
           <span
             key={card.id}
             className={`h-1.5 w-1.5 rounded-full ${
-              dotIndex === index ? "bg-accent" : "bg-line"
+              dotIndex === index ? "bg-text" : "bg-line"
             }`}
           />
         ))}
@@ -150,9 +151,9 @@ function BackLink() {
   return (
     <Link
       href="/me"
-      className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
+      className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
     >
-      <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+      <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
       Profile
     </Link>
   );

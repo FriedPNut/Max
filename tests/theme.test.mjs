@@ -56,5 +56,5 @@ test("resolveTheme follows the choice and the system", () => {
 });
 
 test("theme colors match the design tokens", () => {
-  assert.deepEqual(THEME_COLORS, { light: "#EFEEE9", dark: "#0F0F0E" });
+  assert.deepEqual(THEME_COLORS, { light: "#F4F4F4", dark: "#000000" });
 });

@@ -66,7 +66,7 @@ export default async function ListsPage() {
   return (
     <AppShell userId={user.id}>
       <section className="space-y-8">
-        <h1 className="text-[28px] font-semibold leading-tight text-text">
+        <h1 className="text-[22px] font-bold leading-tight text-text">
           Lists
         </h1>
 

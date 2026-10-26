@@ -37,12 +37,12 @@ export default async function IdeasSubPage({
             <Link
               href="/events"
               aria-label="Back to events"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
             >
-              <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+              <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
             </Link>
 
-            <h1 className="text-[28px] font-semibold leading-tight text-text">
+            <h1 className="text-[22px] font-bold leading-tight text-text">
               Ideas
             </h1>
           </div>

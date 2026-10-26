@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Ellipsis, Plus } from "lucide-react";
 import {
   deleteListAction,
   renameListAction,
@@ -13,6 +13,9 @@ import {
   toggleListItemVoteAction,
 } from "@/app/actions/lists";
 import { AddItemSheet } from "@/components/lists/add-item-sheet";
+import { Button, Input } from "@/components/ui";
+import { LikeButton } from "@/components/ui/like-button";
+import { useNewIds } from "@/lib/use-new-ids";
 import type { ListKind } from "@/lib/lists";
 
 export type DetailItem = {
@@ -70,21 +73,21 @@ function ListAdminControls({
   return (
     <section className="space-y-3 border-b border-line pb-6">
       <div className="flex gap-2">
-        <input
+        <Input
           type="text"
           aria-label="List name"
           value={title}
           maxLength={60}
           onChange={(event) => setTitle(event.target.value)}
-          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-base text-text focus:outline-2 focus:outline-text"
+          className="min-w-0 flex-1"
         />
-        <button type="button" onClick={() => void rename()} disabled={title.trim().length === 0 || title.trim() === listTitle} className="min-h-11 shrink-0 rounded-lg border border-border px-4 text-sm text-text hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none">
+        <Button variant="secondary" onClick={() => void rename()} disabled={title.trim().length === 0 || title.trim() === listTitle}>
           Rename
-        </button>
+        </Button>
       </div>
-      <button type="button" onClick={() => void remove()} className="min-h-11 text-sm text-muted hover:text-text cursor-pointer">
+      <Button variant="destructive" size="sm" onClick={() => void remove()}>
         Delete list
-      </button>
+      </Button>
       {error && (
         <p role="alert" className="text-sm text-text">
           {error}
@@ -111,6 +114,10 @@ export function ListDetailView({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const newIds = useNewIds(
+    items.map((item) => item.id),
+    initialItems.map((item) => item.id)
+  );
 
   const open = useMemo(
     () =>
@@ -206,23 +213,28 @@ export function ListDetailView({
         <>
           <ul className="border-t border-line">
             {open.map((item) => (
-              <li key={item.id} className="flex items-start gap-3 border-b border-line py-3">
+              <li
+                key={item.id}
+                className={`-mx-4 flex items-start gap-3 border-b border-line px-4 py-3 ${
+                  newIds.has(item.id) ? "row-enter" : ""
+                }`}
+              >
                 <input
                   type="checkbox"
                   aria-label={`Mark ${item.title} done`}
                   checked={false}
                   onChange={() => void markDone(item, true)}
-                  className="mt-1 h-5 w-5 shrink-0 accent-text"
+                  className="mt-1 h-5 w-5 shrink-0 accent-primary"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="break-words text-base font-medium text-text">{item.title}</p>
+                  <p className="break-words text-base font-semibold text-text">{item.title}</p>
                   {item.note && <p className="selectable text-sm text-muted break-words">{item.note}</p>}
                   <p className="text-sm text-muted">
                     Added by {item.addedByName}
                     {item.url && (
                       <>
                         {" · "}
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-text underline underline-offset-4">
+                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-link underline underline-offset-4">
                           Link
                         </a>
                       </>
@@ -230,43 +242,38 @@ export function ListDetailView({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => void toggleVote(item)}
-                    aria-pressed={item.votedByMe}
-                    className={`min-h-11 rounded-lg border px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
-                      item.votedByMe
-                        ? "border-text bg-text text-background"
-                        : "border-border bg-transparent text-text hover:bg-surface"
-                    }`}
-                  >
-                    ▲ {item.voteCount}
-                  </button>
+                  <LikeButton
+                    variant="chip"
+                    liked={item.votedByMe}
+                    count={item.voteCount}
+                    onToggle={() => void toggleVote(item)}
+                    label={`${item.votedByMe ? "Remove vote for" : "Vote for"} ${item.title}, ${item.voteCount} ${item.voteCount === 1 ? "vote" : "votes"}`}
+                  />
                   <button
                     type="button"
                     aria-label={`More options for ${item.title}`}
                     aria-expanded={menuId === item.id}
                     onClick={() => setMenuId(menuId === item.id ? null : item.id)}
-                    className="min-h-11 min-w-11 rounded-lg text-muted hover:text-text cursor-pointer"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-colors duration-200 ease-out hover:bg-surface-2"
                   >
-                    ...
+                    <Ellipsis size={24} strokeWidth={1.75} aria-hidden="true" />
                   </button>
                 </div>
                 {menuId === item.id && (
                   <div className="basis-full space-y-1 pl-8">
                     {item.eventIdeaId ? (
-                      <Link href="/events/ideas" className="inline-flex min-h-11 items-center text-sm text-text underline underline-offset-4">
+                      <Link href="/events/ideas" className="inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4">
                         In ideas
                       </Link>
                     ) : (
-                      <button type="button" onClick={() => void suggest(item)} className="min-h-11 text-sm text-text cursor-pointer">
+                      <Button variant="text" size="sm" onClick={() => void suggest(item)}>
                         Suggest as event idea
-                      </button>
+                      </Button>
                     )}
                     {(item.addedByMe || isCreator) && (
-                      <button type="button" onClick={() => void remove(item)} className="block min-h-11 text-sm text-muted hover:text-text cursor-pointer">
+                      <Button variant="destructive" size="sm" onClick={() => void remove(item)}>
                         Delete
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
@@ -279,16 +286,16 @@ export function ListDetailView({
               <h2 className="text-lg font-semibold text-text">Done</h2>
               <ul className="border-t border-line">
                 {done.map((item) => (
-                  <li key={item.id} className="flex items-start gap-3 border-b border-line py-3">
+                  <li key={item.id} className="-mx-4 flex items-start gap-3 border-b border-line px-4 py-3">
                     <input
                       type="checkbox"
                       aria-label={`Mark ${item.title} not done`}
                       checked
                       onChange={() => void markDone(item, false)}
-                      className="mt-1 h-5 w-5 shrink-0 accent-text"
+                      className="mt-1 h-5 w-5 shrink-0 accent-primary"
                     />
                     <div className="min-w-0">
-                      <p className="break-words text-base text-muted line-through">{item.title}</p>
+                      <p className="break-words text-base font-semibold text-muted line-through">{item.title}</p>
                       {item.doneByName && (
                         <p className="text-sm text-muted">Done by {item.doneByName}</p>
                       )}
@@ -305,13 +312,13 @@ export function ListDetailView({
         type="button"
         onClick={() => setSheetOpen(true)}
         aria-label="Add item"
-        className="fixed z-40 flex h-14 w-14 items-center justify-center rounded-full bg-text text-background transition-colors duration-150 ease-out hover:bg-text/90 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+        className="fixed z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary transition-[background-color,opacity,scale] duration-100 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         style={{
-          bottom: "calc(56px + 16px + env(safe-area-inset-bottom, 0px))",
+          bottom: "calc(72px + 16px + env(safe-area-inset-bottom, 0px))",
           right: "calc(16px + env(safe-area-inset-right, 0px))",
         }}
       >
-        <Plus size={24} strokeWidth={1.5} aria-hidden="true" />
+        <Plus size={24} strokeWidth={1.75} aria-hidden="true" />
       </button>
 
       {sheetOpen && (

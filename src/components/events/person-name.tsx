@@ -11,19 +11,19 @@ export function PersonName({
   className?: string;
 }) {
   const content = (
-    <>
+    <span className="font-semibold">
       {person.name}
       {person.id === currentUserId && (
-        <span className="text-muted"> (you)</span>
+        <span className="font-normal text-muted"> (you)</span>
       )}
-    </>
+    </span>
   );
 
   if (person.username) {
     return (
       <Link
         href={`/u/${encodeURIComponent(person.username)}`}
-        className={`transition-opacity duration-150 ease-out hover:opacity-80 ${className}`}
+        className={`transition-opacity duration-200 ease-out hover:opacity-80 ${className}`}
       >
         {content}
       </Link>

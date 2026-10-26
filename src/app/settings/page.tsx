@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Bell, ChevronRight, SunMoon } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
+import { Card } from "@/components/ui";
 
 const rows = [
   { href: "/settings/notifications", label: "Notifications", Icon: Bell },
@@ -12,46 +13,47 @@ export default async function SettingsPage() {
 
   return (
     <AppShell userId={user.id}>
-      <section className="space-y-8">
+      <section className="space-y-6">
         <header>
           <Link
             href="/me"
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 hover:text-text"
+            aria-label="Back to profile"
+            className="-ml-2 inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
-            Profile
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           </Link>
-          <h1 className="text-[28px] font-semibold leading-tight text-text">
+          <h1 className="mt-4 text-[22px] font-bold leading-tight text-text">
             Settings
           </h1>
         </header>
 
-        <ul className="border-t border-line">
-          {rows.map(({ href, label, Icon }) => (
-            <li key={href}>
+        <Card className="overflow-hidden">
+          <div className="divide-y divide-line">
+            {rows.map(({ href, label, Icon }) => (
               <Link
+                key={href}
                 href={href}
-                className="flex min-h-11 items-center justify-between gap-3 border-b border-line py-4 transition-colors duration-150 ease-out hover:text-muted"
+                className="press-row flex min-h-14 items-center justify-between gap-3 px-4 py-3 transition-colors duration-200 ease-out hover:bg-surface-2"
               >
                 <span className="flex min-w-0 items-center gap-3">
                   <Icon
-                    size={20}
-                    strokeWidth={1.5}
+                    size={24}
+                    strokeWidth={1.75}
                     aria-hidden="true"
                     className="shrink-0 text-muted"
                   />
                   <span className="text-base text-text">{label}</span>
                 </span>
                 <ChevronRight
-                  size={20}
-                  strokeWidth={1.5}
+                  size={24}
+                  strokeWidth={1.75}
                   aria-hidden="true"
                   className="shrink-0 text-muted"
                 />
               </Link>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+        </Card>
       </section>
     </AppShell>
   );

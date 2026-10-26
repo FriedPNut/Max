@@ -1,70 +1,75 @@
 import type { ReactNode } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * The header and tab bar are static, so a navigation shows them (and a soft
- * gray skeleton) immediately instead of waiting on the page's data.
+ * The chrome is static, so a navigation shows it (and a soft gray skeleton)
+ * immediately instead of waiting on the page's data.
  */
 export function AppShellSkeleton({
   children,
   label = "Loading",
+  noIsland = false,
 }: {
   children: ReactNode;
   label?: string;
+  noIsland?: boolean;
 }) {
   return (
-    <div className="min-h-dvh bg-background text-text">
-      <header
-        className="fixed inset-x-0 top-0 z-40 border-b border-line bg-background"
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
-      >
-        <div className="mx-auto flex h-14 w-full max-w-[560px] items-center justify-between px-4">
-          <div className="h-5 w-12 rounded bg-line/60" aria-hidden="true" />
-          <div className="h-9 w-9 rounded-lg bg-line/40" aria-hidden="true" />
-        </div>
-      </header>
+    <div className="h-dvh w-full overflow-hidden bg-background text-text">
+      <div className="h-full w-full overflow-x-hidden overflow-y-auto overscroll-contain">
+        <header
+          className="glass sticky top-0 z-40"
+          style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+        >
+          <div className="mx-auto flex h-12 w-full max-w-[560px] items-center justify-between gap-2 px-4">
+            <Skeleton className="h-6 w-14 rounded" />
+            <Skeleton className="h-6 w-6 rounded-full" />
+          </div>
+          <div aria-hidden="true" className="h-px bg-line opacity-0" />
+        </header>
 
-      <main
-        className="w-full overflow-x-hidden overflow-y-auto"
-        style={{
-          height: "100dvh",
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 56px + 24px)",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 56px + 24px)",
-        }}
-      >
         <div
-          className="mx-auto w-full max-w-[560px] px-4"
+          className="mx-auto w-full max-w-[560px] px-4 pt-6"
+          style={{
+            paddingBottom:
+              "calc(60px + 12px + env(safe-area-inset-bottom, 0px))",
+          }}
           aria-busy="true"
           aria-label={label}
         >
-          <div className="animate-pulse space-y-6">{children}</div>
+          <div className="space-y-6">{children}</div>
         </div>
-      </main>
+      </div>
 
-      <div
-        className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-surface"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      >
-        <div className="mx-auto w-full max-w-[560px] px-4">
-          <div className="grid grid-cols-4">
+      {!noIsland && (
+        <div
+          aria-hidden="true"
+          className="glass fixed left-1/2 z-40 rounded-full border border-line shadow-pop"
+          style={{
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+            width: "min(calc(100% - 32px), 420px)",
+            height: 60,
+            transform: "translateX(-50%)",
+          }}
+        >
+          <div className="grid h-full grid-cols-4">
             {[0, 1, 2, 3].map((index) => (
               <div
                 key={index}
-                className="flex min-h-[56px] flex-col items-center justify-center gap-1 py-1.5"
-                aria-hidden="true"
+                className="flex items-center justify-center"
               >
-                <div className="h-6 w-6 rounded bg-line/40" />
-                <div className="h-3 w-10 rounded bg-line/30" />
+                <Skeleton className="h-6 w-6 rounded-full" />
               </div>
             ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 export function SkeletonTitle({ width = "w-32" }: { width?: string }) {
-  return <div className={`h-7 ${width} rounded bg-line/60`} aria-hidden="true" />;
+  return <Skeleton className={`h-7 ${width} rounded`} />;
 }
 
 export function SkeletonList({ rows = 4 }: { rows?: number }) {
@@ -72,8 +77,8 @@ export function SkeletonList({ rows = 4 }: { rows?: number }) {
     <div className="border-t border-line" aria-hidden="true">
       {Array.from({ length: rows }, (_, index) => (
         <div key={index} className="space-y-2 border-b border-line py-4">
-          <div className="h-4 w-2/3 rounded bg-line/50" />
-          <div className="h-4 w-1/3 rounded bg-line/40" />
+          <Skeleton className="h-4 w-2/3 rounded" />
+          <Skeleton className="h-4 w-1/3 rounded" />
         </div>
       ))}
     </div>

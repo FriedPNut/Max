@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { addListItemAction } from "@/app/actions/lists";
+import { Button, Input, Sheet, Textarea } from "@/components/ui";
 import {
   ITEM_NOTE_MAX,
   ITEM_TITLE_MAX,
@@ -9,9 +10,6 @@ import {
   type ListKind,
 } from "@/lib/lists";
 import type { DetailItem } from "@/components/lists/list-detail-view";
-
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 export function AddItemSheet({
   listId,
@@ -64,41 +62,26 @@ export function AddItemSheet({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Add item"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim/40"
-      onClick={onClose}
-    >
-      <form
-        onSubmit={submit}
-        onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-[560px] space-y-5 rounded-t-lg border-t border-border bg-background p-4 pb-8"
-      >
+    <Sheet label="Add item" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-5 pb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-text">Add item</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 px-3 text-sm text-muted hover:text-text cursor-pointer"
-          >
+          <Button variant="text" size="sm" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
         </div>
 
         <div>
           <label htmlFor="item-title" className="mb-2 block text-sm text-muted">
             Name
           </label>
-          <input
+          <Input
             id="item-title"
             type="text"
             value={title}
             maxLength={ITEM_TITLE_MAX}
             onChange={(event) => setTitle(event.target.value)}
             required
-            className={fieldClass}
           />
         </div>
 
@@ -106,13 +89,13 @@ export function AddItemSheet({
           <label htmlFor="item-note" className="mb-2 block text-sm text-muted">
             Note (optional)
           </label>
-          <textarea
+          <Textarea
             id="item-note"
             value={note}
             maxLength={ITEM_NOTE_MAX}
             onChange={(event) => setNote(event.target.value)}
             rows={3}
-            className={`${fieldClass} resize-none`}
+            className="resize-none"
           />
         </div>
 
@@ -120,14 +103,13 @@ export function AddItemSheet({
           <label htmlFor="item-url" className="mb-2 block text-sm text-muted">
             Link (optional)
           </label>
-          <input
+          <Input
             id="item-url"
             type="url"
             inputMode="url"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             placeholder="https://"
-            className={fieldClass}
           />
         </div>
 
@@ -137,14 +119,15 @@ export function AddItemSheet({
           </p>
         )}
 
-        <button
+        <Button
           type="submit"
+          loading={pending}
           disabled={pending || title.trim().length === 0}
-          className="min-h-11 w-full rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full"
         >
-          {pending ? "Adding..." : "Add"}
-        </button>
+          Add
+        </Button>
       </form>
-    </div>
+    </Sheet>
   );
 }

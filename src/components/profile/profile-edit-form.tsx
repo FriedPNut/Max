@@ -21,16 +21,20 @@ import {
   profileDisplayName,
   type ProfileRecord,
 } from "@/lib/profile";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import {
+  Avatar,
+  Button,
+  Textarea,
+  Input,
+  buttonStyles,
+  Card,
+} from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
 const AVATAR_SIZE = 400;
 const JPEG_QUALITY = 0.8;
 
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
-
-const labelClass = "block text-sm text-muted mb-2";
+const labelClass = "block text-[13px] text-muted mb-2";
 
 type Phase = "idle" | "preparing" | "uploading" | "saving";
 
@@ -245,28 +249,23 @@ export function ProfileEditForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-      <div>
-        <span className="block text-sm text-muted mb-2">Photo</span>
+      <Card className="space-y-4 p-4">
+        <span className="block text-[13px] text-muted">Photo</span>
 
         <div className="flex items-center gap-4">
           {previewUrl ? (
-            <img draggable={false}
-              src={previewUrl}
-              alt="New avatar preview"
-              className="h-[88px] w-[88px] shrink-0 rounded-full border border-border bg-surface object-cover"
-            />
+            <Avatar src={previewUrl} initial={initial} size={88} />
           ) : (
-            <ProfileAvatar src={avatarUrl} initial={initial} />
+            <Avatar src={avatarUrl} initial={initial} size={88} />
           )}
 
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
-            className="min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             {profile.avatar_url || avatarBlob ? "Change photo" : "Add photo"}
-          </button>
+          </Button>
 
           <input
             ref={fileInputRef}
@@ -277,78 +276,78 @@ export function ProfileEditForm({
             className="hidden"
           />
         </div>
-      </div>
+      </Card>
 
       {phase === "preparing" && (
         <p className="text-sm text-muted">Preparing photo...</p>
       )}
 
-      <div>
-        <label htmlFor="display_name" className={labelClass}>
-          Display name
-        </label>
-        <input
-          id="display_name"
-          type="text"
-          value={displayName}
-          onChange={(event) => setDisplayName(event.target.value)}
-          maxLength={DISPLAY_NAME_MAX_LENGTH}
-          disabled={busy}
-          autoComplete="name"
-          placeholder="Maya"
-          className={fieldClass}
-        />
-      </div>
+      <Card className="space-y-5 p-4">
+        <div>
+          <label htmlFor="display_name" className={labelClass}>
+            Display name
+          </label>
+          <Input
+            id="display_name"
+            type="text"
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            maxLength={DISPLAY_NAME_MAX_LENGTH}
+            disabled={busy}
+            autoComplete="name"
+            placeholder="Maya"
+          />
+        </div>
 
-      <div>
-        <label htmlFor="username" className={labelClass}>
-          Username
-        </label>
-        <input
-          id="username"
-          type="text"
-          value={username}
-          onChange={(event) =>
-            setUsername(event.target.value.toLowerCase())
-          }
-          minLength={USERNAME_MIN_LENGTH}
-          maxLength={USERNAME_MAX_LENGTH}
-          pattern="[a-z0-9_]+"
-          disabled={busy}
-          autoComplete="off"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder="maya"
-          className={fieldClass}
-        />
-        <p className="mt-1 text-sm text-muted">
-          {USERNAME_MIN_LENGTH}–{USERNAME_MAX_LENGTH} characters: lowercase
-          letters, numbers, and underscores.
-        </p>
-      </div>
+        <div>
+          <label htmlFor="username" className={labelClass}>
+            Username
+          </label>
+          <Input
+            id="username"
+            type="text"
+            value={username}
+            onChange={(event) =>
+              setUsername(event.target.value.toLowerCase())
+            }
+            minLength={USERNAME_MIN_LENGTH}
+            maxLength={USERNAME_MAX_LENGTH}
+            pattern="[a-z0-9_]+"
+            disabled={busy}
+            autoComplete="off"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="maya"
+          />
+          <p className="mt-1 text-sm text-muted">
+            {USERNAME_MIN_LENGTH}–{USERNAME_MAX_LENGTH} characters: lowercase
+            letters, numbers, and underscores.
+          </p>
+        </div>
 
-      <div>
-        <label htmlFor="bio" className={labelClass}>
-          Bio
-        </label>
-        <textarea
-          id="bio"
-          value={bio}
-          onChange={(event) => setBio(event.target.value)}
-          rows={4}
-          maxLength={BIO_MAX_LENGTH}
-          disabled={busy}
-          placeholder="A few words about you."
-          className={`${fieldClass} resize-y min-h-[112px]`}
-        />
-      </div>
+        <div>
+          <label htmlFor="bio" className={labelClass}>
+            Bio
+          </label>
+          <Textarea
+            id="bio"
+            value={bio}
+            onChange={(event) => setBio(event.target.value)}
+            rows={4}
+            maxLength={BIO_MAX_LENGTH}
+            disabled={busy}
+            placeholder="A few words about you."
+            className="min-h-[112px] resize-y"
+          />
+        </div>
+      </Card>
 
       {phase === "uploading" && (
         <div className="space-y-2">
-          <div className="h-[2px] w-full bg-line" aria-hidden="true">
+          <div className="h-[2px] w-full bg-surface-2" aria-hidden="true">
             <div
-              className="h-full bg-text"
+              className="h-full bg-primary"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -357,22 +356,15 @@ export function ProfileEditForm({
       )}
 
       {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-text"
-        >
+        <Card role="alert" className="border-danger/30 px-4 py-3 text-sm text-danger">
           {error}
-        </div>
+        </Card>
       )}
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full sm:w-auto min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-        >
+        <Button type="submit" disabled={busy} className="w-full sm:w-auto">
           {buttonLabel}
-        </button>
+        </Button>
 
         <Link
           href="/me"
@@ -382,9 +374,10 @@ export function ProfileEditForm({
               event.preventDefault();
             }
           }}
-          className={`w-full sm:w-auto text-center min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface ${
-            busy ? "pointer-events-none opacity-60" : ""
-          }`}
+          className={buttonStyles({
+            variant: "secondary",
+            className: `w-full sm:w-auto ${busy ? "pointer-events-none opacity-40" : ""}`,
+          })}
         >
           Cancel
         </Link>

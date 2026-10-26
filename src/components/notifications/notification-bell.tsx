@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Bell } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { BellIcon } from "@/components/icons";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 
 export function NotificationBell({ userId }: { userId: string }) {
@@ -30,8 +31,8 @@ export function NotificationBell({ userId }: { userId: string }) {
     return () => { alive = false; void supabase.removeChannel(channel); };
   }, [supabase, userId]);
 
-  return <Link href="/notifications" aria-label={unread ? "Notifications, unread" : "Notifications"} className="relative inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 hover:bg-surface">
-    <Bell size={20} strokeWidth={1.5} aria-hidden="true" />
-    {unread && <span aria-label="Unread notifications" className="absolute right-2 top-2 h-2 w-2 rounded-full bg-accent" />}
+  return <Link href="/notifications" aria-label={unread ? "Notifications, unread" : "Notifications"} className="relative inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 hover:bg-surface-2">
+    <BellIcon size={24} strokeWidth={1.75} aria-hidden="true" />
+    {unread && <Badge dot label="Unread notifications" className="absolute right-2 top-2" />}
   </Link>;
 }

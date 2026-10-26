@@ -38,9 +38,9 @@ export function ProfileMenu() {
         aria-label="Profile options"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-200 ease-out hover:bg-surface-2"
       >
-        <Ellipsis size={24} strokeWidth={1.5} aria-hidden="true" />
+        <Ellipsis size={24} strokeWidth={1.75} aria-hidden="true" />
       </button>
 
       {open && (
@@ -55,13 +55,13 @@ export function ProfileMenu() {
 
           <div
             role="menu"
-            className="absolute right-0 top-11 z-20 w-40 rounded-lg border border-border bg-surface py-1"
+            className="absolute right-0 top-11 z-20 w-44 overflow-hidden rounded-card border border-line bg-surface py-1 shadow-pop"
           >
             <Link
               href="/recap"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex min-h-11 w-full items-center px-3 text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+              className="flex min-h-11 w-full items-center px-3 text-base text-text transition-colors duration-200 ease-out hover:bg-surface-2"
             >
               Weekly recap
             </Link>
@@ -70,7 +70,7 @@ export function ProfileMenu() {
                 href={`/wrapped/${wrappedYear}`}
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex min-h-11 w-full items-center px-3 text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+                className="flex min-h-11 w-full items-center px-3 text-base text-text transition-colors duration-200 ease-out hover:bg-surface-2"
               >
                 Max Wrapped
               </Link>
@@ -79,7 +79,7 @@ export function ProfileMenu() {
               href="/settings/appearance"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex min-h-11 w-full items-center px-3 text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+              className="flex min-h-11 w-full items-center px-3 text-base text-text transition-colors duration-200 ease-out hover:bg-surface-2"
             >
               Appearance
             </Link>
@@ -87,7 +87,7 @@ export function ProfileMenu() {
               href="/settings/notifications"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex min-h-11 w-full items-center px-3 text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+              className="flex min-h-11 w-full items-center px-3 text-base text-text transition-colors duration-200 ease-out hover:bg-surface-2"
             >
               Notifications
             </Link>

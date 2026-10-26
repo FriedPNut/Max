@@ -7,7 +7,7 @@ import {
   type NotificationPreferenceKey,
 } from "@/app/actions/notifications";
 import { useNotificationSetup } from "@/lib/use-notification-setup";
-import { Switch } from "@/components/ui/switch";
+import { Button, Card, Switch } from "@/components/ui";
 
 type Preferences = Record<NotificationPreferenceKey, boolean>;
 
@@ -16,14 +16,46 @@ const categories: {
   label: string;
   help: string;
 }[] = [
-  { key: "push_reminders", label: "Event reminders", help: "The day before and an hour before events you’re going to" },
-  { key: "push_new_events", label: "New events", help: "When a friend adds an event" },
-  { key: "push_friends", label: "Friends", help: "Requests, accepted requests, and trip invites" },
-  { key: "push_chat", label: "Chat messages", help: "When someone messages you" },
-  { key: "push_hangs", label: "Hang requests", help: "When a friend is down to hang" },
-  { key: "push_social", label: "Comments", help: "When someone comments on your post" },
-  { key: "push_birthdays", label: "Birthdays", help: "The day before and the day of" },
-  { key: "push_recaps", label: "Recaps", help: "Weekly recap, Max Wrapped, and photo of the month" },
+  {
+    key: "push_reminders",
+    label: "Event reminders",
+    help: "The day before and an hour before events you’re going to",
+  },
+  {
+    key: "push_new_events",
+    label: "New events",
+    help: "When a friend adds an event",
+  },
+  {
+    key: "push_friends",
+    label: "Friends",
+    help: "Requests, accepted requests, and trip invites",
+  },
+  {
+    key: "push_chat",
+    label: "Chat messages",
+    help: "When someone messages you",
+  },
+  {
+    key: "push_hangs",
+    label: "Hang requests",
+    help: "When a friend is down to hang",
+  },
+  {
+    key: "push_social",
+    label: "Comments",
+    help: "When someone comments on your post",
+  },
+  {
+    key: "push_birthdays",
+    label: "Birthdays",
+    help: "The day before and the day of",
+  },
+  {
+    key: "push_recaps",
+    label: "Recaps",
+    help: "Weekly recap, Max Wrapped, and photo of the month",
+  },
 ];
 
 const defaultPreferences: Preferences = {
@@ -38,11 +70,19 @@ const defaultPreferences: Preferences = {
   push_recaps: true,
 };
 
-const primaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 hover:opacity-90 disabled:pointer-events-none disabled:opacity-60";
-const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:pointer-events-none disabled:opacity-60";
+const sectionLabel = "px-4 text-[13px] text-muted";
 
-export function NotificationSettings({ initialPreferences }: { initialPreferences: (Partial<Preferences> & { timezone?: string | null }) | null }) {
-  const [preferences, setPreferences] = useState<Preferences>({ ...defaultPreferences, ...initialPreferences });
+export function NotificationSettings({
+  initialPreferences,
+}: {
+  initialPreferences:
+    | (Partial<Preferences> & { timezone?: string | null })
+    | null;
+}) {
+  const [preferences, setPreferences] = useState<Preferences>({
+    ...defaultPreferences,
+    ...initialPreferences,
+  });
   const [error, setError] = useState<string | null>(null);
   const [testPending, setTestPending] = useState(false);
   const {
@@ -103,7 +143,9 @@ export function NotificationSettings({ initialPreferences }: { initialPreference
     try {
       const response = await fetch("/api/push/test", { method: "POST" });
       const result = await response.json();
-      if (!response.ok) setError(result.error ?? "Couldn't send a test notification.");
+      if (!response.ok) {
+        setError(result.error ?? "Couldn't send a test notification.");
+      }
     } catch {
       setError("Couldn't send a test notification.");
     } finally {
@@ -111,28 +153,125 @@ export function NotificationSettings({ initialPreferences }: { initialPreference
     }
   }
 
-  const iosInstructions = "To get notifications on iPhone, tap Share, then Add to Home Screen, open Max from your home screen, and turn notifications on here.";
+  const iosInstructions =
+    "To get notifications on iPhone, tap Share, then Add to Home Screen, open Max from your home screen, and turn notifications on here.";
 
-  return <div className="space-y-8">
-    <section className="space-y-4">
-      <div className="flex items-center justify-between gap-4 border-b border-line py-4">
-        <div><h2 className="text-base font-medium text-text">Notifications</h2><p className="mt-1 text-sm text-muted">Allow Max to send updates to your devices.</p></div>
-        <Switch checked={preferences.push_enabled} label="Notifications" onChange={() => void toggle("push_enabled")} />
-      </div>
-      {categories.map((item) => <div key={item.key} className="flex items-center justify-between gap-4 border-b border-line py-4">
-        <div><h3 className="text-base text-text">{item.label}</h3><p className="mt-1 text-sm text-muted">{item.help}</p></div>
-        <Switch checked={preferences[item.key]} disabled={!preferences.push_enabled} label={item.label} onChange={() => void toggle(item.key)} />
-      </div>)}
-    </section>
+  const hasDeviceAction =
+    deviceState === "not-asked" ||
+    deviceState === "app-off" ||
+    deviceState === "ready";
 
-    <section className="space-y-3">
-      <h2 className="text-lg font-semibold text-text">This device</h2>
-      {deviceState === "ios-needs-install" ? <p className="text-sm leading-relaxed text-muted">{iosInstructions}</p> : deviceState === "blocked" ? <p className="text-sm leading-relaxed text-muted">Notifications are blocked in your browser settings. Allow them for Max in your browser, then come back here.</p> : <p className="text-sm text-muted">{deviceState === "ready" ? "Notifications are on for this device." : deviceState === "unsupported" ? "This browser doesn’t support push notifications." : deviceState === "not-configured" ? "Push notifications aren’t configured yet." : deviceState === "loading" ? "Checking this device…" : "Notifications are off for this device."}</p>}
-      {(deviceState === "not-asked" || deviceState === "app-off") && <button type="button" disabled={deviceBusy} onClick={() => void turnOnDeviceAndSync()} className={primaryButton}>{deviceBusy ? "Turning on..." : "Turn on"}</button>}
-      {deviceState === "ready" && <button type="button" disabled={deviceBusy} onClick={() => void turnOffThisDevice()} className={secondaryButton}>{deviceBusy ? "Saving..." : "Turn off"}</button>}
-      {deviceState === "ready" && <button type="button" disabled={testPending} onClick={() => void sendTest()} className={`${secondaryButton} ml-2`}>{testPending ? "Sending..." : "Send test notification"}</button>}
-    </section>
+  const deviceMessage =
+    deviceState === "ios-needs-install"
+      ? iosInstructions
+      : deviceState === "blocked"
+      ? "Notifications are blocked in your browser settings. Allow them for Max in your browser, then come back here."
+      : deviceState === "ready"
+      ? "Notifications are on for this device."
+      : deviceState === "unsupported"
+      ? "This browser doesn’t support push notifications."
+      : deviceState === "not-configured"
+      ? "Push notifications aren’t configured yet."
+      : deviceState === "loading"
+      ? "Checking this device…"
+      : "Notifications are off for this device.";
 
-    {(error || deviceError) && <p role="alert" className="text-sm text-text">{error ?? deviceError}</p>}
-  </div>;
+  return (
+    <div className="space-y-6">
+      <section className="space-y-2">
+        <h2 className={sectionLabel}>Push notifications</h2>
+
+        <Card className="overflow-hidden">
+          <div className="divide-y divide-line">
+            <div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold text-text">
+                  Notifications
+                </h3>
+                <p className="mt-1 text-sm text-muted">
+                  Allow Max to send updates to your devices.
+                </p>
+              </div>
+              <Switch
+                checked={preferences.push_enabled}
+                label="Notifications"
+                onChange={() => void toggle("push_enabled")}
+              />
+            </div>
+
+            {categories.map((item) => (
+              <div
+                key={item.key}
+                className="flex min-h-14 items-center justify-between gap-4 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-text">
+                    {item.label}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted">{item.help}</p>
+                </div>
+                <Switch
+                  checked={preferences[item.key]}
+                  disabled={!preferences.push_enabled}
+                  label={item.label}
+                  onChange={() => void toggle(item.key)}
+                />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className={sectionLabel}>This device</h2>
+
+        <Card className="overflow-hidden">
+          <div className="divide-y divide-line">
+            <p className="px-4 py-3 text-sm leading-relaxed text-muted">
+              {deviceMessage}
+            </p>
+
+            {hasDeviceAction && (
+              <div className="flex flex-wrap gap-2 px-4 py-3">
+                {(deviceState === "not-asked" || deviceState === "app-off") && (
+                  <Button
+                    disabled={deviceBusy}
+                    onClick={() => void turnOnDeviceAndSync()}
+                  >
+                    {deviceBusy ? "Turning on..." : "Turn on"}
+                  </Button>
+                )}
+
+                {deviceState === "ready" && (
+                  <Button
+                    variant="secondary"
+                    disabled={deviceBusy}
+                    onClick={() => void turnOffThisDevice()}
+                  >
+                    {deviceBusy ? "Saving..." : "Turn off"}
+                  </Button>
+                )}
+
+                {deviceState === "ready" && (
+                  <Button
+                    variant="secondary"
+                    disabled={testPending}
+                    onClick={() => void sendTest()}
+                  >
+                    {testPending ? "Sending..." : "Send test notification"}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {(error || deviceError) && (
+        <p role="alert" className="text-sm text-text">
+          {error ?? deviceError}
+        </p>
+      )}
+    </div>
+  );
 }

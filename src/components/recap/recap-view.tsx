@@ -109,7 +109,7 @@ export function RecapView() {
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-[28px] font-semibold leading-tight text-text">
+            <h1 className="text-[22px] font-bold leading-tight text-text">
               Your week
             </h1>
             <p className="mt-1 text-sm text-muted">
@@ -124,9 +124,9 @@ export function RecapView() {
               onClick={() => setOffset((current) => Math.max(-104, current - 1))}
               disabled={loading}
               aria-label="Previous week"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-200 ease-out hover:bg-surface-2 disabled:opacity-40 disabled:pointer-events-none"
             >
-              <ChevronLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+              <ChevronLeft size={24} strokeWidth={1.75} aria-hidden="true" />
             </button>
 
             <button
@@ -134,9 +134,9 @@ export function RecapView() {
               onClick={() => setOffset((current) => Math.min(0, current + 1))}
               disabled={loading || offset === 0}
               aria-label="Next week"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-200 ease-out hover:bg-surface-2 disabled:opacity-40 disabled:pointer-events-none"
             >
-              <ChevronRight size={20} strokeWidth={1.5} aria-hidden="true" />
+              <ChevronRight size={24} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -150,7 +150,7 @@ export function RecapView() {
             {stats.map((stat) => (
               <li
                 key={stat.label}
-                className="flex min-h-11 items-center justify-between gap-3 border-b border-line py-3"
+                className="flex min-h-14 items-center justify-between gap-3 border-b border-line py-3"
               >
                 <span className="text-base text-muted">{stat.label}</span>
                 <span className="shrink-0 text-base text-text">{stat.value}</span>
@@ -171,16 +171,16 @@ export function RecapView() {
               <img draggable={false}
                 src={data.topPost.imageUrl}
                 alt=""
-                className="h-14 w-14 shrink-0 rounded-lg border border-border bg-surface object-cover"
+                className="h-14 w-14 shrink-0 rounded-[10px] bg-surface-2 object-cover"
               />
             ) : (
               <span
                 aria-hidden="true"
-                className="h-14 w-14 shrink-0 rounded-lg border border-border bg-surface"
+                className="h-14 w-14 shrink-0 rounded-[10px] bg-surface-2"
               />
             )}
             <span className="min-w-0">
-              <span className="block truncate text-base text-text">
+              <span className="block truncate text-base font-semibold text-text">
                 {data.topPost.authorName}
               </span>
               <span className="mt-0.5 block text-sm text-muted">
@@ -200,12 +200,12 @@ export function RecapView() {
               <li key={event.id} className="border-b border-line">
                 <Link
                   href={`/events/${event.id}`}
-                  className="flex min-h-11 items-center justify-between gap-3 py-3 transition-colors duration-150 ease-out hover:text-muted"
+                  className="flex min-h-11 items-center justify-between gap-3 py-3 transition-colors duration-200 ease-out hover:text-muted"
                 >
                   <span className="min-w-0 truncate text-base text-text">
                     {event.title}
                   </span>
-                  <span className="shrink-0 text-sm text-muted">
+                  <span className="shrink-0 text-xs text-muted">
                     {formatEventDay(event.startsAt, timeZone ?? "UTC")} ·{" "}
                     {formatEventTime(event.startsAt, timeZone ?? "UTC")}
                   </span>
@@ -229,9 +229,9 @@ function BackLink() {
   return (
     <Link
       href="/me"
-      className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
+      className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
     >
-      <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+      <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
       Profile
     </Link>
   );

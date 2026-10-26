@@ -6,11 +6,9 @@ import {
   createConversationAction,
   type ChatActionState,
 } from "@/app/actions/chat";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { Button, Card, Input } from "@/components/ui";
 import type { FriendListItem } from "@/lib/chat";
-
-const inputClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 export function NewChatForm({ friends }: { friends: FriendListItem[] }) {
   const [state, formAction, pending] = useActionState(
@@ -29,39 +27,30 @@ export function NewChatForm({ friends }: { friends: FriendListItem[] }) {
   }
 
   return (
-    <form action={formAction} className="space-y-6">
-      <div className="border-t border-line">
+    <form action={formAction} className="space-y-5">
+      <Card className="overflow-hidden">
         {friends.map((friend) => (
           <label
             key={friend.id}
-            className="flex cursor-pointer items-center gap-3 border-b border-line py-3"
+            className="flex min-h-14 cursor-pointer items-center gap-3 border-b border-line px-4 py-3 last:border-b-0"
           >
-            <input
-              type="checkbox"
-              name="friend_ids"
-              value={friend.id}
-              checked={selectedIds.includes(friend.id)}
-              onChange={() => toggleFriend(friend.id)}
-              className="h-4 w-4 accent-text"
-            />
-
-            <ProfileAvatar
+            <Avatar
               src={friend.avatarUrl}
               initial={friend.initial}
               size={40}
             />
 
-            <span className="min-w-0">
+            <span className="min-w-0 flex-1">
               {friend.username ? (
                 <Link
                   href={`/u/${encodeURIComponent(friend.username)}`}
-                  className="block truncate text-base font-medium text-text transition-opacity duration-150 ease-out hover:opacity-80"
+                  className="block truncate text-[15px] font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-70"
                   onClick={(event) => event.stopPropagation()}
                 >
                   {friend.name}
                 </Link>
               ) : (
-                <span className="block truncate text-base font-medium text-text">
+                <span className="block truncate text-[15px] font-semibold text-text">
                   {friend.name}
                 </span>
               )}
@@ -71,50 +60,55 @@ export function NewChatForm({ friends }: { friends: FriendListItem[] }) {
                 </span>
               )}
             </span>
+
+            <input
+              type="checkbox"
+              name="friend_ids"
+              value={friend.id}
+              checked={selectedIds.includes(friend.id)}
+              onChange={() => toggleFriend(friend.id)}
+              className="ml-auto h-5 w-5 shrink-0 accent-primary"
+            />
           </label>
         ))}
-      </div>
+      </Card>
 
       {selectedCount >= 2 && (
-        <div>
+        <Card className="space-y-3 p-4">
           <label
             htmlFor="group-name"
-            className="block text-sm text-muted mb-2"
+            className="block text-[13px] text-muted"
           >
             Group name
           </label>
-          <input
+          <Input
             id="group-name"
             name="name"
             type="text"
             required
             autoComplete="off"
             placeholder="Sunday crew"
-            className={inputClass}
           />
-        </div>
+        </Card>
       )}
 
       {state.error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-text"
-        >
+        <p role="alert" className="text-sm text-danger">
           {state.error}
-        </div>
+        </p>
       )}
 
-      <button
+      <Button
         type="submit"
         disabled={pending || selectedCount === 0}
-        className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+        className="w-full"
       >
         {pending
           ? "Starting..."
           : selectedCount >= 2
           ? "Create group"
           : "Start chat"}
-      </button>
+      </Button>
     </form>
   );
 }

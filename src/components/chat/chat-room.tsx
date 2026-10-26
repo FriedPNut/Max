@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { LocalTime } from "@/components/local-time";
+import { Button, Card, Input, Textarea } from "@/components/ui";
 import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -67,20 +68,20 @@ function MessageMenu({
         onClick={onToggle}
         aria-label="Message options"
         aria-expanded={open}
-        className="min-h-11 min-w-11 rounded-lg text-muted transition-colors duration-150 ease-out hover:text-text cursor-pointer"
+        className="min-h-11 min-w-11 rounded-full text-muted transition-colors duration-200 ease-out hover:text-text"
       >
         ...
       </button>
       {open && (
-        <div
+        <Card
           data-message-menu
-          className="absolute bottom-full right-0 z-20 mb-1 min-w-[140px] rounded-lg border border-border bg-surface py-1"
+          className="absolute bottom-full right-0 z-20 mb-1 min-w-[140px] py-1"
         >
           {hasBody && (
             <button
               type="button"
               onClick={onCopy}
-              className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-background cursor-pointer"
+              className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-surface-2"
             >
               {copied ? "Copied" : "Copy"}
             </button>
@@ -88,7 +89,7 @@ function MessageMenu({
           <button
             type="button"
             onClick={onPin}
-            className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-background cursor-pointer"
+            className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-surface-2"
           >
             {isPinned ? "Unpin" : "Pin"}
           </button>
@@ -97,20 +98,20 @@ function MessageMenu({
               <button
                 type="button"
                 onClick={onEdit}
-                className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-background cursor-pointer"
+                className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-surface-2"
               >
                 Edit
               </button>
               <button
                 type="button"
                 onClick={onDelete}
-                className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-background cursor-pointer"
+                className="block min-h-11 w-full px-4 text-left text-sm text-danger hover:bg-surface-2"
               >
                 Delete
               </button>
             </>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -1038,23 +1039,22 @@ export function ChatRoom({
           onClick={() => setSearchOpen((open) => !open)}
           aria-label="Search this chat"
           aria-expanded={searchOpen}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
         >
-          {searchOpen ? <X size={20} strokeWidth={1.5} aria-hidden="true" /> : <Search size={20} strokeWidth={1.5} aria-hidden="true" />}
+          {searchOpen ? <X size={24} strokeWidth={1.75} aria-hidden="true" /> : <Search size={24} strokeWidth={1.75} aria-hidden="true" />}
         </button>
       </div>
 
       {searchOpen && (
         <div className="mb-4 space-y-3 border-b border-line pb-4">
           <label htmlFor="chat-search" className="block text-sm text-muted">Search this chat</label>
-          <input
+          <Input
             id="chat-search"
             type="search"
             value={searchQuery}
             onChange={(event) => void runSearch(event.target.value)}
             placeholder="Find a message"
             autoComplete="off"
-            className="w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base focus:outline-2 focus:outline-offset-0 focus:outline-text"
           />
           {searchQuery.trim().length < 2 ? (
             <p className="text-sm text-muted">Type at least two letters.</p>
@@ -1071,7 +1071,7 @@ export function ChatRoom({
                   <button
                     type="button"
                     onClick={() => void jumpFromSearch(result.id)}
-                    className="flex w-full flex-col items-start gap-1 py-3 text-left cursor-pointer"
+                    className="flex w-full flex-col items-start gap-1 py-3 text-left"
                   >
                     <span className="text-sm text-muted">
                       {namesById.get(result.user_id) ?? "A friend"} · <LocalTime iso={result.created_at} format="card" />
@@ -1150,6 +1150,13 @@ export function ChatRoom({
             const previous = messages[index - 1];
             const isOwn = message.user_id === currentUserId;
             const startsRun = !previous || previous.user_id !== message.user_id;
+            const next = messages[index + 1];
+            const endsRun =
+              !next ||
+              next.user_id !== message.user_id ||
+              new Date(next.created_at).getTime() -
+                new Date(message.created_at).getTime() >
+                TIMESTAMP_GAP_MS;
             const name =
               namesById.get(message.user_id) ??
               (isOwn ? "You" : "A friend");
@@ -1167,7 +1174,7 @@ export function ChatRoom({
             return (
               <Fragment key={message.id}>
                 {showTimestamp && (
-                  <p className="my-3 text-center text-sm text-muted">
+                  <p className="my-3 text-center text-xs text-muted">
                     <LocalTime iso={message.created_at} format="card" />
                   </p>
                 )}
@@ -1189,12 +1196,12 @@ export function ChatRoom({
                     username ? (
                       <Link
                         href={`/u/${username}`}
-                        className="mb-1 text-[13px] text-muted transition-colors duration-150 ease-out hover:text-text"
+                        className="mb-1 text-sm font-semibold text-muted transition-colors duration-200 ease-out hover:text-text"
                       >
                         {name}
                       </Link>
                     ) : (
-                      <p className="mb-1 text-[13px] text-muted">{name}</p>
+                      <p className="mb-1 text-sm font-semibold text-muted">{name}</p>
                     )
                   )}
 
@@ -1226,9 +1233,9 @@ export function ChatRoom({
                         }
                         aria-label="Add a reaction"
                         aria-expanded={reactionBarId === message.id}
-                        className="hidden min-h-11 min-w-11 items-center justify-center rounded-lg text-muted transition-colors duration-150 ease-out hover:text-text md:inline-flex md:invisible md:group-hover:visible md:focus-visible:visible cursor-pointer"
+                        className="hidden min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-colors duration-200 ease-out hover:text-text md:inline-flex md:invisible md:group-hover:visible md:focus-visible:visible"
                       >
-                        <Smile size={20} strokeWidth={1.5} aria-hidden="true" />
+                        <Smile size={24} strokeWidth={1.75} aria-hidden="true" />
                       </button>
                     )}
                     <div
@@ -1245,31 +1252,45 @@ export function ChatRoom({
                           event.stopPropagation();
                         }
                       }}
-                      className={`max-w-[78%] whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-base leading-relaxed transition-colors duration-150 ease-out ${
+                      className={`max-w-[78%] whitespace-pre-wrap break-words rounded-[22px] px-3.5 py-2 text-base leading-[1.4] transition-colors duration-200 ease-out ${
                         isOwn
-                          ? "bg-text text-background"
-                          : "bg-surface border border-border text-text"
-                      } ${highlightId === message.id ? "ring-2 ring-accent" : ""}`}
+                          ? "bubble-gradient text-on-primary"
+                          : "bg-surface-2 text-text"
+                      } ${
+                        endsRun
+                          ? isOwn
+                            ? "rounded-br-[6px]"
+                            : "rounded-bl-[6px]"
+                          : ""
+                      } ${highlightId === message.id ? "ring-2 ring-primary" : ""}`}
                     >
                       {message.deleted_at ? (
                         <span className="text-sm italic text-muted">Message deleted</span>
                       ) : editingId === message.id ? (
                         <div className="space-y-2">
-                          <textarea
+                          <Textarea
                             value={editDraft}
                             onChange={(event) => setEditDraft(event.target.value)}
                             maxLength={2000}
                             rows={2}
                             aria-label="Edit message"
-                            className="w-full min-w-[200px] bg-surface text-text border border-border rounded-lg px-2 py-2 text-base"
+                            className="min-w-[200px] px-2 py-2"
                           />
                           <div className="flex gap-2">
-                            <button type="button" onClick={() => void saveEdit(message.id)} disabled={editDraft.trim().length === 0} className="min-h-11 rounded-lg bg-text px-3 text-sm text-background cursor-pointer disabled:opacity-60">
+                            <Button
+                              size="sm"
+                              onClick={() => void saveEdit(message.id)}
+                              disabled={editDraft.trim().length === 0}
+                            >
                               Save
-                            </button>
-                            <button type="button" onClick={() => setEditingId(null)} className="min-h-11 rounded-lg border border-border px-3 text-sm text-text cursor-pointer">
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setEditingId(null)}
+                            >
                               Cancel
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       ) : (
@@ -1280,7 +1301,7 @@ export function ChatRoom({
                                 <img draggable={false} src={imageUrls[message.image_path]} alt={message.body ?? "Photo"} loading="lazy" className="max-h-[320px] w-auto max-w-full rounded-lg object-cover" />
                               </button>
                             ) : (
-                              <span className="block h-40 w-40 animate-pulse rounded-lg bg-line" aria-label="Loading photo" />
+                              <span className="block h-40 w-40 rounded-lg bg-surface-2" aria-label="Loading photo" />
                             )
                           )}
                           {message.body && (
@@ -1362,8 +1383,8 @@ export function ChatRoom({
           className="fixed inset-0 z-[60] flex items-center justify-center bg-background p-4"
           onClick={() => setFullscreenUrl(null)}
         >
-          <button type="button" onClick={() => setFullscreenUrl(null)} aria-label="Close photo" className="absolute right-4 top-4 min-h-11 min-w-11 rounded-lg text-text cursor-pointer">
-            <X size={20} strokeWidth={1.5} aria-hidden="true" />
+          <button type="button" onClick={() => setFullscreenUrl(null)} aria-label="Close photo" className="absolute right-4 top-4 min-h-11 min-w-11 rounded-full text-text">
+            <X size={24} strokeWidth={1.75} aria-hidden="true" />
           </button>
           <img draggable={false} src={fullscreenUrl} alt="" className="max-h-full max-w-full object-contain" />
         </div>
@@ -1377,7 +1398,7 @@ export function ChatRoom({
           bottom:
             keyboardInset > 0
               ? keyboardInset
-              : "calc(56px + env(safe-area-inset-bottom, 0px))",
+              : "env(safe-area-inset-bottom, 0px)",
         }}
       >
         {mentionQuery !== null && (
@@ -1415,18 +1436,24 @@ export function ChatRoom({
           onSubmit={handleSend}
           className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-3"
         >
-          <PhotoComposer
-            conversationId={conversationId}
-            userId={currentUserId}
-            onSent={(message) => {
-              shouldScrollToBottom.current = true;
-              setMessages((current) =>
-                current.some((m) => m.id === message.id) ? current : [...current, message]
-              );
-            }}
-            onError={setError}
-          />
-          <input
+          <div
+            className={
+              body.trim().length > 0 ? "hidden" : "contents"
+            }
+          >
+            <PhotoComposer
+              conversationId={conversationId}
+              userId={currentUserId}
+              onSent={(message) => {
+                shouldScrollToBottom.current = true;
+                setMessages((current) =>
+                  current.some((m) => m.id === message.id) ? current : [...current, message]
+                );
+              }}
+              onError={setError}
+            />
+          </div>
+          <Input
             type="text"
             value={body}
             onChange={(event) => {
@@ -1440,16 +1467,21 @@ export function ChatRoom({
             aria-label="Message"
             enterKeyHint="send"
             autoComplete="off"
-            className="min-w-0 flex-1 bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text"
+            pill
+            className="min-w-0 flex-1 px-4 py-2.5"
           />
 
-          <button
-            type="submit"
-            disabled={sending || body.trim().length === 0}
-            className="shrink-0 min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-          >
-            {sending ? "Sending..." : "Send"}
-          </button>
+          {body.trim().length > 0 && (
+            <Button
+              type="submit"
+              variant="text"
+              size="sm"
+              disabled={sending}
+              className="shrink-0 text-primary"
+            >
+              {sending ? "Sending..." : "Send"}
+            </Button>
+          )}
         </form>
 
         {error && (

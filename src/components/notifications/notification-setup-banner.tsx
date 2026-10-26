@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BellOff, Loader2 } from "lucide-react";
+import { Bell } from "lucide-react";
+import { Button, Card } from "@/components/ui";
 import {
   useNotificationSetup,
   type NotificationSetupState,
@@ -44,9 +45,6 @@ function orderedFixSteps(): FixStep[] {
   if (macSafari) return [FIX_STEPS.safari, FIX_STEPS.chrome, FIX_STEPS.android];
   return [FIX_STEPS.chrome, FIX_STEPS.android, FIX_STEPS.safari];
 }
-
-const buttonClass =
-  "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface disabled:pointer-events-none disabled:opacity-60 cursor-pointer sm:w-auto";
 
 export function NotificationSetupBanner() {
   const { state, busy, error, refresh, turnOn } = useNotificationSetup();
@@ -115,22 +113,19 @@ export function NotificationSetupBanner() {
   }
 
   return (
-    <aside
-      aria-label={content.title}
-      className={`rounded-lg border border-border p-4 transition-opacity duration-150 ease-out ${
+    <aside aria-label={content.title}>
+    <Card
+      className={`p-4 transition-opacity duration-200 ease-out ${
         fading ? "opacity-0" : "opacity-100"
       }`}
     >
       <div className="flex items-start gap-3">
-        <BellOff
-          size={20}
-          strokeWidth={1.5}
-          aria-hidden="true"
-          className="mt-0.5 shrink-0 text-muted"
-        />
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
+          <Bell size={20} strokeWidth={1.75} aria-hidden="true" />
+        </span>
 
         <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-base font-medium text-text">{content.title}</p>
+          <p className="text-base font-semibold text-text">{content.title}</p>
           <p className="text-sm leading-relaxed text-muted">{content.line}</p>
         </div>
       </div>
@@ -162,43 +157,27 @@ export function NotificationSetupBanner() {
 
       {(shown === "not-asked" || shown === "app-off") && (
         <div className="mt-3">
-          <button
-            type="button"
-            disabled={busy}
+          <Button
+            variant="primary"
+            loading={busy}
             onClick={() => void turnOn()}
-            className={buttonClass}
+            className="w-full sm:w-auto"
           >
-            {busy && (
-              <Loader2
-                size={20}
-                strokeWidth={1.5}
-                aria-hidden="true"
-                className="animate-spin"
-              />
-            )}
             Turn on
-          </button>
+          </Button>
         </div>
       )}
 
       {shown === "blocked" && (
         <div className="mt-3">
-          <button
-            type="button"
-            disabled={checking}
+          <Button
+            variant="primary"
+            loading={checking}
             onClick={() => void recheck()}
-            className={buttonClass}
+            className="w-full sm:w-auto"
           >
-            {checking && (
-              <Loader2
-                size={20}
-                strokeWidth={1.5}
-                aria-hidden="true"
-                className="animate-spin"
-              />
-            )}
             I&apos;ve changed it
-          </button>
+          </Button>
         </div>
       )}
 
@@ -207,6 +186,7 @@ export function NotificationSetupBanner() {
           {error}
         </p>
       )}
+    </Card>
     </aside>
   );
 }

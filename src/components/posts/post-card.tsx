@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
-import { useState, useTransition } from "react";
+import { Heart, MessageCircle } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { deletePostAction } from "@/app/actions/posts";
 import { DeletePostMenu } from "@/components/posts/delete-post-menu";
-import { LikeButton } from "@/components/posts/like-button";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { PostCommentsSheet } from "@/components/posts/post-comments-sheet";
+import { PostCopyLinkButton } from "@/components/posts/post-copy-link-button";
+import { PostLikeButton } from "@/components/posts/post-like-button";
+import { Avatar, Button } from "@/components/ui";
+import type { LikeButtonHandle } from "@/components/ui/like-button";
 import type { FeedPost } from "@/lib/posts";
 
 export function PostCard({
@@ -23,44 +26,124 @@ export function PostCard({
   const [confirming, setConfirming] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.commentCount ?? 0);
+  const [likeCount, setLikeCount] = useState(post.likeCount ?? 0);
+  const [expanded, setExpanded] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
+  const likeRef = useRef<LikeButtonHandle | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const lastTap = useRef<{ at: number; x: number; y: number } | null>(null);
+  const photoTapStart = useRef<{ x: number; y: number } | null>(null);
+  const lastDoubleTap = useRef(0);
+  const heartTimer = useRef<number | null>(null);
+  const [heart, setHeart] = useState<{ key: number } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (heartTimer.current !== null) {
+        window.clearTimeout(heartTimer.current);
+      }
+    };
+  }, []);
+
+  const imageUrls = post.imageUrls ?? [];
+  const images =
+    imageUrls.length > 0
+      ? imageUrls
+      : post.imageUrl
+      ? [post.imageUrl]
+      : [];
+  const hasPhotos = images.length > 0 && !imageFailed;
+  const isTextOnly = !post.imageUrl && Boolean(post.caption);
+  const captionIsLong =
+    (post.caption?.length ?? 0) > 110 || (post.caption?.includes("\n") ?? false);
   const alt = post.caption
     ? `Post by ${post.authorName}: ${post.caption}`
     : `Post by ${post.authorName}`;
-  const authorDetails = (
-    <div className="min-w-0 flex-1">
-      {post.authorUsername ? (
-        <Link
-          href={`/u/${encodeURIComponent(post.authorUsername)}`}
-          className="truncate text-base font-medium text-text hover:opacity-80"
-        >
-          {post.authorName}
-        </Link>
-      ) : (
-        <p className="truncate text-base font-medium text-text">
-          {post.authorName}
-        </p>
-      )}
-      {post.eventId && post.eventTitle && (
-        <Link
-          href={`/events/${post.eventId}`}
-          className="block truncate text-sm text-muted hover:text-text"
-        >
-          {post.eventTitle}
-        </Link>
-      )}
-      <p className="mt-0.5 text-sm text-muted">{post.relativeTime}</p>
-    </div>
-  );
-  const authorContent = (
-    <>
-      <ProfileAvatar
-        src={post.authorAvatarUrl}
-        initial={post.authorInitial}
-        size={36}
-      />
-      {authorDetails}
-    </>
-  );
+
+  function showDoubleTapHeart() {
+    const now = Date.now();
+
+    // A double tap also fires dblclick; only animate once.
+    if (now - lastDoubleTap.current < 400) {
+      return;
+    }
+
+    lastDoubleTap.current = now;
+    setHeart({ key: now });
+    likeRef.current?.like();
+
+    if (heartTimer.current !== null) {
+      window.clearTimeout(heartTimer.current);
+    }
+
+    heartTimer.current = window.setTimeout(() => setHeart(null), 700);
+  }
+
+  function handlePhotoPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    photoTapStart.current = { x: event.clientX, y: event.clientY };
+  }
+
+  function handlePhotoPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "mouse") {
+      return;
+    }
+
+    const tapStart = photoTapStart.current;
+    photoTapStart.current = null;
+
+    // A scroll that happens to end on the photo is not a tap.
+    if (
+      !tapStart ||
+      Math.abs(event.clientX - tapStart.x) > 12 ||
+      Math.abs(event.clientY - tapStart.y) > 12
+    ) {
+      return;
+    }
+
+    const now = Date.now();
+    const previous = lastTap.current;
+
+    if (
+      previous &&
+      now - previous.at < 300 &&
+      Math.abs(event.clientX - previous.x) < 30 &&
+      Math.abs(event.clientY - previous.y) < 30
+    ) {
+      lastTap.current = null;
+      showDoubleTapHeart();
+      return;
+    }
+
+    lastTap.current = { at: now, x: event.clientX, y: event.clientY };
+  }
+
+  function handleScroll(event: React.UIEvent<HTMLDivElement>) {
+    const width = event.currentTarget.clientWidth;
+
+    if (!width) {
+      return;
+    }
+
+    setImageIndex(
+      Math.min(
+        images.length - 1,
+        Math.max(0, Math.round(event.currentTarget.scrollLeft / width))
+      )
+    );
+  }
+
+  function goToImage(index: number) {
+    const track = trackRef.current;
+
+    if (!track) {
+      return;
+    }
+
+    track.scrollTo({ left: index * track.clientWidth, behavior: "smooth" });
+    setImageIndex(index);
+  }
 
   function handleDelete() {
     setDeleteError(null);
@@ -81,25 +164,60 @@ export function PostCard({
     });
   }
 
+  const commentButton = (
+    <>
+      <MessageCircle size={24} strokeWidth={1.75} aria-hidden="true" />
+    </>
+  );
+
   return (
-    <article className="border-b border-line py-6">
+    <article className="space-y-2">
       <div className="flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          {authorContent}
+        <Avatar
+          src={post.authorAvatarUrl}
+          initial={post.authorInitial}
+          size={32}
+        />
+
+        <div className="min-w-0 flex-1">
+          {post.authorUsername ? (
+            <Link
+              href={`/u/${encodeURIComponent(post.authorUsername)}`}
+              className="block truncate text-[14px] font-semibold leading-tight text-text transition-opacity duration-200 ease-out hover:opacity-70"
+            >
+              {post.authorName}
+            </Link>
+          ) : (
+            <p className="truncate text-[14px] font-semibold leading-tight text-text">
+              {post.authorName}
+            </p>
+          )}
+
+          {post.eventId && post.eventTitle && (
+            <Link
+              href={`/events/${post.eventId}`}
+              className="mt-0.5 block truncate text-xs text-muted transition-colors duration-200 ease-out hover:text-text"
+            >
+              {post.eventTitle}
+            </Link>
+          )}
         </div>
 
-        {post.isOwner && (
-          <DeletePostMenu
-            onDeleteRequested={() => {
-              setConfirming(true);
-              setDeleteError(null);
-            }}
-          />
-        )}
+        <DeletePostMenu
+          postId={post.id}
+          onDeleteRequested={
+            post.isOwner
+              ? () => {
+                  setConfirming(true);
+                  setDeleteError(null);
+                }
+              : undefined
+          }
+        />
       </div>
 
       {confirming && (
-        <div className="mt-3 rounded-lg border border-border bg-surface p-4 space-y-3">
+        <div className="space-y-3 rounded-lg bg-surface-2 p-3">
           <p className="text-sm text-text">
             Delete this post? It can&apos;t be undone.
           </p>
@@ -111,86 +229,225 @@ export function PostCard({
           )}
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleDelete}
               disabled={pending}
-              className="min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
             >
               {pending ? "Deleting..." : "Delete"}
-            </button>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => {
                 setConfirming(false);
                 setDeleteError(null);
               }}
               disabled={pending}
-              className="min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
-      {post.imageUrl && !imageFailed ? (
-        <img draggable={false}
-          src={post.imageUrl}
-          alt={alt}
-          loading="lazy"
-          decoding="async"
-          onError={() => setImageFailed(true)}
-          className="mt-3 w-full h-auto rounded-lg bg-surface"
-        />
+      {hasPhotos ? (
+        <div
+          className="relative -mx-4 overflow-hidden bg-surface-2"
+          onPointerDown={handlePhotoPointerDown}
+          onPointerUp={handlePhotoPointerUp}
+          onDoubleClick={(event) => {
+            event.preventDefault();
+            showDoubleTapHeart();
+          }}
+        >
+          <div
+            ref={trackRef}
+            data-no-swipe
+            onScroll={handleScroll}
+            className={`flex snap-x snap-mandatory overflow-x-auto ${
+              images.length > 1 ? "touch-pan-x" : ""
+            }`}
+          >
+            {images.map((imageUrl, index) => (
+              <div
+                key={`${imageUrl}-${index}`}
+                className="w-full shrink-0 snap-center"
+              >
+                <img
+                  draggable={false}
+                  src={imageUrl}
+                  alt={alt}
+                  loading="lazy"
+                  decoding="async"
+                  onError={() => setImageFailed(true)}
+                  className="aspect-[4/5] w-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+
+          {images.length > 1 && (
+            <>
+              <div className="pointer-events-none absolute right-2 top-2 rounded-full bg-scrim/60 px-2 py-1 text-xs font-semibold text-on-primary">
+                {imageIndex + 1}/{images.length}
+              </div>
+
+              <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5">
+                {images.map((imageUrl, index) => (
+                  <button
+                    key={`dot-${imageUrl}-${index}`}
+                    type="button"
+                    onClick={() => goToImage(index)}
+                    aria-label={`Go to photo ${index + 1}`}
+                    aria-current={index === imageIndex}
+                    className={`h-1.5 w-1.5 rounded-full transition-opacity duration-200 ease-out ${
+                      index === imageIndex
+                        ? "bg-on-primary"
+                        : "bg-on-primary/40"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {heart && (
+            <span
+              key={heart.key}
+              aria-hidden="true"
+              className="double-tap-heart pointer-events-none absolute inset-0 flex items-center justify-center"
+            >
+              <Heart
+                size={96}
+                fill="white"
+                strokeWidth={1}
+                className="text-on-primary drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]"
+              />
+            </span>
+          )}
+        </div>
+      ) : isTextOnly ? (
+        <div className="-mx-4 flex min-h-[260px] items-center justify-center bg-surface-2 px-6 py-10">
+          <p className="selectable whitespace-pre-wrap break-words text-center text-xl font-semibold leading-snug text-text">
+            {post.caption}
+          </p>
+        </div>
       ) : (
-        <p className="mt-3 text-sm text-muted">Photo unavailable.</p>
+        <p className="py-4 text-sm text-muted">Photo unavailable.</p>
       )}
 
-      <div className="mt-3 flex items-center gap-6">
-        <LikeButton
+      <div className="flex items-center gap-1">
+        <PostLikeButton
+          ref={likeRef}
           postId={post.id}
           initialLiked={post.hasLiked}
-          initialCount={post.likeCount}
+          initialCount={post.likeCount ?? 0}
+          showCount={false}
+          onCountChange={setLikeCount}
         />
 
-        <Link
-          href={`/feed/${post.id}`}
-          aria-label={`${post.commentCount} ${
-            post.commentCount === 1 ? "comment" : "comments"
-          }`}
-          className="inline-flex min-h-11 items-center gap-2 text-text transition-opacity duration-150 ease-out hover:opacity-80"
-        >
-          <MessageCircle size={20} strokeWidth={1.5} aria-hidden="true" />
-          <span className="text-sm text-muted">{post.commentCount}</span>
-        </Link>
+        {showComments ? (
+          <button
+            type="button"
+            onClick={() => setCommentsOpen(true)}
+            aria-label={`${commentCount} ${
+              commentCount === 1 ? "comment" : "comments"
+            }`}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center text-text transition-opacity duration-200 ease-out hover:opacity-70"
+          >
+            {commentButton}
+          </button>
+        ) : (
+          <a
+            href="#comments"
+            aria-label={`${commentCount} ${
+              commentCount === 1 ? "comment" : "comments"
+            }`}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center text-text transition-opacity duration-200 ease-out hover:opacity-70"
+          >
+            {commentButton}
+          </a>
+        )}
+
+        <PostCopyLinkButton postId={post.id} />
       </div>
 
-      {post.caption && (
-        <p className="mt-2 whitespace-pre-wrap break-words text-base text-text">
-          {post.caption}
-        </p>
+      <p className="text-[14px] font-semibold text-text">
+        {likeCount} {likeCount === 1 ? "like" : "likes"}
+      </p>
+
+      {post.caption && !isTextOnly && (
+        <div className="relative">
+          <p
+            className={`text-base leading-snug text-text ${
+              expanded ? "whitespace-pre-wrap break-words" : "line-clamp-2"
+            }`}
+          >
+            <Link
+              href={
+                post.authorUsername
+                  ? `/u/${encodeURIComponent(post.authorUsername)}`
+                  : `/feed/${post.id}`
+              }
+              className="font-semibold transition-opacity duration-200 ease-out hover:opacity-70"
+            >
+              {post.authorName}
+            </Link>{" "}
+            {post.caption}
+          </p>
+
+          {!expanded && captionIsLong && (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="absolute bottom-0 right-0 bg-background pl-1 text-sm text-muted transition-opacity duration-200 ease-out hover:opacity-70"
+            >
+              more
+            </button>
+          )}
+        </div>
       )}
 
-      {showComments && post.previewComments.length > 0 && (
-        <ul className="mt-2 space-y-1">
-          {post.previewComments.map((comment) => (
-            <li key={comment.id} className="line-clamp-2 text-sm text-text">
-              <span className="font-medium">{comment.authorName}</span>{" "}
-              <span className="break-words">{comment.body}</span>
+      {showComments && commentCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setCommentsOpen(true)}
+          className="block min-h-6 text-sm text-muted transition-opacity duration-200 ease-out hover:opacity-70"
+        >
+          View all {commentCount} {commentCount === 1 ? "comment" : "comments"}
+        </button>
+      )}
+
+      {showComments && (post.previewComments ?? []).length > 0 && (
+        <ul className="space-y-0.5">
+          {(post.previewComments ?? []).map((comment) => (
+            <li key={comment.id}>
+              <button
+                type="button"
+                onClick={() => setCommentsOpen(true)}
+                className="line-clamp-2 w-full text-left text-base leading-snug text-text"
+              >
+                <span className="font-semibold">{comment.authorName}</span>{" "}
+                <span className="break-words">{comment.body}</span>
+              </button>
             </li>
           ))}
         </ul>
       )}
 
-      {showComments && post.commentCount > post.previewComments.length && (
-        <Link
-          href={`/feed/${post.id}`}
-          className="mt-1 inline-flex min-h-11 items-center text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
-        >
-          View all {post.commentCount} comments
-        </Link>
+      <p className="text-xs text-muted">{post.relativeTime}</p>
+
+      {commentsOpen && (
+        <PostCommentsSheet
+          postId={post.id}
+          postAuthorId={post.authorId}
+          initialCount={commentCount}
+          onClose={() => setCommentsOpen(false)}
+          onCountChange={setCommentCount}
+        />
       )}
     </article>
   );

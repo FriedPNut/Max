@@ -7,6 +7,7 @@ import {
   respondToHangAction,
 } from "@/app/actions/hangs";
 import { AnyoneDownSheet } from "@/components/hang/anyone-down-sheet";
+import { Button, Chip } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { timeLeftLabel, type HangResponse } from "@/lib/hangs";
 
@@ -167,13 +168,9 @@ export function HangView({
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        onClick={() => setSheetOpen(true)}
-        className="min-h-11 w-full rounded-lg bg-text px-4 py-3 text-base font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer"
-      >
+      <Button onClick={() => setSheetOpen(true)} className="w-full">
         Anyone down?
-      </button>
+      </Button>
 
       {error && (
         <p role="alert" className="text-sm text-text">
@@ -186,9 +183,9 @@ export function HangView({
       ) : (
         <ul className="border-t border-line">
           {hangs.map((hang) => (
-            <li key={hang.id} className="space-y-3 border-b border-line py-4">
+            <li key={hang.id} className="-mx-4 space-y-3 border-b border-line px-4 py-4">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-sm text-muted">{hang.creatorName}</p>
+                <p className="text-sm font-semibold text-text">{hang.creatorName}</p>
                 <p className="shrink-0 text-sm text-muted">
                   {timeLeftLabel(hang.expiresAt, now)}
                 </p>
@@ -204,21 +201,16 @@ export function HangView({
                 {RESPONSES.map((option) => {
                   const selected = hang.myResponse === option.value;
                   return (
-                    <button
+                    <Chip
                       key={option.value}
-                      type="button"
-                      aria-pressed={selected}
+                      selected={selected}
                       onClick={() =>
                         void respond(hang.id, selected ? null : option.value)
                       }
-                      className={`min-h-11 rounded-lg border px-4 text-sm transition-colors duration-150 ease-out cursor-pointer ${
-                        selected
-                          ? "border-text bg-text text-background"
-                          : "border-border bg-transparent text-text hover:bg-surface"
-                      }`}
+                      className="min-h-11 px-4"
                     >
                       {option.label}
-                    </button>
+                    </Chip>
                   );
                 })}
               </div>
@@ -234,16 +226,16 @@ export function HangView({
 
               {hang.isMine && (
                 <div className="flex gap-4 pt-1">
-                  <button
-                    type="button"
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     onClick={() => void end(hang.id)}
-                    className="min-h-11 text-sm text-muted hover:text-text cursor-pointer"
                   >
                     End
-                  </button>
+                  </Button>
                   <Link
                     href={`/events/new?hang=${hang.id}`}
-                    className="inline-flex min-h-11 items-center text-sm text-text underline underline-offset-4"
+                    className="inline-flex min-h-11 items-center text-sm text-link underline underline-offset-4"
                   >
                     Turn into event
                   </Link>

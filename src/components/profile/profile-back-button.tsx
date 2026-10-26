@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { BackIcon } from "@/components/icons";
 
 export function ProfileBackButton() {
   const router = useRouter();
@@ -11,9 +11,9 @@ export function ProfileBackButton() {
       type="button"
       onClick={() => router.back()}
       aria-label="Back"
-      className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-200 ease-out hover:bg-surface-2"
     >
-      <ArrowLeft size={24} strokeWidth={1.5} aria-hidden="true" />
+      <BackIcon size={24} strokeWidth={1.75} aria-hidden="true" />
     </button>
   );
 }

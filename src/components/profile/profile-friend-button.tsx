@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { requestProfileFriendshipAction } from "@/app/actions/profile";
+import { Button } from "@/components/ui";
 import type { ProfileRelationship } from "@/lib/profile";
 
 export function ProfileFriendButton({
@@ -49,41 +50,33 @@ export function ProfileFriendButton({
   const isIncoming = relationship === "incoming";
 
   return (
-    <div>
+    <div className="min-w-0 flex-1">
       {isFriend ? (
-        <button
-          type="button"
-          disabled
-          className="w-full min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-muted font-sans font-medium text-sm cursor-default"
-        >
+        <Button variant="secondary" disabled className="w-full text-muted">
           Friends
-        </button>
+        </Button>
       ) : isSent ? (
-        <button
-          type="button"
-          disabled
-          className="w-full min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-muted font-sans font-medium text-sm cursor-default"
-        >
+        <Button variant="secondary" disabled className="w-full text-muted">
           Request sent
-        </button>
+        </Button>
       ) : isIncoming ? (
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={handleAdd}
           disabled={pending}
-          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full"
         >
           {pending ? "Accepting..." : "Accept"}
-        </button>
+        </Button>
       ) : (
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={handleAdd}
           disabled={pending}
-          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full"
         >
           {pending ? "Adding..." : "Add friend"}
-        </button>
+        </Button>
       )}
 
       {error && (

@@ -6,7 +6,9 @@ import { useState } from "react";
 import { EventRow } from "@/components/events/event-row";
 import { IdeaRow } from "@/components/events/idea-row";
 import { IdeaSheet } from "@/components/events/idea-sheet";
+import { Button, Chip, SegmentedControl } from "@/components/ui";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useNewIds } from "@/lib/use-new-ids";
 import type { EventListItem, IdeaListItem, IdeaStatus } from "@/lib/events";
 
 type IdeaView = "ideas" | "events";
@@ -32,6 +34,10 @@ export function IdeasPage({
   const [view, setView] = useState<IdeaView>(initialView);
   const [filter, setFilter] = useState<IdeaFilter>("open");
   const [sheet, setSheet] = useState<SheetState>(null);
+  const newIds = useNewIds(
+    ideas.map((idea) => idea.id),
+    initialIdeas.map((idea) => idea.id)
+  );
 
   const visibleIdeas = ideas
     .filter((idea) => idea.status === filter)
@@ -100,57 +106,35 @@ export function IdeasPage({
           <Link
             href="/events"
             aria-label="Back to events"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-200 ease-out hover:bg-surface-2"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           </Link>
 
-          <h1 className="text-[28px] font-semibold leading-tight text-text">
+          <h1 className="text-[22px] font-bold leading-tight text-text">
             Ideas
           </h1>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => setSheet({ mode: "create" })}
           aria-label="Add idea"
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+          className="h-11 w-11 shrink-0 px-0"
         >
-          <Plus size={20} strokeWidth={1.5} aria-hidden="true" />
-        </button>
+          <Plus size={24} strokeWidth={1.75} aria-hidden="true" />
+        </Button>
       </div>
 
-      <div
-        role="group"
-        aria-label="Ideas sections"
-        className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-surface p-1"
-      >
-        <button
-          type="button"
-          aria-pressed={view === "ideas"}
-          onClick={() => setView("ideas")}
-          className={`min-h-11 rounded-lg px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
-            view === "ideas"
-              ? "bg-text text-background font-medium"
-              : "text-muted hover:text-text"
-          }`}
-        >
-          Ideas
-        </button>
-
-        <button
-          type="button"
-          aria-pressed={view === "events"}
-          onClick={() => setView("events")}
-          className={`min-h-11 rounded-lg px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
-            view === "events"
-              ? "bg-text text-background font-medium"
-              : "text-muted hover:text-text"
-          }`}
-        >
-          All events
-        </button>
-      </div>
+      <SegmentedControl
+        label="Ideas sections"
+        value={view}
+        onChange={setView}
+        options={[
+          { value: "ideas", label: "Ideas" },
+          { value: "events", label: "All events" },
+        ]}
+      />
 
       {view === "ideas" ? (
         <div className="space-y-4">
@@ -159,25 +143,15 @@ export function IdeasPage({
             aria-label="Idea status"
             className="flex items-center gap-2"
           >
-            {(["open", "scheduled"] as const).map((status) => {
-              const isActive = filter === status;
-
-              return (
-                <button
-                  key={status}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => setFilter(status)}
-                  className={`min-h-9 rounded-lg border px-3 text-sm transition-colors duration-150 ease-out cursor-pointer ${
-                    isActive
-                      ? "border-text text-text font-medium"
-                      : "border-border text-muted hover:text-text"
-                  }`}
-                >
-                  {status === "open" ? "Open" : "Scheduled"}
-                </button>
-              );
-            })}
+            {(["open", "scheduled"] as const).map((status) => (
+              <Chip
+                key={status}
+                selected={filter === status}
+                onClick={() => setFilter(status)}
+              >
+                {status === "open" ? "Open" : "Scheduled"}
+              </Chip>
+            ))}
           </div>
 
           {visibleIdeas.length === 0 ? (
@@ -198,6 +172,7 @@ export function IdeasPage({
                   onDropped={handleDropped}
                   onDeleted={handleDeleted}
                   onVoteChange={handleVoteChange}
+                  animateIn={newIds.has(idea.id)}
                 />
               ))}
             </div>

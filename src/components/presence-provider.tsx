@@ -58,7 +58,7 @@ export function OnlineDot({ userId }: { userId: string | null | undefined }) {
     <span
       aria-label="Active now"
       title="Active now"
-      className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-accent"
+      className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary"
     />
   );
 }

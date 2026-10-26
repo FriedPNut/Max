@@ -9,25 +9,12 @@ import {
   unclaimEventItemAction,
 } from "@/app/actions/event-plan";
 import { PersonName } from "@/components/events/person-name";
+import { Button, Card, inputClass } from "@/components/ui";
 import { useAutofocus } from "@/lib/use-autofocus";
 import type {
   EventPlanActionResult,
   EventPlanSnapshot,
 } from "@/lib/event-plan";
-
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
-
-const labelClass = "block text-sm text-muted mb-2";
-
-const primaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
-
-const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
-
-const textButton =
-  "inline-flex min-h-11 items-center px-1 text-sm text-muted transition-colors duration-150 ease-out hover:text-text cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
 
 export function BringTab({
   eventId,
@@ -147,17 +134,16 @@ export function BringTab({
         </div>
 
         {!formOpen && (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => {
               setFormOpen(true);
               setFormError(null);
             }}
-            className={`${secondaryButton} gap-1.5`}
           >
-            <Plus size={20} strokeWidth={1.5} aria-hidden="true" />
+            <Plus size={24} strokeWidth={1.75} aria-hidden="true" />
             Add item
-          </button>
+          </Button>
         )}
       </div>
 
@@ -168,13 +154,14 @@ export function BringTab({
       )}
 
       {formOpen && (
+        <Card>
         <form
           onSubmit={handleAdd}
           noValidate
-          className="space-y-3 rounded-lg border border-border bg-surface p-4"
+          className="space-y-3 p-4"
         >
           <div>
-            <label htmlFor="bring-item-label" className={labelClass}>
+            <label htmlFor="bring-item-label" className="mb-2 block text-sm text-muted">
               Item
             </label>
             <input
@@ -192,41 +179,37 @@ export function BringTab({
               disabled={addPending}
               autoComplete="off"
               placeholder="Ice"
-              className={fieldClass}
+              className={inputClass}
             />
           </div>
 
           {formError && (
             <div
               role="alert"
-              className="rounded-lg border border-border bg-background px-3.5 py-3 text-sm text-text"
+              className="rounded-lg bg-background px-3.5 py-3 text-sm text-text"
             >
               {formError}
             </div>
           )}
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              disabled={addPending}
-              className={primaryButton}
-            >
+            <Button type="submit" disabled={addPending}>
               {addPending ? "Adding..." : "Add item"}
-            </button>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => {
                 setFormOpen(false);
                 setFormError(null);
               }}
               disabled={addPending}
-              className={secondaryButton}
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
+        </Card>
       )}
 
       {items.length === 0 ? (
@@ -261,54 +244,54 @@ export function BringTab({
 
                   <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
                     {!item.claimedBy && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() =>
                           runItemAction(`claim:${item.id}`, item.id, () =>
                             claimEventItemAction(eventId, item.id)
                           )
                         }
                         disabled={busy}
-                        className={secondaryButton}
                       >
                         {pendingAction === `claim:${item.id}`
                           ? "Claiming..."
                           : "I'll bring it"}
-                      </button>
+                      </Button>
                     )}
 
                     {isMine && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() =>
                           runItemAction(`unclaim:${item.id}`, item.id, () =>
                             unclaimEventItemAction(eventId, item.id)
                           )
                         }
                         disabled={busy}
-                        className={secondaryButton}
                       >
                         {pendingAction === `unclaim:${item.id}`
                           ? "Unclaiming..."
                           : "Unclaim"}
-                      </button>
+                      </Button>
                     )}
 
                     {canDelete && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={() =>
                           runItemAction(`delete:${item.id}`, item.id, () =>
                             deleteEventItemAction(eventId, item.id)
                           )
                         }
                         disabled={busy}
-                        className={textButton}
                       >
                         {pendingAction === `delete:${item.id}`
                           ? "Deleting..."
                           : "Delete"}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

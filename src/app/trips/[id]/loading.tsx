@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AppShellSkeleton,
   SkeletonList,
@@ -8,12 +9,12 @@ export default function TripLoading() {
   return (
     <AppShellSkeleton label="Loading trip">
       <div className="flex items-center gap-2">
-        <div className="h-11 w-11 rounded-lg bg-line/40" aria-hidden="true" />
+        <Skeleton className="h-11 w-11 rounded-lg" />
         <SkeletonTitle width="w-40" />
       </div>
       <div className="flex gap-2" aria-hidden="true">
-        <div className="h-11 flex-1 rounded-lg bg-line/40" />
-        <div className="h-11 flex-1 rounded-lg bg-line/40" />
+        <Skeleton className="h-11 flex-1 rounded-lg" />
+        <Skeleton className="h-11 flex-1 rounded-lg" />
       </div>
       <SkeletonList rows={4} />
     </AppShellSkeleton>

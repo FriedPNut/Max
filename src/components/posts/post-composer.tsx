@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronRight, ImagePlus } from "lucide-react";
 import { createPostAction } from "@/app/actions/posts";
 import {
   MAX_UPLOAD_BYTES,
@@ -11,14 +12,10 @@ import {
 } from "@/lib/client-image";
 import { POSTS_BUCKET } from "@/lib/posts";
 import { createClient } from "@/lib/supabase/client";
+import { Button, buttonStyles, Textarea } from "@/components/ui";
 
 const MAX_DIMENSION = 1600;
 const JPEG_QUALITY = 0.8;
-
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
-
-const labelClass = "block text-sm text-muted mb-2";
 
 type Phase = "idle" | "preparing" | "uploading" | "posting";
 
@@ -30,12 +27,14 @@ export function PostComposer({
   onPosted,
   eventId: initialEventId = "",
   events = [],
+  showSheetHeader = false,
 }: {
   userId: string;
   onClose?: () => void;
   onPosted?: () => void;
   eventId?: string;
   events?: EventOption[];
+  showSheetHeader?: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -154,7 +153,11 @@ export function PostComposer({
     setPhase("posting");
 
     try {
-      const result = await createPostAction({ imagePath: path, caption, eventId: eventId || null });
+      const result = await createPostAction({
+        imagePath: path,
+        caption,
+        eventId: eventId || null,
+      });
 
       if (result.error) {
         await supabase.storage.from(POSTS_BUCKET).remove([path]);
@@ -186,134 +189,215 @@ export function PostComposer({
       ? "Posting..."
       : "Post";
 
+  const shareLabel =
+    phase === "idle"
+      ? "Share"
+      : phase === "preparing"
+      ? "Preparing..."
+      : phase === "uploading"
+      ? "Uploading..."
+      : "Sharing...";
+
+  const selectedEvent = events.find((item) => item.id === eventId);
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-      <div>
-        <span className="block text-sm text-muted mb-2">Photo</span>
-
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={busy}
-          className="inline-flex min-h-11 items-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-        >
-          {previewUrl ? "Choose another photo" : "Choose photo"}
-        </button>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          disabled={busy}
-          className="hidden"
-        />
-      </div>
-
-      {phase === "preparing" && (
-        <p className="text-sm text-muted">Preparing photo...</p>
-      )}
-
-      {previewUrl && (
-        <img draggable={false}
-          src={previewUrl}
-          alt="Selected photo preview"
-          className="w-full max-h-[360px] object-contain rounded-lg bg-surface"
-        />
-      )}
-
-      {events.length > 0 && (
-        <div>
-          <label htmlFor="post-event" className={labelClass}>
-            Add to event
-          </label>
-          <select
-            id="post-event"
-            value={eventId}
-            onChange={(event) => setEventId(event.target.value)}
-            disabled={busy}
-            className={fieldClass}
-          >
-            <option value="">No event</option>
-            {events.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <div>
-        <label htmlFor="caption" className={labelClass}>
-          Caption (optional)
-        </label>
-        <textarea
-          id="caption"
-          value={caption}
-          onChange={(event) => setCaption(event.target.value)}
-          rows={4}
-          maxLength={2000}
-          disabled={busy}
-          placeholder="Say something about this photo."
-          className={`${fieldClass} resize-y min-h-[112px]`}
-        />
-      </div>
-
-      {phase === "uploading" && (
-        <div className="space-y-2">
-          <div className="h-[2px] w-full bg-line" aria-hidden="true">
-            <div
-              className="h-full bg-text"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-sm text-muted">Uploading {progress}%</p>
-        </div>
-      )}
-
-      {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-text"
-        >
-          {error}
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          type="submit"
-          disabled={!photo || busy}
-          className="w-full sm:w-auto min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-        >
-          {buttonLabel}
-        </button>
-
-        {onClose ? (
+    <form
+      onSubmit={handleSubmit}
+      className={showSheetHeader ? "flex min-h-full flex-col" : "space-y-6"}
+      noValidate
+    >
+      {showSheetHeader && (
+        <div className="sticky top-0 z-20 -mx-4 -mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-line bg-surface px-4 py-2">
           <button
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="w-full sm:w-auto min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="min-h-11 justify-self-start text-[15px] text-text transition-opacity duration-200 ease-out disabled:opacity-40"
           >
             Cancel
           </button>
-        ) : (
-          <Link
-            href="/feed"
-            aria-disabled={busy}
-            onClick={(event) => {
-              if (busy) {
-                event.preventDefault();
-              }
-            }}
-            className={`w-full sm:w-auto text-center min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface ${
-              busy ? "pointer-events-none opacity-60" : ""
-            }`}
+
+          <h2 className="text-base font-semibold text-text">New post</h2>
+
+          <button
+            type="submit"
+            disabled={!photo || busy}
+            className="min-h-11 justify-self-end text-[15px] font-semibold text-primary transition-opacity duration-200 ease-out disabled:opacity-40"
           >
-            Cancel
-          </Link>
+            {shareLabel}
+          </button>
+        </div>
+      )}
+
+      <div
+        className={
+          showSheetHeader ? "flex-1 space-y-5 pb-2" : "space-y-6"
+        }
+      >
+        <div className="relative overflow-hidden rounded-lg bg-surface-2">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            aria-label={previewUrl ? "Choose another photo" : "Choose photo"}
+            className={`relative flex w-full items-center justify-center overflow-hidden ${
+              showSheetHeader
+                ? "aspect-[4/5] max-h-[46dvh]"
+                : "aspect-[4/5] max-h-[360px]"
+            } min-h-[220px]`}
+          >
+            {previewUrl ? (
+              <img
+                draggable={false}
+                src={previewUrl}
+                alt="Selected photo preview"
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <span className="flex flex-col items-center gap-2 px-6 text-center text-sm text-muted">
+                <ImagePlus size={32} strokeWidth={1.5} aria-hidden="true" />
+                Choose photo
+              </span>
+            )}
+          </button>
+
+          {previewUrl && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy}
+              className="absolute bottom-3 right-3 rounded-full bg-scrim/60 px-3 py-1.5 text-xs font-semibold text-on-primary disabled:opacity-40"
+            >
+              Change
+            </button>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            disabled={busy}
+            className="hidden"
+          />
+        </div>
+
+        {phase === "preparing" && (
+          <p className="text-sm text-muted">Preparing photo...</p>
+        )}
+
+        <div className="border-t border-line">
+          <Textarea
+            id="caption"
+            value={caption}
+            onChange={(event) => setCaption(event.target.value)}
+            rows={3}
+            maxLength={2000}
+            disabled={busy}
+            placeholder="Write a caption..."
+            aria-label="Caption"
+            className="min-h-[88px] resize-none"
+            style={{
+              borderWidth: 0,
+              backgroundColor: "transparent",
+              paddingLeft: 0,
+              paddingRight: 0,
+            }}
+          />
+        </div>
+
+        {events.length > 0 && (
+          <div className="relative flex min-h-12 items-center justify-between gap-3 border-y border-line">
+            <span className="text-base text-text">Add to event</span>
+
+            <span className="flex min-w-0 items-center gap-1.5 text-sm text-muted">
+              <span className="max-w-[220px] truncate">
+                {selectedEvent?.title ?? "No event"}
+              </span>
+              <ChevronRight
+                size={18}
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+            </span>
+
+            <select
+              id="post-event"
+              value={eventId}
+              onChange={(event) => setEventId(event.target.value)}
+              disabled={busy}
+              aria-label="Add to event"
+              className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
+            >
+              <option value="">No event</option>
+              {events.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {phase === "uploading" && (
+          <div className="space-y-2">
+            <div className="h-[2px] w-full bg-line" aria-hidden="true">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-sm text-muted">Uploading {progress}%</p>
+          </div>
+        )}
+
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg bg-surface-2 px-3.5 py-3 text-sm text-text"
+          >
+            {error}
+          </p>
+        )}
+
+        {!showSheetHeader && (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="submit"
+              disabled={!photo || busy}
+              className="w-full sm:w-auto"
+            >
+              {buttonLabel}
+            </Button>
+
+            {onClose ? (
+              <Button
+                variant="secondary"
+                onClick={onClose}
+                disabled={busy}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+            ) : (
+              <Link
+                href="/feed"
+                aria-disabled={busy}
+                onClick={(event) => {
+                  if (busy) {
+                    event.preventDefault();
+                  }
+                }}
+                className={`${buttonStyles({
+                  variant: "secondary",
+                })} w-full text-center sm:w-auto ${
+                  busy ? "pointer-events-none opacity-40" : ""
+                }`}
+              >
+                Cancel
+              </Link>
+            )}
+          </div>
         )}
       </div>
     </form>

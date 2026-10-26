@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar } from "@/components/ui";
 import { OnlineDot } from "@/components/presence-provider";
 import type { ProfileFriend } from "@/lib/profile";
 
@@ -13,23 +13,23 @@ export function ProfileFriendsList({ friends }: { friends: ProfileFriend[] }) {
       {friends.map((friend) => (
         <li
           key={friend.id}
-          className="flex items-center gap-3 border-b border-line py-3"
+          className="flex min-h-14 items-center gap-3 border-b border-line py-3"
         >
           <span className="relative block shrink-0">
             {friend.username ? (
               <Link
                 href={`/u/${encodeURIComponent(friend.username)}`}
                 aria-label={`View ${friend.name}'s profile`}
-                className="block transition-opacity duration-150 ease-out hover:opacity-80"
+                className="block transition-opacity duration-200 ease-out hover:opacity-80"
               >
-                <ProfileAvatar
+                <Avatar
                   src={friend.avatarUrl}
                   initial={friend.initial}
                   size={40}
                 />
               </Link>
             ) : (
-              <ProfileAvatar
+              <Avatar
                 src={friend.avatarUrl}
                 initial={friend.initial}
                 size={40}
@@ -42,12 +42,12 @@ export function ProfileFriendsList({ friends }: { friends: ProfileFriend[] }) {
             {friend.username ? (
               <Link
                 href={`/u/${encodeURIComponent(friend.username)}`}
-                className="block truncate text-base font-medium text-text transition-opacity duration-150 ease-out hover:opacity-80"
+                className="block truncate text-[15px] font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-70"
               >
                 {friend.name}
               </Link>
             ) : (
-              <p className="truncate text-base font-medium text-text">
+              <p className="truncate text-[15px] font-semibold text-text">
                 {friend.name}
               </p>
             )}

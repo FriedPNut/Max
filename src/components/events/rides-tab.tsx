@@ -11,20 +11,12 @@ import {
 import { PersonName } from "@/components/events/person-name";
 import { RideForm } from "@/components/events/ride-form";
 import { LocalTime } from "@/components/local-time";
+import { Button, Card } from "@/components/ui";
 import type {
   EventPlanActionResult,
   EventPlanSnapshot,
   EventRide,
 } from "@/lib/event-plan";
-
-const primaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
-
-const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
-
-const textButton =
-  "inline-flex min-h-11 items-center px-1 text-sm text-muted transition-colors duration-150 ease-out hover:text-text cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
 
 type FormState =
   | { type: "create" }
@@ -151,14 +143,10 @@ export function RidesTab({
         </div>
 
         {!form && !myRide && (
-          <button
-            type="button"
-            onClick={() => setForm({ type: "create" })}
-            className={`${secondaryButton} gap-1.5`}
-          >
-            <Plus size={20} strokeWidth={1.5} aria-hidden="true" />
+          <Button variant="secondary" onClick={() => setForm({ type: "create" })}>
+            <Plus size={24} strokeWidth={1.75} aria-hidden="true" />
             Offer a ride
-          </button>
+          </Button>
         )}
       </div>
 
@@ -259,7 +247,7 @@ function RideRow({
   return (
     <article className="border-b border-line py-4">
       <div className="flex items-start justify-between gap-4">
-        <p className="min-w-0 text-base font-medium text-text break-words">
+        <p className="min-w-0 text-base font-semibold text-text break-words">
           <PersonName person={ride.driver} currentUserId={currentUserId} />
         </p>
 
@@ -306,16 +294,17 @@ function RideRow({
                 </span>
 
                 {isDriver && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="text"
+                    size="sm"
                     onClick={() => onRemovePassenger(passenger.id)}
                     disabled={busy}
-                    className={`${textButton} shrink-0`}
+                    className="shrink-0"
                   >
                     {pendingAction === `remove:${ride.id}:${passenger.id}`
                       ? "Removing..."
                       : "Remove"}
-                  </button>
+                  </Button>
                 )}
               </li>
             ))}
@@ -325,79 +314,70 @@ function RideRow({
 
       {isDriver ? (
         confirmingDelete ? (
-          <div className="mt-3 space-y-3 rounded-lg border border-border bg-surface p-3">
+          <Card className="mt-3 space-y-3 p-3">
             <p className="text-sm text-text">
               Delete this ride? Passengers will lose their seats.
             </p>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
+              <Button
+                variant="destructive"
                 onClick={onDelete}
                 disabled={busy}
-                className={primaryButton}
               >
                 {pendingAction === `delete:${ride.id}`
                   ? "Deleting..."
                   : "Delete ride"}
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={onCancelDelete}
                 disabled={busy}
-                className={secondaryButton}
               >
                 Cancel
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         ) : (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={onEdit}
               disabled={busy}
-              className={secondaryButton}
             >
               Edit ride
-            </button>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="text"
+              size="sm"
               onClick={onRequestDelete}
               disabled={busy}
-              className={textButton}
             >
               Delete
-            </button>
+            </Button>
           </div>
         )
       ) : isPassenger ? (
         <div className="mt-3">
-          <button
-            type="button"
-            onClick={onLeave}
-            disabled={busy}
-            className={secondaryButton}
-          >
+          <Button variant="secondary" onClick={onLeave} disabled={busy}>
             {pendingAction === `leave:${ride.id}` ? "Leaving..." : "Leave"}
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="mt-3 space-y-2">
-          <button
-            type="button"
+          <Button
             onClick={onJoin}
             disabled={busy || isFull || blocked}
-            className={primaryButton}
           >
             {pendingAction === `join:${ride.id}`
               ? "Joining..."
               : isFull
               ? "Full"
               : "Join"}
-          </button>
+          </Button>
 
           {blocked && !isFull && (
             <p className="text-sm text-muted">{blockedMessage}</p>

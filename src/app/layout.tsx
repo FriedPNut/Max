@@ -1,16 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { NativeApp } from "@/components/native-app";
 import { THEME_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
-
-const instrumentSans = Instrument_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-instrument",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Max",
@@ -25,8 +17,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#EFEEE9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0F0F0E" },
+    { media: "(prefers-color-scheme: light)", color: "#F4F4F4" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
 
@@ -36,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={instrumentSans.variable} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           suppressHydrationWarning

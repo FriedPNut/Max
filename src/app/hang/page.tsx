@@ -90,12 +90,12 @@ export default async function HangPage() {
         <div>
           <Link
             href="/events"
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
+            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
             Events
           </Link>
-          <h1 className="text-[28px] font-semibold leading-tight text-text">
+          <h1 className="text-[22px] font-bold leading-tight text-text">
             Hang now
           </h1>
         </div>

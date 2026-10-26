@@ -5,6 +5,7 @@ import {
   startDmWithFriendAction,
   type ChatActionState,
 } from "@/app/actions/chat";
+import { Button } from "@/components/ui";
 
 export function ProfileMessageButton({ friendId }: { friendId: string }) {
   const [state, formAction, pending] = useActionState(
@@ -13,16 +14,17 @@ export function ProfileMessageButton({ friendId }: { friendId: string }) {
   );
 
   return (
-    <div>
+    <div className="min-w-0 flex-1">
       <form action={formAction}>
         <input type="hidden" name="friend_id" value={friendId} />
-        <button
+        <Button
           type="submit"
+          variant="secondary"
           disabled={pending}
-          className="w-full min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full"
         >
           {pending ? "Opening..." : "Message"}
-        </button>
+        </Button>
       </form>
 
       {state.error && (

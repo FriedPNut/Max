@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { NewTripButton } from "@/components/trips/new-trip-button";
+import { Avatar } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/server";
 import { nameInitial } from "@/lib/chat";
 import { countdownLabel, dateKey, parseDateKey, type TripRecord } from "@/lib/trips";
@@ -100,7 +101,7 @@ export default async function TripsPage() {
   return (
     <AppShell userId={user.id}>
       <section className="space-y-8">
-        <h1 className="text-[28px] font-semibold leading-tight text-text">Trips</h1>
+        <h1 className="text-[22px] font-bold leading-tight text-text">Trips</h1>
 
         {loadError ? (
           <p className="text-sm text-muted">Couldn&apos;t load trips. Refresh and try again.</p>
@@ -112,21 +113,24 @@ export default async function TripsPage() {
               const countdown = countdownLabel(trip.start_date, trip.end_date);
               const isPast = past.includes(trip);
               return (
-                <li key={trip.id} className="border-b border-line">
-                  <Link href={`/trips/${trip.id}`} className="flex min-h-11 items-center justify-between gap-3 py-4 transition-colors duration-150 ease-out hover:text-muted">
+                <li key={trip.id} className="-mx-4 border-b border-line">
+                  <Link href={`/trips/${trip.id}`} className="flex min-h-14 items-center justify-between gap-3 px-4 py-4 transition-colors duration-200 ease-out hover:bg-surface-2">
                     <div className="min-w-0">
-                      <p className="truncate text-base font-medium text-text">{trip.title}</p>
+                      <p className="truncate text-base font-semibold text-text">{trip.title}</p>
                       <p className="truncate text-sm text-muted">
                         {trip.destination ? `${trip.destination} · ` : ""}
                         {formatRange(trip.start_date, trip.end_date)}
                         {!isPast && countdown ? ` · ${countdown}` : ""}
                       </p>
                     </div>
-                    <span className="flex shrink-0 -space-x-2" aria-label="Members">
+                    <span className="flex shrink-0" aria-label="Members">
                       {(initialsByTrip.get(trip.id) ?? []).slice(0, 4).map((initial, index) => (
-                        <span key={index} className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-sm text-text">
-                          {initial}
-                        </span>
+                        <Avatar
+                          key={index}
+                          initial={initial}
+                          size={32}
+                          className={index > 0 ? "-ml-2 ring-2 ring-background" : ""}
+                        />
                       ))}
                     </span>
                   </Link>

@@ -5,9 +5,7 @@ import {
   renameConversationAction,
   type ChatActionState,
 } from "@/app/actions/chat";
-
-const inputClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
+import { Button, Card, Input } from "@/components/ui";
 
 export function RenameGroupForm({
   conversationId,
@@ -22,40 +20,37 @@ export function RenameGroupForm({
   );
 
   return (
+    <Card className="p-4">
     <form
       action={formAction}
-      className="space-y-3 rounded-lg border border-border bg-surface p-4"
+      className="space-y-3"
     >
       <div>
-        <label htmlFor="group-name" className="block text-sm text-muted mb-2">
+        <label htmlFor="group-name" className="mb-2 block text-[13px] text-muted">
           Group name
         </label>
-        <input
+        <Input
           id="group-name"
           name="name"
           type="text"
           required
           autoComplete="off"
           defaultValue={initialName}
-          className={inputClass}
         />
       </div>
 
       {state.error && (
-        <p role="alert" className="text-sm text-text">
+        <p role="alert" className="text-sm text-danger">
           {state.error}
         </p>
       )}
 
       {state.success && <p className="text-sm text-muted">Saved.</p>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-      >
+      <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Save"}
-      </button>
+      </Button>
     </form>
+    </Card>
   );
 }

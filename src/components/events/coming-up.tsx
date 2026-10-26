@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { LocalTime } from "@/components/local-time";
+import { Card } from "@/components/ui";
 import type { EventListItem } from "@/lib/events";
 
 const subscribe = () => () => {};
@@ -47,10 +48,8 @@ export function ComingUp({
   if (items.length === 0) return null;
 
   return (
-    <section
-      aria-labelledby="coming-up-heading"
-      className="rounded-lg border border-border bg-surface p-4"
-    >
+    <Card>
+    <section aria-labelledby="coming-up-heading" className="p-4">
       <h2 id="coming-up-heading" className="text-lg font-semibold text-text">
         Coming up
       </h2>
@@ -61,7 +60,7 @@ export function ComingUp({
               href={`/events/${event.id}`}
               className="flex min-h-11 items-center justify-between gap-3 py-2"
             >
-              <span className="min-w-0 break-words text-base font-medium text-text">
+              <span className="min-w-0 break-words text-base font-semibold text-text">
                 {event.title}
               </span>
               <span className="shrink-0 text-sm text-muted">
@@ -79,5 +78,6 @@ export function ComingUp({
         ))}
       </ul>
     </section>
+    </Card>
   );
 }

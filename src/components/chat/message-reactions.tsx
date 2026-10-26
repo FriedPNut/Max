@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Chip } from "@/components/ui/chip";
 import {
   REACTION_EMOJI,
   REACTION_KEYS,
@@ -14,7 +15,7 @@ export function ReactionBar({ onPick }: { onPick: (reaction: ReactionKey) => voi
       data-reaction-ui="bar"
       role="group"
       aria-label="Pick a reaction"
-      className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-surface px-1 py-1"
+      className="inline-flex items-center gap-0.5 rounded-full bg-surface px-1 py-1 shadow-pop"
     >
       {REACTION_KEYS.map((reaction) => (
         <button
@@ -22,7 +23,7 @@ export function ReactionBar({ onPick }: { onPick: (reaction: ReactionKey) => voi
           type="button"
           onClick={() => onPick(reaction)}
           aria-label={REACTION_LABELS[reaction]}
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-lg leading-none transition-colors duration-150 ease-out hover:bg-background cursor-pointer"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-lg leading-none transition-colors duration-200 ease-out hover:bg-surface-2 active:opacity-90"
         >
           <span aria-hidden="true">{REACTION_EMOJI[reaction]}</span>
         </button>
@@ -46,6 +47,21 @@ export function ReactionChip({
 }) {
   const holdTimer = useRef<number | null>(null);
   const held = useRef(false);
+  const wasMine = useRef(mine);
+  const [popping, setPopping] = useState(false);
+
+  useEffect(() => {
+    const previous = wasMine.current;
+    wasMine.current = mine;
+
+    if (!mine || previous) {
+      return;
+    }
+
+    setPopping(true);
+    const timer = window.setTimeout(() => setPopping(false), 320);
+    return () => window.clearTimeout(timer);
+  }, [mine]);
 
   function clearHold() {
     if (holdTimer.current !== null) {
@@ -65,10 +81,9 @@ export function ReactionChip({
   }
 
   return (
-    <button
-      type="button"
+    <Chip
       data-reaction-ui="chip"
-      aria-pressed={mine}
+      selected={mine}
       aria-label={`${REACTION_LABELS[reaction]}, ${count}. ${
         mine ? "Remove your reaction" : "Add your reaction"
       }`}
@@ -86,14 +101,12 @@ export function ReactionChip({
 
         onToggle();
       }}
-      className={`inline-flex min-h-9 items-center gap-1 rounded-full border px-2 text-sm text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer ${
-        mine ? "border-accent bg-surface" : "border-border bg-background"
-      }`}
+      className={`min-h-7 gap-1 px-2 py-0.5 text-xs ${popping ? "reaction-pop" : ""}`}
     >
       <span aria-hidden="true" className="leading-none">
         {REACTION_EMOJI[reaction]}
       </span>
-      <span className="text-muted">{count}</span>
-    </button>
+      <span className="opacity-80">{count}</span>
+    </Chip>
   );
 }

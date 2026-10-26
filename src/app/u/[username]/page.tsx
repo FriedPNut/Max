@@ -10,6 +10,7 @@ import { ProfileTabs } from "@/components/profile/profile-tabs";
 import { createClient } from "@/lib/supabase/server";
 import {
   normalizeUsername,
+  profileDisplayName,
   type ProfileRecord,
 } from "@/lib/profile";
 import {
@@ -76,7 +77,7 @@ export default async function PublicProfilePage({
 
   return (
     <AppShell actions={<ProfileBackButton />}>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <ProfileHeader
           profile={profile}
           avatarUrl={data.avatarUrl}
@@ -87,20 +88,25 @@ export default async function PublicProfilePage({
               : undefined
           }
         >
-          <div className="space-y-2">
-            <ProfileFriendButton
-              profileId={profile.id}
-              initialRelationship={relationship}
-            />
+          <ProfileFriendButton
+            profileId={profile.id}
+            initialRelationship={relationship}
+          />
 
-            {relationship === "friend" && (
-              <ProfileMessageButton friendId={profile.id} />
-            )}
-          </div>
+          {relationship === "friend" && (
+            <ProfileMessageButton friendId={profile.id} />
+          )}
         </ProfileHeader>
 
         <ProfileTabs
-          postsContent={<ProfilePostGrid posts={data.posts} />}
+          postsContent={
+            <ProfilePostGrid
+              posts={data.posts}
+              authorName={profileDisplayName(profile)}
+              authorUsername={profile.username}
+              authorAvatarUrl={data.avatarUrl}
+            />
+          }
           eventsContent={
             <ProfileEvents
               upcoming={data.upcomingEvents}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createHangAction } from "@/app/actions/hangs";
+import { Button, Chip, Input, Sheet, Textarea } from "@/components/ui";
 import { HANG_MESSAGE_MAX, type HangDuration } from "@/lib/hangs";
 
 const DURATIONS: { value: HangDuration; label: string }[] = [
@@ -9,9 +10,6 @@ const DURATIONS: { value: HangDuration; label: string }[] = [
   { value: "3h", label: "3 hours" },
   { value: "midnight", label: "Tonight until midnight" },
 ];
-
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 export function AnyoneDownSheet({ onClose }: { onClose: () => void }) {
   const [message, setMessage] = useState("");
@@ -41,34 +39,23 @@ export function AnyoneDownSheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Anyone down?"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim/40"
-      onClick={onClose}
-    >
-      <form
-        onSubmit={submit}
-        onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-[560px] space-y-5 rounded-t-lg border-t border-border bg-background p-4 pb-8"
-      >
+    <Sheet label="Anyone down?" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-5 pb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-text">Anyone down?</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 px-3 text-sm text-muted hover:text-text cursor-pointer"
-          >
+          <Button variant="text" size="sm" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
         </div>
 
         <div>
-          <label htmlFor="hang-message" className="mb-2 block text-sm text-muted">
+          <label
+            htmlFor="hang-message"
+            className="mb-2 block text-sm text-muted"
+          >
             What&apos;s the plan?
           </label>
-          <textarea
+          <Textarea
             id="hang-message"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
@@ -76,25 +63,27 @@ export function AnyoneDownSheet({ onClose }: { onClose: () => void }) {
             rows={3}
             required
             placeholder="Coffee at Bean Lab?"
-            className={`${fieldClass} resize-none`}
+            className="resize-none"
           />
-          <p className="mt-1 text-right text-sm text-muted">
+          <p className="mt-1 text-right text-xs text-muted">
             {message.length}/{HANG_MESSAGE_MAX}
           </p>
         </div>
 
         <div>
-          <label htmlFor="hang-location" className="mb-2 block text-sm text-muted">
+          <label
+            htmlFor="hang-location"
+            className="mb-2 block text-sm text-muted"
+          >
             Location (optional)
           </label>
-          <input
+          <Input
             id="hang-location"
             type="text"
             value={location}
             onChange={(event) => setLocation(event.target.value)}
             maxLength={120}
             placeholder="Bean Lab, 3rd St"
-            className={fieldClass}
           />
         </div>
 
@@ -102,19 +91,13 @@ export function AnyoneDownSheet({ onClose }: { onClose: () => void }) {
           <p className="mb-2 text-sm text-muted">Open for</p>
           <div className="flex flex-wrap gap-2">
             {DURATIONS.map((option) => (
-              <button
+              <Chip
                 key={option.value}
-                type="button"
-                aria-pressed={duration === option.value}
+                selected={duration === option.value}
                 onClick={() => setDuration(option.value)}
-                className={`min-h-11 rounded-lg border px-4 text-sm transition-colors duration-150 ease-out cursor-pointer ${
-                  duration === option.value
-                    ? "border-text bg-text text-background"
-                    : "border-border bg-transparent text-text hover:bg-surface"
-                }`}
               >
                 {option.label}
-              </button>
+              </Chip>
             ))}
           </div>
         </div>
@@ -125,14 +108,15 @@ export function AnyoneDownSheet({ onClose }: { onClose: () => void }) {
           </p>
         )}
 
-        <button
+        <Button
           type="submit"
+          loading={pending}
           disabled={pending || message.trim().length === 0}
-          className="min-h-11 w-full rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full"
         >
-          {pending ? "Posting..." : "Post"}
-        </button>
+          Post
+        </Button>
       </form>
-    </div>
+    </Sheet>
   );
 }

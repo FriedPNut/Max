@@ -5,6 +5,7 @@ import {
   createEventRideAction,
   updateEventRideAction,
 } from "@/app/actions/event-plan";
+import { Button, Card, inputClass, Textarea } from "@/components/ui";
 import {
   RIDE_SEATS_MAX,
   RIDE_SEATS_MIN,
@@ -13,16 +14,7 @@ import {
 } from "@/lib/event-plan";
 import { useAutofocus } from "@/lib/use-autofocus";
 
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text [color-scheme:light]";
-
-const labelClass = "block text-sm text-muted mb-2";
-
-const primaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
-
-const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
+const labelClass = "mb-2 block text-sm text-muted";
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -174,11 +166,8 @@ export function RideForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      className="space-y-4 rounded-lg border border-border bg-surface p-4"
-    >
+    <Card>
+    <form onSubmit={handleSubmit} noValidate className="space-y-4 p-4">
       <h3 className="text-lg font-semibold text-text">
         {isEditing ? "Edit ride" : "Offer a ride"}
       </h3>
@@ -192,7 +181,7 @@ export function RideForm({
           value={seats}
           onChange={(event) => setSeats(event.target.value)}
           disabled={pending}
-          className={fieldClass}
+          className={inputClass}
         >
           {seatOptions.map((count) => (
             <option key={count} value={count}>
@@ -224,7 +213,7 @@ export function RideForm({
           disabled={pending}
           autoComplete="off"
           placeholder="Rina's place"
-          className={fieldClass}
+          className={inputClass}
         />
       </div>
 
@@ -244,7 +233,7 @@ export function RideForm({
             }
           }}
           disabled={pending}
-          className={fieldClass}
+          className={inputClass}
         />
       </div>
 
@@ -252,7 +241,7 @@ export function RideForm({
         <label htmlFor="ride-notes" className={labelClass}>
           Notes (optional)
         </label>
-        <textarea
+        <Textarea
           id="ride-notes"
           rows={3}
           value={notes}
@@ -265,21 +254,21 @@ export function RideForm({
           }}
           disabled={pending}
           placeholder="Meet out front."
-          className={`${fieldClass} resize-y`}
+          className="resize-y"
         />
       </div>
 
       {error && (
         <div
           role="alert"
-          className="rounded-lg border border-border bg-background px-3.5 py-3 text-sm text-text"
+          className="rounded-lg bg-background px-3.5 py-3 text-sm text-text"
         >
           {error}
         </div>
       )}
 
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={pending} className={primaryButton}>
+        <Button type="submit" disabled={pending}>
           {pending
             ? isEditing
               ? "Saving..."
@@ -287,17 +276,17 @@ export function RideForm({
             : isEditing
             ? "Save"
             : "Offer ride"}
-        </button>
+        </Button>
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={onCancel}
           disabled={pending}
-          className={secondaryButton}
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
+    </Card>
   );
 }

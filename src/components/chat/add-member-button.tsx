@@ -6,7 +6,8 @@ import {
   addConversationMemberAction,
   type ChatActionState,
 } from "@/app/actions/chat";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui";
 import type { FriendListItem } from "@/lib/chat";
 
 export function AddMemberButton({
@@ -22,21 +23,21 @@ export function AddMemberButton({
   );
 
   return (
-    <div className="flex items-center gap-3 border-b border-line py-3">
+    <div className="flex min-h-14 items-center gap-3 border-b border-line py-3">
       {friend.username ? (
         <Link
           href={`/u/${encodeURIComponent(friend.username)}`}
           aria-label={`View ${friend.name}'s profile`}
-          className="shrink-0 transition-opacity duration-150 ease-out hover:opacity-80"
+          className="shrink-0 transition-opacity duration-200 ease-out hover:opacity-80"
         >
-          <ProfileAvatar
+          <Avatar
             src={friend.avatarUrl}
             initial={friend.initial}
             size={40}
           />
         </Link>
       ) : (
-        <ProfileAvatar
+        <Avatar
           src={friend.avatarUrl}
           initial={friend.initial}
           size={40}
@@ -47,12 +48,12 @@ export function AddMemberButton({
         {friend.username ? (
           <Link
             href={`/u/${encodeURIComponent(friend.username)}`}
-            className="block truncate text-base font-medium text-text transition-opacity duration-150 ease-out hover:opacity-80"
+            className="block truncate text-[15px] font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-70"
           >
             {friend.name}
           </Link>
         ) : (
-          <p className="truncate text-base font-medium text-text">
+          <p className="truncate text-[15px] font-semibold text-text">
             {friend.name}
           </p>
         )}
@@ -71,19 +72,19 @@ export function AddMemberButton({
             value={conversationId}
           />
           <input type="hidden" name="friend_id" value={friend.id} />
-          <button
+          <Button
             type="submit"
+            size="sm"
             disabled={pending || state.success}
-            className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
           >
             {state.success ? "Added" : pending ? "Adding..." : "Add"}
-          </button>
+          </Button>
         </form>
 
         {state.error && (
           <p
             role="alert"
-            className="max-w-[180px] text-right text-sm text-text"
+            className="max-w-[180px] text-right text-sm text-danger"
           >
             {state.error}
           </p>

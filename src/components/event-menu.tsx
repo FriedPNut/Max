@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/events";
 import { SERIES_SCOPE_OPTIONS } from "@/lib/events";
 import { lockPageScroll } from "@/lib/scroll-lock";
+import { Button, buttonStyles, Card } from "@/components/ui";
 
 export function EventMenu({
   eventId,
@@ -67,9 +68,9 @@ export function EventMenu({
         aria-label="Event options"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
       >
-        <Ellipsis size={20} strokeWidth={1.5} aria-hidden="true" />
+        <Ellipsis size={24} strokeWidth={1.75} aria-hidden="true" />
       </button>
 
       {menuOpen && (
@@ -82,15 +83,15 @@ export function EventMenu({
             className="fixed inset-0 z-10 cursor-default bg-transparent"
           />
 
-          <div
+          <Card
             role="menu"
-            className="absolute right-0 top-11 z-20 w-44 rounded-lg border border-border bg-surface py-1"
+            className="absolute right-0 top-11 z-20 w-44 py-1 shadow-pop"
           >
             <Link
               href={`/events/${eventId}/edit`}
               role="menuitem"
               onClick={() => setMenuOpen(false)}
-              className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+              className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-200 ease-out hover:bg-surface-2"
             >
               Edit
             </Link>
@@ -99,11 +100,11 @@ export function EventMenu({
               type="button"
               role="menuitem"
               onClick={openDelete}
-              className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer"
+              className="flex min-h-11 w-full items-center px-3 text-left text-sm text-danger transition-colors duration-200 ease-out hover:bg-surface-2"
             >
               Delete
             </button>
-          </div>
+          </Card>
         </>
       )}
 
@@ -113,14 +114,14 @@ export function EventMenu({
             <div
               aria-hidden="true"
               onClick={closeDialog}
-              className="fixed inset-0 z-50 bg-scrim/30"
+              className="fixed inset-0 z-50 bg-scrim/40"
             />
 
-            <div
+            <Card
               role="dialog"
               aria-modal="true"
               aria-labelledby="delete-event-title"
-              className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-surface p-4"
+              className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <h2
@@ -135,9 +136,9 @@ export function EventMenu({
                   onClick={closeDialog}
                   disabled={pending}
                   aria-label="Close"
-                  className="inline-flex h-11 w-11 -mr-2 -mt-2 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+                  className="inline-flex h-11 w-11 -mr-2 -mt-2 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2 disabled:pointer-events-none disabled:opacity-40"
                 >
-                  <X size={20} strokeWidth={1.5} aria-hidden="true" />
+                  <X size={24} strokeWidth={1.75} aria-hidden="true" />
                 </button>
               </div>
 
@@ -171,7 +172,7 @@ export function EventMenu({
                             name="scope"
                             value={option.value}
                             defaultChecked={option.value === "only"}
-                            className="h-4 w-4 accent-text"
+                            className="h-4 w-4 accent-primary"
                           />
                           {option.label}
                         </label>
@@ -186,21 +187,17 @@ export function EventMenu({
                     type="button"
                     onClick={closeDialog}
                     disabled={pending}
-                    className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+                    className={buttonStyles({ variant: "secondary" })}
                   >
                     Cancel
                   </button>
 
-                  <button
-                    type="submit"
-                    disabled={pending}
-                    className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-                  >
+                  <Button type="submit" variant="destructive" disabled={pending}>
                     {pending ? "Deleting..." : "Delete"}
-                  </button>
+                  </Button>
                 </div>
               </form>
-            </div>
+            </Card>
           </>,
           document.body
         )}

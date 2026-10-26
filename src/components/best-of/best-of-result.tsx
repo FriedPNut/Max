@@ -57,16 +57,16 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
         <Link
           href={`/best-of/${previousKey}`}
           aria-label="Previous month"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-200 ease-out hover:bg-surface-2"
         >
-          <ChevronLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+          <ChevronLeft size={24} strokeWidth={1.75} aria-hidden="true" />
         </Link>
       ) : (
         <span
           aria-hidden="true"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted opacity-60"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted opacity-40"
         >
-          <ChevronLeft size={20} strokeWidth={1.5} />
+          <ChevronLeft size={24} strokeWidth={1.75} />
         </span>
       )}
 
@@ -74,16 +74,16 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
         <Link
           href={`/best-of/${nextKey}`}
           aria-label="Next month"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-200 ease-out hover:bg-surface-2"
         >
-          <ChevronRight size={20} strokeWidth={1.5} aria-hidden="true" />
+          <ChevronRight size={24} strokeWidth={1.75} aria-hidden="true" />
         </Link>
       ) : (
         <span
           aria-hidden="true"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted opacity-60"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted opacity-40"
         >
-          <ChevronRight size={20} strokeWidth={1.5} />
+          <ChevronRight size={24} strokeWidth={1.75} />
         </span>
       )}
     </div>
@@ -96,13 +96,13 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
       <section className="space-y-6">
         <Link
           href="/best-of"
-          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
         >
-          <ChevronLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+          <ChevronLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           This month
         </Link>
 
-        <h1 className="text-[28px] font-semibold leading-tight text-text">
+        <h1 className="text-[22px] font-bold leading-tight text-text">
           Photo of the month
         </h1>
 
@@ -118,7 +118,7 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
   if (!data) {
     return error ? (
       <section className="space-y-6">
-        <h1 className="text-[28px] font-semibold leading-tight text-text">
+        <h1 className="text-[22px] font-bold leading-tight text-text">
           Photo of the month
         </h1>
         <p className="text-sm text-muted">{error}</p>
@@ -138,15 +138,15 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
       <div className="space-y-6">
         <Link
           href="/best-of"
-          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
         >
-          <ChevronLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+          <ChevronLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           This month
         </Link>
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-[28px] font-semibold leading-tight text-text">
+            <h1 className="text-[22px] font-bold leading-tight text-text">
               Photo of the month
             </h1>
             <p className="mt-1 text-sm text-muted">{data.monthLabel}</p>
@@ -164,12 +164,12 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
               <img draggable={false}
                 src={winner.imageUrl}
                 alt={winner.caption ?? ""}
-                className="w-full rounded-lg border border-border bg-surface object-cover"
+                className="w-full rounded-[10px] bg-surface-2 object-cover"
               />
             )}
 
             <div>
-              <p className="text-base text-text">
+              <p className="text-base font-semibold text-text">
                 {winner.isMine ? "You" : winner.authorName}
               </p>
               <p className="mt-1 text-sm text-muted">
@@ -190,21 +190,21 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
                 {runnersUp.map((post) => (
                   <li
                     key={post.id}
-                    className="flex items-center gap-3 border-b border-line py-3"
+                    className="flex min-h-14 items-center gap-3 border-b border-line py-3"
                   >
                     {post.imageUrl ? (
                       <img draggable={false}
                         src={post.imageUrl}
                         alt=""
-                        className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover"
+                        className="h-12 w-12 shrink-0 rounded-[10px] bg-surface-2 object-cover"
                       />
                     ) : (
                       <span
                         aria-hidden="true"
-                        className="h-12 w-12 shrink-0 rounded-lg border border-border bg-surface"
+                        className="h-12 w-12 shrink-0 rounded-[10px] bg-surface-2"
                       />
                     )}
-                    <span className="min-w-0 flex-1 truncate text-base text-text">
+                    <span className="min-w-0 flex-1 truncate text-base font-semibold text-text">
                       {post.isMine ? "You" : post.authorName}
                     </span>
                     <span className="shrink-0 text-sm text-muted">

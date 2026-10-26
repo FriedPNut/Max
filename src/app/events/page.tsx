@@ -163,9 +163,9 @@ export default async function EventsPage({
     <Link
       href="/events/new"
       aria-label="Add event"
-      className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
     >
-      <CalendarPlus size={20} strokeWidth={1.5} aria-hidden="true" />
+      <CalendarPlus size={24} strokeWidth={1.75} aria-hidden="true" />
     </Link>
   );
 

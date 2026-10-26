@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { setRsvpAction } from "@/app/actions/events";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar, Button } from "@/components/ui";
 import {
   RSVP_CHOICES,
   RSVP_LABELS,
@@ -88,7 +88,7 @@ export function EventRsvpPanel({
               {capacity !== null ? ` / ${capacity}` : ""}
             </span>
             {isFull && (
-              <span className="text-sm font-medium text-text">Full</span>
+              <span className="text-sm font-semibold text-text">Full</span>
             )}
           </div>
         </div>
@@ -98,20 +98,17 @@ export function EventRsvpPanel({
             const isSelected = selected === item;
 
             return (
-              <button
+              <Button
                 key={item}
                 type="button"
+                variant={isSelected ? "primary" : "secondary"}
                 onClick={() => choose(item)}
                 aria-pressed={isSelected}
                 disabled={pending !== null || isPast}
-                className={`w-full min-h-11 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors duration-150 ease-out cursor-pointer disabled:opacity-60 disabled:pointer-events-none ${
-                  isSelected
-                    ? "bg-accent border-accent text-on-accent"
-                    : "bg-transparent border-border text-text hover:bg-surface"
-                }`}
+                className="w-full px-3"
               >
                 {pending === item ? "Saving..." : RSVP_LABELS[item]}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -148,7 +145,7 @@ export function EventRsvpPanel({
         {snapshot.totalAnswers === 0 ? (
           <p className="text-sm text-muted">No answers yet.</p>
         ) : (
-          <div className="border-t border-line">
+          <div className="-mx-4 border-t border-line">
             {RSVP_STATUSES.map((status) => {
               const people = groups[status];
 
@@ -158,7 +155,7 @@ export function EventRsvpPanel({
 
               return (
                 <div key={status} className="border-b border-line py-4">
-                  <p className="text-sm text-muted">
+                  <p className="px-4 text-sm text-muted">
                     {RSVP_LABELS[status]} · {people.length}
                   </p>
 
@@ -166,41 +163,41 @@ export function EventRsvpPanel({
                     {people.map((person) => (
                       <li
                         key={person.id}
-                        className="flex items-center gap-3 py-3"
+                        className="flex min-h-14 items-center gap-3 px-4 py-3"
                       >
                         {person.username ? (
                           <Link
                             href={`/u/${encodeURIComponent(person.username)}`}
                             aria-label={`View ${person.name}'s profile`}
-                            className="shrink-0 transition-opacity duration-150 ease-out hover:opacity-80"
+                            className="shrink-0 transition-opacity duration-200 ease-out hover:opacity-80"
                           >
-                            <ProfileAvatar
+                            <Avatar
                               src={person.avatarUrl}
                               initial={
                                 person.name.charAt(0).toUpperCase() || "?"
                               }
-                              size={36}
+                              size={40}
                             />
                           </Link>
                         ) : (
-                          <ProfileAvatar
+                          <Avatar
                             src={person.avatarUrl}
                             initial={
                               person.name.charAt(0).toUpperCase() || "?"
                             }
-                            size={36}
+                            size={40}
                           />
                         )}
 
                         {person.username ? (
                           <Link
                             href={`/u/${encodeURIComponent(person.username)}`}
-                            className="text-base text-text break-words transition-opacity duration-150 ease-out hover:opacity-80"
+                            className="text-base font-semibold text-text break-words transition-opacity duration-200 ease-out hover:opacity-80"
                           >
                             {person.name}
                           </Link>
                         ) : (
-                          <span className="text-base text-text break-words">
+                          <span className="text-base font-semibold text-text break-words">
                             {person.name}
                           </span>
                         )}

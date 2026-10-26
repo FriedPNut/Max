@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/ideas";
 import { IdeaVoteButton } from "@/components/events/idea-vote-button";
 import { LocalTime } from "@/components/local-time";
+import { Button, buttonStyles, Card } from "@/components/ui";
 import type { IdeaListItem } from "@/lib/events";
 
 export function IdeaRow({
@@ -17,6 +18,7 @@ export function IdeaRow({
   onDropped,
   onDeleted,
   onVoteChange,
+  animateIn = false,
 }: {
   idea: IdeaListItem;
   onEdit: (idea: IdeaListItem) => void;
@@ -26,6 +28,7 @@ export function IdeaRow({
     ideaId: string,
     next: { voteCount: number; hasVoted: boolean }
   ) => void;
+  animateIn?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -88,22 +91,26 @@ export function IdeaRow({
     idea.status === "scheduled" && idea.eventId ? (
       <Link
         href={`/events/${idea.eventId}`}
-        className="text-base font-medium text-text break-words transition-opacity duration-150 ease-out hover:opacity-80"
+        className="text-base font-semibold text-text break-words transition-opacity duration-200 ease-out hover:opacity-80"
       >
         {idea.title}
       </Link>
     ) : (
-      <p className="text-base font-medium text-text break-words">{idea.title}</p>
+      <p className="text-base font-semibold text-text break-words">{idea.title}</p>
     );
 
   return (
-    <article className="border-b border-line py-4">
+    <article
+      className={`-mx-4 border-b border-line px-4 py-4 last:border-b-0 ${
+        animateIn ? "row-enter" : ""
+      }`}
+    >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           {titleNode}
 
           {idea.description && (
-            <p className="mt-1 text-sm leading-relaxed text-text break-words">
+            <p className="mt-1 text-base leading-relaxed text-text break-words">
               {idea.description}
             </p>
           )}
@@ -116,7 +123,7 @@ export function IdeaRow({
           {idea.status === "scheduled" && idea.eventId && (
             <Link
               href={`/events/${idea.eventId}`}
-              className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-text transition-opacity duration-150 ease-out hover:opacity-80"
+              className="mt-1 inline-flex min-h-11 items-center text-sm font-semibold text-link transition-opacity duration-200 ease-out hover:opacity-80"
             >
               View event
             </Link>
@@ -125,7 +132,7 @@ export function IdeaRow({
           {idea.isCreator && isOpen && (
             <Link
               href={`/events/new?idea=${idea.id}`}
-              className="mt-2 inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
+              className={`mt-2 ${buttonStyles({ variant: "secondary", size: "sm" })}`}
             >
               Make it an event
             </Link>
@@ -151,9 +158,9 @@ export function IdeaRow({
                 aria-label="Idea options"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-[background-color,opacity,scale] duration-100 ease-out hover:bg-surface-2 cursor-pointer disabled:pointer-events-none disabled:opacity-40"
               >
-                <Ellipsis size={20} strokeWidth={1.5} aria-hidden="true" />
+                <Ellipsis size={24} strokeWidth={1.75} aria-hidden="true" />
               </button>
 
               {menuOpen && (
@@ -168,7 +175,7 @@ export function IdeaRow({
 
                   <div
                     role="menu"
-                    className="absolute right-0 top-11 z-20 w-44 rounded-lg border border-border bg-surface py-1"
+                    className="absolute right-0 top-11 z-20 w-44 rounded-card border border-line bg-surface py-1 shadow-pop"
                   >
                     <button
                       type="button"
@@ -177,7 +184,7 @@ export function IdeaRow({
                         setMenuOpen(false);
                         onEdit(idea);
                       }}
-                      className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer"
+                      className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-200 ease-out hover:bg-surface-2 cursor-pointer"
                     >
                       Edit
                     </button>
@@ -186,7 +193,7 @@ export function IdeaRow({
                       type="button"
                       role="menuitem"
                       onClick={handleDrop}
-                      className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer"
+                      className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-200 ease-out hover:bg-surface-2 cursor-pointer"
                     >
                       Drop idea
                     </button>
@@ -198,7 +205,7 @@ export function IdeaRow({
                         setMenuOpen(false);
                         setConfirmingDelete(true);
                       }}
-                      className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer"
+                      className="flex min-h-11 w-full items-center px-3 text-left text-sm text-danger transition-colors duration-200 ease-out hover:bg-surface-2 cursor-pointer"
                     >
                       Delete
                     </button>
@@ -221,31 +228,29 @@ export function IdeaRow({
       )}
 
       {confirmingDelete && (
-        <div className="mt-3 space-y-3 rounded-lg border border-border bg-surface p-3">
+        <Card className="mt-3 space-y-3 p-3">
           <p className="text-sm text-text">
             Delete this idea? It can&apos;t be undone.
           </p>
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
+            <Button
+              variant="destructive"
               onClick={handleDelete}
               disabled={pendingAction !== null}
-              className="min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
             >
               {pendingAction === "delete" ? "Deleting..." : "Delete"}
-            </button>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => setConfirmingDelete(false)}
               disabled={pendingAction !== null}
-              className="min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
             >
               Cancel
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
     </article>
   );

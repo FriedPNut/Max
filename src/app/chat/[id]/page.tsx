@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { DmActiveStatus } from "@/components/chat/dm-active-status";
+import { Avatar } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 import {
@@ -99,6 +100,14 @@ export default async function ConversationPage({
   const title = conversation.is_group
     ? conversation.name?.trim() || "Group chat"
     : profileName(otherProfile);
+  const headerAvatarUrl = conversation.is_group
+    ? null
+    : avatarUrls.get(otherMember?.user_id ?? "") ?? null;
+  const infoHref = conversation.is_group
+    ? `/chat/${conversation.id}/members`
+    : otherUsername
+    ? `/u/${encodeURIComponent(otherUsername)}`
+    : `/chat/${conversation.id}/members`;
 
   const MESSAGE_PAGE_SIZE = 30;
   const { data: messageData, error: messageError } = await supabase
@@ -114,48 +123,46 @@ export default async function ConversationPage({
   const hasMoreMessages = messages.length === MESSAGE_PAGE_SIZE;
 
   return (
-    <AppShell>
-      <section className="space-y-6">
-        <div>
+    <AppShell noIsland>
+      <section className="space-y-4">
+        <header className="flex items-center gap-2">
           <Link
             href="/chat"
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-150 ease-out mb-6"
+            aria-label="Back to messages"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
-            Chat
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           </Link>
 
-          <h1 className="text-[28px] font-semibold leading-tight text-text break-words">
+          <Avatar
+            src={headerAvatarUrl}
+            initial={nameInitial(title)}
+            size={32}
+          />
+
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[15px] font-semibold leading-tight text-text">
+              {title}
+            </h1>
+
             {conversation.is_group ? (
-              <Link
-                href={`/chat/${conversation.id}/members`}
-                className="transition-opacity duration-150 ease-out hover:opacity-80"
-              >
-                {title}
-              </Link>
-            ) : otherUsername ? (
-              <Link
-                href={`/u/${encodeURIComponent(otherUsername)}`}
-                className="transition-opacity duration-150 ease-out hover:opacity-80"
-              >
-                {title}
-              </Link>
+              <p className="mt-0.5 truncate text-xs text-muted">
+                {chatMembers.length}{" "}
+                {chatMembers.length === 1 ? "member" : "members"}
+              </p>
             ) : (
-              title
+              <DmActiveStatus userId={otherMember?.user_id ?? null} />
             )}
-          </h1>
+          </div>
 
-          {conversation.is_group && (
-            <p className="mt-1 text-sm text-muted">
-              {chatMembers.length}{" "}
-              {chatMembers.length === 1 ? "member" : "members"}
-            </p>
-          )}
-
-          {!conversation.is_group && (
-            <DmActiveStatus userId={otherMember?.user_id ?? null} />
-          )}
-        </div>
+          <Link
+            href={infoHref}
+            aria-label="Chat info"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
+          >
+            <Info size={24} strokeWidth={1.75} aria-hidden="true" />
+          </Link>
+        </header>
 
         {messageError ? (
           <p className="text-sm text-muted">

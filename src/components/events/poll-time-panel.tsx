@@ -7,6 +7,7 @@ import {
   type PickPollTimeState,
 } from "@/app/actions/events";
 import { LocalTime } from "@/components/local-time";
+import { Button } from "@/components/ui";
 import {
   DATE_VOTE_OPTIONS,
   type DateVote,
@@ -105,13 +106,13 @@ export function PollTimePanel({
             return (
               <div key={option.id} className="border-b border-line py-4">
                 <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-base font-medium text-text">
+                  <p className="text-base font-semibold text-text">
                     <LocalTime iso={option.startsAt} format="date" /> at{" "}
                     <LocalTime iso={option.startsAt} format="time" />
                   </p>
 
                   {option.isLeading && (
-                    <span className="shrink-0 text-sm font-medium text-accent">
+                    <span className="shrink-0 text-sm font-semibold text-primary">
                       Leading
                     </span>
                   )}
@@ -136,10 +137,10 @@ export function PollTimePanel({
                         onClick={() => choose(option, choice.value)}
                         aria-pressed={selected}
                         disabled={busy}
-                        className={`min-h-11 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors duration-150 ease-out cursor-pointer disabled:opacity-60 disabled:pointer-events-none ${
+                        className={`min-h-11 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors duration-200 ease-out disabled:pointer-events-none disabled:opacity-40 ${
                           selected
-                            ? "border-accent bg-accent text-on-accent"
-                            : "border-border bg-transparent text-text hover:bg-surface"
+                            ? "bg-primary text-on-primary"
+                            : "bg-surface-2 text-text"
                         }`}
                       >
                         {isPending
@@ -185,15 +186,11 @@ export function PollTimePanel({
                       value={option.id}
                       readOnly
                     />
-                    <button
-                      type="submit"
-                      disabled={busy}
-                      className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-                    >
+                    <Button type="submit" variant="secondary" size="sm" disabled={busy}>
                       {pickPending && pickingId === option.id
                         ? "Picking..."
                         : "Pick this time"}
-                    </button>
+                    </Button>
                   </form>
                 )}
               </div>

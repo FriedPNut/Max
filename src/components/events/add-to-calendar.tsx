@@ -2,6 +2,7 @@
 
 import { CalendarPlus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui";
 
 export function AddToCalendar({
   googleUrl,
@@ -29,16 +30,15 @@ export function AddToCalendar({
 
   return (
     <div className="relative">
-      <button
-        type="button"
+      <Button
+        variant="secondary"
         onClick={() => setOpen((current) => !current)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
       >
-        <CalendarPlus size={20} strokeWidth={1.5} aria-hidden="true" />
+        <CalendarPlus size={24} strokeWidth={1.75} aria-hidden="true" />
         Add to calendar
-      </button>
+      </Button>
 
       {open && (
         <>
@@ -52,7 +52,7 @@ export function AddToCalendar({
 
           <div
             role="menu"
-            className="absolute left-0 top-12 z-20 w-full min-w-60 rounded-lg border border-border bg-surface py-1"
+            className="absolute left-0 top-12 z-20 w-full min-w-60 rounded-card border border-line bg-surface py-1 shadow-pop"
           >
             <a
               role="menuitem"
@@ -60,7 +60,7 @@ export function AddToCalendar({
               target="_blank"
               rel="noreferrer"
               onClick={() => setOpen(false)}
-              className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+              className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-200 ease-out hover:bg-surface-2"
             >
               Google Calendar
             </a>
@@ -70,7 +70,7 @@ export function AddToCalendar({
               href={icsHref}
               download="event.ics"
               onClick={() => setOpen(false)}
-              className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+              className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-200 ease-out hover:bg-surface-2"
             >
               Apple / Outlook (.ics)
             </a>

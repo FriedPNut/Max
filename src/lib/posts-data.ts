@@ -63,9 +63,11 @@ function buildBaseFeedPost({
   return {
     id: post.id,
     imageUrl,
+    imageUrls: imageUrl ? [imageUrl] : [],
     caption: post.caption,
     createdAt: post.created_at,
     relativeTime: relativeTime(post.created_at, now),
+    authorId: post.user_id,
     authorName: name,
     authorInitial: nameInitial(name),
     authorUsername: profile?.username?.trim() || null,
@@ -208,10 +210,8 @@ export async function loadPostPage(
     })
   );
 
-  if (commentsResult.error) {
-    return { posts: [], hasMore: false, error: commentsResult.error };
-  }
-
+  // Comments are a layer on top of the feed. If that query fails, show the
+  // posts without previews instead of replacing the whole feed with an error.
   const posts: FeedPost[] = basePosts.map((post) => {
     const comments = commentsResult.byPost.get(post.id) ?? [];
 
@@ -226,7 +226,7 @@ export async function loadPostPage(
 }
 
 export type PostDetailResult =
-  | { post: FeedPost; comments: PostComment[] }
+  | { post: FeedPost; comments: PostComment[]; commentsError?: string }
   | { gone: true }
   | { error: string };
 
@@ -284,10 +284,6 @@ export async function loadPostDetail(
     return { error: "Couldn't load this post. Refresh and try again." };
   }
 
-  if (commentsResult.error) {
-    return { error: commentsResult.error };
-  }
-
   const profile = (profileResult.data ?? undefined) as PostProfile | undefined;
   const likes = (likesResult.data ?? []) as LikeRow[];
   const avatarUrls = await resolveProfileAvatarUrls(supabase, profile ? [profile] : []);
@@ -323,5 +319,6 @@ export async function loadPostDetail(
       previewComments: newestFirst.slice(0, COMMENT_PREVIEW_COUNT).reverse(),
     },
     comments: [...newestFirst].reverse(),
+    commentsError: commentsResult.error,
   };
 }

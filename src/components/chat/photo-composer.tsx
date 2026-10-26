@@ -3,6 +3,7 @@
 import { ImagePlus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { sendPhotoMessageAction } from "@/app/actions/chat-messages";
+import { Button, Card, Input } from "@/components/ui";
 import {
   MAX_UPLOAD_BYTES,
   resizeImageToWidth,
@@ -140,9 +141,9 @@ export function PhotoComposer({
           aria-label="Send a photo"
           disabled={busy}
           onClick={() => fileRef.current?.click()}
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2 disabled:opacity-40"
         >
-          <ImagePlus size={20} strokeWidth={1.5} aria-hidden="true" />
+          <ImagePlus size={24} strokeWidth={1.75} aria-hidden="true" />
         </button>
         <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
         {localError && <p role="alert" className="text-sm text-text">{localError}</p>}
@@ -151,14 +152,14 @@ export function PhotoComposer({
   }
 
   return (
-    <div className="w-full space-y-2 rounded-lg border border-border bg-surface p-3">
+    <Card className="w-full space-y-2 p-3">
       <div className="flex items-start justify-between gap-2">
         <img draggable={false} src={preview} alt="Photo to send" className="max-h-48 rounded-lg object-contain" />
-        <button type="button" aria-label="Remove photo" onClick={clear} disabled={busy} className="inline-flex h-11 w-11 items-center justify-center text-muted hover:text-text cursor-pointer">
-          <X size={20} strokeWidth={1.5} aria-hidden="true" />
+        <button type="button" aria-label="Remove photo" onClick={clear} disabled={busy} className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text">
+          <X size={24} strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>
-      <input
+      <Input
         type="text"
         value={caption}
         onChange={(event) => setCaption(event.target.value)}
@@ -166,13 +167,17 @@ export function PhotoComposer({
         disabled={busy}
         placeholder="Add a caption (optional)"
         aria-label="Caption"
-        className="w-full bg-background text-text placeholder:text-muted border border-border rounded-lg px-3 py-2 text-base focus:outline-2 focus:outline-text"
+        className="px-3 py-2"
       />
       {phase === "uploading" && <p className="text-sm text-muted">Uploading {progress}%</p>}
       {localError && <p role="alert" className="text-sm text-text">{localError}</p>}
-      <button type="button" onClick={() => void send()} disabled={busy} className="min-h-11 w-full rounded-lg bg-text px-4 py-3 text-sm font-medium text-background cursor-pointer disabled:opacity-60">
+      <Button
+        onClick={() => void send()}
+        disabled={busy}
+        className="w-full"
+      >
         {phase === "uploading" ? "Uploading..." : phase === "sending" ? "Sending..." : "Send photo"}
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }

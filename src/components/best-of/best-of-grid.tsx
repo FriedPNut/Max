@@ -4,6 +4,7 @@ import { Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { loadBestOfAction } from "@/app/actions/best-of";
 import { BestOfSkeleton } from "@/components/best-of/skeletons";
+import { Chip } from "@/components/ui";
 import { useViewerTimeZone } from "@/components/recap/use-viewer-time-zone";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -120,7 +121,7 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-[28px] font-semibold leading-tight text-text">
+        <h1 className="text-[22px] font-bold leading-tight text-text">
           Photo of the month
         </h1>
         <p className="text-sm text-muted">
@@ -135,22 +136,22 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
             {topThree.map((post, index) => (
               <li
                 key={post.id}
-                className="flex items-center gap-3 border-b border-line py-2"
+                className="flex min-h-14 items-center gap-3 border-b border-line py-2"
               >
                 <span className="w-4 shrink-0 text-sm text-muted">{index + 1}</span>
                 {post.imageUrl ? (
                   <img draggable={false}
                     src={post.imageUrl}
                     alt=""
-                    className="h-10 w-10 shrink-0 rounded-lg border border-border object-cover"
+                    className="h-10 w-10 shrink-0 rounded-[10px] bg-surface-2 object-cover"
                   />
                 ) : (
                   <span
                     aria-hidden="true"
-                    className="h-10 w-10 shrink-0 rounded-lg border border-border bg-surface"
+                    className="h-10 w-10 shrink-0 rounded-[10px] bg-surface-2"
                   />
                 )}
-                <span className="min-w-0 flex-1 truncate text-sm text-text">
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">
                   {post.isMine ? "You" : post.authorName}
                 </span>
                 <span className="shrink-0 text-sm text-muted">{post.voteCount}</span>
@@ -177,17 +178,17 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
                   src={post.imageUrl}
                   alt={post.caption ?? ""}
                   loading="lazy"
-                  className="aspect-square w-full rounded-lg border border-border bg-surface object-cover"
+                  className="aspect-square w-full rounded-[10px] bg-surface-2 object-cover"
                 />
               ) : (
                 <span
                   aria-hidden="true"
-                  className="block aspect-square w-full rounded-lg border border-border bg-surface"
+                  className="block aspect-square w-full rounded-[10px] bg-surface-2"
                 />
               )}
 
               <div className="mt-1 flex items-center justify-between gap-1">
-                <span className="min-w-0 truncate text-sm text-muted">
+                <span className="min-w-0 truncate text-sm font-semibold text-muted">
                   {post.isMine ? "You" : post.authorName}
                 </span>
 
@@ -196,26 +197,25 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
                     {post.voteCount}
                   </span>
                 ) : (
-                  <button
-                    type="button"
+                  <Chip
                     onClick={() => void toggleVote(post)}
                     disabled={busy}
-                    aria-pressed={post.hasMyVote}
+                    selected={post.hasMyVote}
                     aria-label={`${
                       post.hasMyVote ? "Remove your vote" : "Vote for this photo"
                     }. ${post.voteCount} ${
                       post.voteCount === 1 ? "vote" : "votes"
                     }.`}
-                    className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-text transition-colors duration-150 ease-out hover:bg-surface disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+                    className="min-h-11 shrink-0 gap-1 px-2 disabled:pointer-events-none disabled:opacity-40"
                   >
                     <Trophy
-                      size={20}
-                      strokeWidth={1.5}
+                      size={24}
+                      strokeWidth={1.75}
                       fill={post.hasMyVote ? "currentColor" : "none"}
                       aria-hidden="true"
                     />
-                    <span className="text-sm text-muted">{post.voteCount}</span>
-                  </button>
+                    <span className="text-sm opacity-80">{post.voteCount}</span>
+                  </Chip>
                 )}
               </div>
             </li>

@@ -149,6 +149,7 @@ export async function loadProfilePage(
     caption: post.caption,
     createdAt: post.created_at,
     likeCount: likeCounts.get(post.id) ?? 0,
+    imageCount: 1,
   }));
 
   const nowMs = now;

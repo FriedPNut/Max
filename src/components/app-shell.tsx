@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { BottomTabBar } from "@/components/bottom-tab-bar";
-import { NotificationBell } from "@/components/notifications/notification-bell";
+import { AppShellClient } from "@/components/shell/app-shell-client";
 import { PresenceProvider } from "@/components/presence-provider";
+import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 
 export async function getAuthenticatedUser() {
   if (!isSupabaseConfigured()) {
@@ -46,48 +45,69 @@ export async function AppShell({
   children,
   actions,
   userId,
+  noIsland = false,
 }: {
   children: React.ReactNode;
   actions?: React.ReactNode;
   userId?: string;
+  /** Hides the island bar on full-screen screens such as conversations and composers. */
+  noIsland?: boolean;
 }) {
-  const activeUserId = userId ?? (await getAuthenticatedUser()).user.id;
+  // Pages that already authenticated pass their user id, so only resolve the
+  // session here when it is actually needed.
+  let activeUserId = userId;
+  let fallbackName: string | null = null;
+  let fallbackInitial = "M";
+
+  if (!activeUserId) {
+    const auth = await getAuthenticatedUser();
+    activeUserId = auth.user.id;
+    fallbackName = auth.displayName;
+    fallbackInitial = auth.initial;
+  }
+
+  const supabase = await createClient();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name,username,avatar_url")
+    .eq("id", activeUserId)
+    .maybeSingle();
+
+  let name =
+    profile?.display_name?.trim() ||
+    profile?.username?.trim() ||
+    fallbackName;
+
+  if (!name) {
+    const auth = await getAuthenticatedUser();
+    name = auth.displayName;
+    fallbackInitial = auth.initial;
+  }
+
+  const initial = name.charAt(0).toUpperCase() || fallbackInitial;
+
+  let avatarUrl: string | null = null;
+
+  if (profile?.avatar_url) {
+    const urls = await resolveProfileAvatarUrls(supabase, [
+      { id: activeUserId, avatar_url: profile.avatar_url },
+    ]);
+    avatarUrl = urls.get(activeUserId) ?? null;
+  }
+
   return (
     <PresenceProvider userId={activeUserId}>
-    <div className="min-h-dvh bg-background text-text">
-      <header
-        className="fixed inset-x-0 top-0 z-40 border-b border-line bg-background"
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      <AppShellClient
+        userId={activeUserId}
+        name={name}
+        initial={initial}
+        avatarUrl={avatarUrl}
+        actions={actions}
+        noIsland={noIsland}
       >
-        <div className="mx-auto flex h-14 w-full max-w-[560px] items-center justify-between px-4">
-          <Link
-            href="/events"
-            className="inline-flex min-h-11 items-center text-lg font-semibold text-text"
-          >
-            Max
-          </Link>
-
-          <div className="flex items-center gap-1">
-            <NotificationBell userId={activeUserId} />
-            {actions}
-          </div>
-        </div>
-      </header>
-
-      {/* The main column is the only scroll area, so the chrome never moves. */}
-      <main
-        className="w-full overflow-x-hidden overflow-y-auto"
-        style={{
-          height: "100dvh",
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 56px + 24px)",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 56px + 24px)",
-        }}
-      >
-        <div className="mx-auto w-full max-w-[560px] px-4">{children}</div>
-      </main>
-
-      <BottomTabBar />
-    </div>
+        {children}
+      </AppShellClient>
     </PresenceProvider>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toggleIdeaVoteAction } from "@/app/actions/ideas";
+import { LikeButton } from "@/components/ui/like-button";
 
 export function IdeaVoteButton({
   ideaId,
@@ -37,10 +38,7 @@ export function IdeaVoteButton({
     const previousVoted = voted;
     const previousCount = value;
     const nextVoted = !previousVoted;
-    const nextCount = Math.max(
-      0,
-      previousCount + (nextVoted ? 1 : -1)
-    );
+    const nextCount = Math.max(0, previousCount + (nextVoted ? 1 : -1));
 
     apply(nextVoted, nextCount);
     setError(null);
@@ -71,24 +69,20 @@ export function IdeaVoteButton({
 
   return (
     <div className="flex shrink-0 flex-col items-end gap-1">
-      <button
-        type="button"
-        onClick={handleClick}
+      <LikeButton
+        variant="chip"
+        liked={voted}
+        count={value}
         disabled={pending || disabled}
-        aria-pressed={voted}
-        aria-label={
+        onToggle={() => void handleClick()}
+        label={
           voted
-            ? `Remove upvote for ${title}, ${value} ${value === 1 ? "vote" : "votes"}`
+            ? `Remove upvote for ${title}, ${value} ${
+                value === 1 ? "vote" : "votes"
+              }`
             : `Upvote ${title}, ${value} ${value === 1 ? "vote" : "votes"}`
         }
-        className={`inline-flex min-h-11 min-w-[76px] items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors duration-150 ease-out cursor-pointer disabled:opacity-60 disabled:pointer-events-none ${
-          voted
-            ? "border-text text-text"
-            : "border-border text-muted hover:text-text"
-        }`}
-      >
-        Upvote {value}
-      </button>
+      />
 
       {error && (
         <p role="alert" className="max-w-[180px] text-right text-sm text-text">

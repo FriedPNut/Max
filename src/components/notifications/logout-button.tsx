@@ -41,7 +41,7 @@ export function LogoutButton() {
     role="menuitem"
     onClick={() => void handleClick()}
     disabled={pending}
-    className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-150 ease-out hover:bg-background disabled:opacity-60"
+    className="flex min-h-11 w-full items-center px-3 text-left text-base text-text transition-colors duration-200 ease-out hover:bg-surface-2 disabled:opacity-40"
   >
     {pending ? "Logging out..." : "Log out"}
   </button>;

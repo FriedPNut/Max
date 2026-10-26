@@ -20,12 +20,12 @@ export function BestOfBanner() {
   return (
     <Link
       href={banner.href}
-      className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-2 text-sm text-text transition-colors duration-150 ease-out hover:bg-background"
+      className="press-row flex min-h-14 items-center justify-between gap-3 rounded-card border border-line bg-surface px-4 py-2 text-base font-semibold text-text transition-colors duration-200 ease-out hover:bg-surface-2"
     >
       <span className="min-w-0 truncate">{banner.label}</span>
       <ChevronRight
-        size={20}
-        strokeWidth={1.5}
+        size={24}
+        strokeWidth={1.75}
         aria-hidden="true"
         className="shrink-0 text-muted"
       />

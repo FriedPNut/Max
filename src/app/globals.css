@@ -3,43 +3,109 @@
 :root {
   color-scheme: light;
 
-  --background: #EFEEE9;
-  --surface: #FBFBF8;
-  --text: #1E1E1C;
-  --muted: #5E5E58;
-  --line: #DAD8D0;
-  --border: #BFBCB1;
-  --accent: #E8481F;
-  --on-accent: #FFFFFF;
-  --scrim: #111111;
+  --background: #f4f4f4;
+  --surface: #fbfbfb;
+  --surface-2: #efefef;
+  --text: #262626;
+  --muted: #737373;
+  --line: #dbdbdb;
+  --border: #c7c7c7;
+  --primary: #0095f6;
+  --primary-pressed: #1877f2;
+  --link: #00376b;
+  --danger: #ff3040;
+  --today: #c8434f;
+  --on-primary: #ffffff;
+
+  /* Motion tokens (DESIGN.md §7). Only transform and opacity animate. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-press: 100ms;
+  --duration-standard: 200ms;
+  --duration-page: 320ms;
+  --duration-sheet: 320ms;
+  --duration-heart: 500ms;
+  --duration-shimmer: 1400ms;
+  --shimmer: rgba(255, 255, 255, 0.7);
+
+  --scrim: #000000;
+  --glass: rgba(251, 251, 251, 0.72);
+  --island-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --control-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --story-gradient: linear-gradient(
+    45deg,
+    #feda75 0%,
+    #fa7e1e 25%,
+    #d62976 50%,
+    #962fbf 75%,
+    #4f5bd5 100%
+  );
+  --bubble-gradient: linear-gradient(135deg, #7a3ff2, #3797f0);
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --background: #0F0F0E;
-  --surface: #1A1A18;
-  --text: #F2F2EE;
-  --muted: #9A9A94;
-  --line: #2A2A27;
-  --border: #2A2A27;
-  --accent: #FF5A2E;
-  --on-accent: #FFFFFF;
+  --background: #000000;
+  --surface: #121212;
+  --surface-2: #262626;
+  --text: #f5f5f5;
+  --muted: #a8a8a8;
+  --line: #262626;
+  --border: #363636;
+  --primary: #0095f6;
+  --primary-pressed: #1877f2;
+  --link: #e0f1ff;
+  --danger: #ff3040;
+  --today: #e5676f;
+  --on-primary: #ffffff;
+
+  --shimmer: rgba(255, 255, 255, 0.08);
+
   --scrim: #000000;
+  --glass: rgba(24, 24, 24, 0.68);
+  --island-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --control-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-border: var(--border);
-  --color-accent: var(--accent);
-  --color-on-accent: var(--on-accent);
+  --color-primary: var(--primary);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-link: var(--link);
+  --color-danger: var(--danger);
+  --color-today: var(--today);
+  --color-on-primary: var(--on-primary);
   --color-scrim: var(--scrim);
 
-  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+
+  /* Type scale: 22/700 title, 16/600 heading, 15/400 body, 13 secondary, 12 meta. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.4;
+  --text-lg: 1rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.375rem;
+  --font-weight-medium: 600;
+
+  --radius-md: 10px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 14px;
+  --radius-card: 14px;
+  --radius-sheet: 20px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 * {
@@ -58,7 +124,7 @@ html,
 body {
   background-color: var(--background);
   color: var(--text);
-  font-family: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -68,6 +134,32 @@ body {
   overflow-x: hidden;
   overscroll-behavior: none;
   touch-action: manipulation;
+}
+
+/* Glass chrome: top bar, island bar, floating menus. */
+.glass {
+  background-color: var(--glass);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* The one sanctioned gradient, used for story rings and the login wordmark. */
+.story-gradient {
+  background-image: var(--story-gradient);
+}
+
+/* Own chat bubbles. */
+.bubble-gradient {
+  background-image: var(--bubble-gradient);
+}
+
+/* Floating menus and the island bar, and small raised controls. */
+.shadow-pop {
+  box-shadow: var(--island-shadow);
+}
+
+.shadow-control {
+  box-shadow: var(--control-shadow);
 }
 
 /*
@@ -132,17 +224,64 @@ main,
   }
 }
 
-/* Taps get a quiet pressed state instead of the browser's blue highlight. */
+/*
+ * Every control eases its press and its color change over the press duration,
+ * even when the element has no Tailwind transition utility of its own.
+ */
+button,
+[role="button"],
+a,
+summary {
+  transition-property: color, background-color, border-color, opacity, scale;
+  transition-duration: var(--duration-press);
+  transition-timing-function: var(--ease-out);
+}
+
+/*
+ * Press: every control squeezes to 0.97 with a small opacity drop. The
+ * independent `scale` property composes with existing transforms instead of
+ * overwriting them, and stays on the compositor.
+ */
 button:active,
 [role="button"]:active,
-a:active {
-  opacity: 0.7;
-  transition-duration: 100ms;
+a:active,
+summary:active {
+  opacity: 0.9;
+  scale: 0.97;
+  transition-duration: var(--duration-press);
+  transition-timing-function: var(--ease-out);
+}
+
+/* Rows flash surface-2 instead of scaling, so a tap never shifts text. */
+.press-row {
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    opacity var(--duration-press) var(--ease-out);
+}
+
+.press-row:active,
+.press-row:has(a:active),
+.press-row:has(button:active) {
+  background-color: var(--surface-2);
+  opacity: 1;
+  scale: 1;
+}
+
+.press-row a:active,
+.press-row button:active {
+  opacity: 1;
+}
+
+/* Horizontal scrollers keep their own gestures; the page never rubber-bands. */
+@media (hover: none) {
+  .press-row:hover {
+    background-color: transparent;
+  }
 }
 
 ::selection {
-  background-color: var(--accent);
-  color: var(--on-accent);
+  background-color: var(--primary);
+  color: var(--on-primary);
 }
 
 /* Keep browser autofill on the surface token instead of forcing white. */
@@ -152,8 +291,8 @@ input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 select:-webkit-autofill {
   -webkit-text-fill-color: var(--text);
-  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
-  box-shadow: 0 0 0 1000px var(--surface) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-2) inset;
+  box-shadow: 0 0 0 1000px var(--surface-2) inset;
   caret-color: var(--text);
 }
 
@@ -162,4 +301,403 @@ html.theme-changing *,
 html.theme-changing *::before,
 html.theme-changing *::after {
   transition: none !important;
+}
+
+@keyframes tab-tap {
+  0% {
+    transform: scale(0.9);
+  }
+  55% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes tab-enter-right {
+  from {
+    opacity: 0;
+    transform: translate3d(24px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tab-enter-left {
+  from {
+    opacity: 0;
+    transform: translate3d(-24px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tab-enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tab-enter-right {
+  animation: tab-enter-right 250ms var(--ease-out) both;
+}
+
+.tab-enter-left {
+  animation: tab-enter-left 250ms var(--ease-out) both;
+}
+
+.tab-enter-fade {
+  animation: tab-enter-fade 200ms var(--ease-out) both;
+}
+
+/* Story rings and the full-screen story viewer. */
+.story-ring-unseen {
+  background-image: var(--story-gradient);
+}
+
+.story-ring-seen {
+  background-color: var(--line);
+}
+
+@keyframes story-slide-forward {
+  from {
+    opacity: 0.6;
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes story-slide-back {
+  from {
+    opacity: 0.6;
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.story-slide-forward {
+  animation: story-slide-forward var(--duration-page) var(--ease-spring) both;
+}
+
+.story-slide-back {
+  animation: story-slide-back var(--duration-page) var(--ease-spring) both;
+}
+
+@keyframes story-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.story-progress-fill {
+  transform-origin: left center;
+  animation: story-progress 5s linear forwards;
+}
+
+/*
+ * Page pushes. A pushed page arrives from the right over the old one; a back
+ * navigation enters from the left. The route content is the only element that
+ * moves, so scroll restoration and loading.tsx skeletons keep working.
+ */
+@keyframes page-push-in {
+  from {
+    opacity: 0.4;
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes page-back-in {
+  from {
+    opacity: 0.5;
+    transform: translate3d(-28%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-push-in {
+  animation: page-push-in var(--duration-page) var(--ease-spring) both;
+}
+
+.page-back-in {
+  animation: page-back-in var(--duration-page) var(--ease-spring) both;
+}
+
+/* Bottom sheets: glide up on the spring curve, backdrop fades. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.sheet-backdrop {
+  animation: fade-in var(--duration-page) var(--ease-out) both;
+}
+
+.sheet-panel-inner {
+  animation: sheet-in var(--duration-sheet) var(--ease-spring) both;
+  will-change: transform;
+}
+
+/* Likes: the heart pops on like and fades quietly on unlike. */
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes double-tap-heart {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+.heart-icon {
+  transition:
+    color var(--duration-heart) var(--ease-out),
+    fill var(--duration-heart) var(--ease-out),
+    transform 300ms var(--ease-spring);
+}
+
+.heart-pop {
+  animation: heart-pop 300ms var(--ease-spring);
+}
+
+.double-tap-heart {
+  animation: double-tap-heart 700ms var(--ease-out) forwards;
+}
+
+/* Reaction chips, counters, rows and unread badges. */
+@keyframes chip-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.reaction-pop {
+  animation: chip-pop 300ms var(--ease-spring);
+}
+
+@keyframes count-fade {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.count-fade {
+  animation: count-fade 150ms var(--ease-out) both;
+}
+
+.row-enter {
+  animation: fade-in 150ms var(--ease-out) both;
+}
+
+@keyframes badge-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.badge-pop {
+  animation: badge-pop 220ms var(--ease-spring) both;
+}
+
+/* Skeleton shimmer: a light sweep over surface-2, readable in both themes. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-2);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--shimmer) 50%,
+    transparent 100%
+  );
+  transform: translate3d(-100%, 0, 0);
+  animation: skeleton-shimmer var(--duration-shimmer) var(--ease-out) infinite;
+  will-change: transform;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+/* Pull to refresh: the indicator follows the finger, then spins in place. */
+.pull-indicator {
+  transition:
+    transform 200ms var(--ease-out),
+    opacity 200ms var(--ease-out);
+}
+
+/* Toasts float above the island bar, then fade away. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.toast {
+  animation: toast-in 220ms var(--ease-spring) both;
+}
+
+.toast[data-leaving="true"] {
+  opacity: 0;
+  transform: translate3d(0, 8px, 0);
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+
+/* The iOS-style switch slides on the spring curve. */
+.switch-knob {
+  transition: transform var(--duration-page) var(--ease-spring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * Reduced motion keeps fades of 100ms or less and removes every automatic
+   * movement: slides, pops, shimmer sweeps, spinner rotation and press scale.
+   */
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 100ms !important;
+    transition-property: opacity !important;
+    scroll-behavior: auto !important;
+  }
+
+  .story-slide-forward,
+  .story-slide-back,
+  .story-progress-fill,
+  .page-push-in,
+  .page-back-in,
+  .tab-enter-right,
+  .tab-enter-left,
+  .tab-enter-fade,
+  .sheet-backdrop,
+  .sheet-panel-inner,
+  .heart-pop,
+  .double-tap-heart,
+  .reaction-pop,
+  .count-fade,
+  .row-enter,
+  .badge-pop,
+  .toast {
+    animation: fade-in 100ms linear both !important;
+  }
+
+  .heart-pop,
+  .double-tap-heart,
+  .reaction-pop,
+  .badge-pop {
+    animation-name: fade-in !important;
+  }
+
+  .skeleton::after {
+    opacity: 0.4;
+    transform: none;
+  }
+
+  button:active,
+  [role="button"]:active,
+  a:active,
+  summary:active {
+    opacity: 0.9;
+    scale: 1 !important;
+  }
+
+  .press-row:active,
+  .press-row:has(a:active),
+  .press-row:has(button:active) {
+    background-color: var(--surface-2);
+    scale: 1 !important;
+  }
 }

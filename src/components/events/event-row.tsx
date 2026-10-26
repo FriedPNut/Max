@@ -12,7 +12,7 @@ export function EventRow({
   return (
     <Link
       href={`/events/${event.id}`}
-      className="flex items-center gap-3 border-b border-line py-4 transition-colors duration-150 ease-out hover:bg-surface"
+      className="press-row -mx-4 flex min-h-14 items-center gap-3 border-b border-line px-4 py-3 transition-colors duration-200 ease-out last:border-b-0 hover:bg-surface-2"
     >
       {event.coverUrl && (
         <img draggable={false}
@@ -20,13 +20,13 @@ export function EventRow({
           alt=""
           loading="lazy"
           decoding="async"
-          className="h-12 w-12 shrink-0 rounded-lg border border-border bg-surface object-cover"
+          className="h-12 w-12 shrink-0 rounded-lg bg-surface-2 object-cover"
         />
       )}
 
       <div className="min-w-0 flex-1">
         <p
-          className={`text-base font-medium break-words ${
+          className={`text-base font-semibold break-words ${
             muted ? "text-muted" : "text-text"
           }`}
         >

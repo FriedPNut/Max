@@ -6,7 +6,8 @@ import {
   startDmWithFriendAction,
   type ChatActionState,
 } from "@/app/actions/chat";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui";
 import { OnlineDot } from "@/components/presence-provider";
 import type { FriendListItem } from "@/lib/chat";
 
@@ -19,12 +20,12 @@ export function StartChatButton({ friend }: { friend: FriendListItem }) {
   const identity = (
     <>
       <span className="relative block shrink-0">
-        <ProfileAvatar src={friend.avatarUrl} initial={friend.initial} size={40} />
+        <Avatar src={friend.avatarUrl} initial={friend.initial} size={40} />
         <OnlineDot userId={friend.id} />
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-base font-medium text-text">
+        <span className="block truncate text-[15px] font-semibold text-text">
           {friend.name}
         </span>
         {friend.username && (
@@ -38,11 +39,11 @@ export function StartChatButton({ friend }: { friend: FriendListItem }) {
 
   return (
     <div className="border-b border-line">
-      <div className="flex items-center gap-3 py-3">
+      <div className="flex min-h-14 items-center gap-3 py-3">
         {friend.username ? (
           <Link
             href={`/u/${encodeURIComponent(friend.username)}`}
-            className="flex min-w-0 flex-1 items-center gap-3 transition-opacity duration-150 ease-out hover:opacity-80"
+            className="flex min-w-0 flex-1 items-center gap-3 transition-opacity duration-200 ease-out hover:opacity-80"
           >
             {identity}
           </Link>
@@ -54,18 +55,14 @@ export function StartChatButton({ friend }: { friend: FriendListItem }) {
 
         <form action={formAction} className="shrink-0">
           <input type="hidden" name="friend_id" value={friend.id} />
-          <button
-            type="submit"
-            disabled={pending}
-            className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-          >
+          <Button type="submit" variant="secondary" size="sm" disabled={pending}>
             {pending ? "Opening..." : "Message"}
-          </button>
+          </Button>
         </form>
       </div>
 
       {state.error && (
-        <p role="alert" className="pb-3 text-sm text-text">
+        <p role="alert" className="pb-3 text-sm text-danger">
           {state.error}
         </p>
       )}

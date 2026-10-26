@@ -9,5 +9,5 @@ export function DmActiveStatus({ userId }: { userId: string | null }) {
     return null;
   }
 
-  return <p className="mt-1 text-sm text-muted">Active now</p>;
+  return <p className="mt-0.5 truncate text-xs text-muted">Active now</p>;
 }

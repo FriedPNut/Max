@@ -61,12 +61,12 @@ export default async function FreePage() {
         <div>
           <Link
             href="/events"
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-150 ease-out mb-6"
+            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out mb-6"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
             Events
           </Link>
-          <h1 className="text-[28px] font-semibold leading-tight text-text">
+          <h1 className="text-[22px] font-bold leading-tight text-text">
             Who&apos;s free
           </h1>
         </div>

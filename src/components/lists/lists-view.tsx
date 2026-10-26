@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { CreateListSheet } from "@/components/lists/create-list-sheet";
+import { Chip } from "@/components/ui";
 import {
   LIST_KIND_LABELS,
   type ListKind,
@@ -37,21 +38,16 @@ export function ListsView({
 
   return (
     <div className="space-y-6">
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filter lists">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filter lists" data-no-swipe>
         {FILTERS.map((option) => (
-          <button
+          <Chip
             key={option.value}
-            type="button"
-            aria-pressed={filter === option.value}
+            selected={filter === option.value}
             onClick={() => setFilter(option.value)}
-            className={`min-h-11 shrink-0 rounded-full border px-4 text-sm transition-colors duration-150 ease-out cursor-pointer ${
-              filter === option.value
-                ? "border-text bg-text text-background"
-                : "border-border bg-surface text-text hover:bg-background"
-            }`}
+            className="min-h-11 px-4"
           >
             {option.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -63,10 +59,10 @@ export function ListsView({
             <li key={row.id} className="border-b border-line">
               <Link
                 href={`/lists/${row.id}`}
-                className="flex min-h-11 items-center justify-between gap-3 py-3 transition-colors duration-150 ease-out hover:text-muted"
+                className="press-row -mx-4 flex min-h-14 items-center justify-between gap-3 px-4 py-3 transition-colors duration-200 ease-out hover:bg-surface-2"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-base font-medium text-text">{row.title}</p>
+                  <p className="truncate text-base font-semibold text-text">{row.title}</p>
                   <p className="text-sm text-muted">
                     {LIST_KIND_LABELS[row.kind]} · by {row.creatorName}
                   </p>
@@ -82,13 +78,13 @@ export function ListsView({
         type="button"
         onClick={() => setSheetOpen(true)}
         aria-label="New list"
-        className="fixed z-40 flex h-14 w-14 items-center justify-center rounded-full bg-text text-background transition-colors duration-150 ease-out hover:bg-text/90 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+        className="fixed z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary transition-[background-color,opacity,scale] duration-100 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         style={{
-          bottom: "calc(56px + 16px + env(safe-area-inset-bottom, 0px))",
+          bottom: "calc(72px + 16px + env(safe-area-inset-bottom, 0px))",
           right: "calc(16px + env(safe-area-inset-right, 0px))",
         }}
       >
-        <Plus size={24} strokeWidth={1.5} aria-hidden="true" />
+        <Plus size={24} strokeWidth={1.75} aria-hidden="true" />
       </button>
 
       {sheetOpen && <CreateListSheet onClose={() => setSheetOpen(false)} />}

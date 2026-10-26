@@ -5,7 +5,7 @@ import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { AddMemberButton } from "@/components/chat/add-member-button";
 import { LeaveGroupButton } from "@/components/chat/leave-group-button";
 import { RenameGroupForm } from "@/components/chat/rename-group-form";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 import {
@@ -151,13 +151,13 @@ export default async function GroupMembersPage({
         <div>
           <Link
             href={`/chat/${conversation.id}`}
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-150 ease-out mb-6"
+            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-80"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
             Chat
           </Link>
 
-          <h1 className="text-[28px] font-semibold leading-tight text-text break-words">
+          <h1 className="text-[22px] font-bold leading-tight text-text break-words">
             {title}
           </h1>
           <p className="mt-2 text-sm text-muted">
@@ -167,7 +167,7 @@ export default async function GroupMembersPage({
         </div>
 
         {loadError ? (
-          <p className="text-sm text-muted">
+          <p role="alert" className="text-sm text-danger">
             Couldn&apos;t load this group. Refresh and try again.
           </p>
         ) : (
@@ -185,22 +185,22 @@ export default async function GroupMembersPage({
                   return (
                     <li
                       key={member.id}
-                      className="flex items-center gap-3 border-b border-line py-3"
+                      className="flex min-h-14 items-center gap-3 border-b border-line py-3"
                     >
                       {member.username ? (
                         <Link
                           href={`/u/${encodeURIComponent(member.username)}`}
                           aria-label={`View ${member.name}'s profile`}
-                          className="shrink-0 transition-opacity duration-150 ease-out hover:opacity-80"
+                          className="shrink-0 transition-opacity duration-200 ease-out hover:opacity-80"
                         >
-                          <ProfileAvatar
+                          <Avatar
                             src={member.avatarUrl}
                             initial={member.initial}
                             size={40}
                           />
                         </Link>
                       ) : (
-                        <ProfileAvatar
+                        <Avatar
                           src={member.avatarUrl}
                           initial={member.initial}
                           size={40}
@@ -211,19 +211,19 @@ export default async function GroupMembersPage({
                         {member.username ? (
                           <Link
                             href={`/u/${encodeURIComponent(member.username)}`}
-                            className="block truncate text-base font-medium text-text transition-opacity duration-150 ease-out hover:opacity-80"
+                            className="block truncate text-[15px] font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-70"
                           >
                             {member.name}
                           </Link>
                         ) : (
-                          <p className="truncate text-base font-medium text-text">
+                          <p className="truncate text-[15px] font-semibold text-text">
                             {member.name}
                           </p>
                         )}
                       </div>
 
                       {tags.length > 0 && (
-                        <span className="shrink-0 text-sm text-muted">
+                        <span className="shrink-0 text-xs text-muted">
                           {tags.join(" · ")}
                         </span>
                       )}

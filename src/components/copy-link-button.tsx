@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Button, Toast } from "@/components/ui";
 
 type CopyState = "idle" | "copied" | "error";
 
@@ -23,6 +24,7 @@ function fallbackCopy(value: string) {
 
 export function CopyLinkButton() {
   const [state, setState] = useState<CopyState>("idle");
+  const [toast, setToast] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -56,8 +58,10 @@ export function CopyLinkButton() {
       }
 
       showTemporary("copied");
+      setToast("Link copied");
     } catch {
       showTemporary("error");
+      setToast("Couldn't copy the link");
     }
   }
 
@@ -69,13 +73,12 @@ export function CopyLinkButton() {
       : "Copy link";
 
   return (
-    <button
-      type="button"
-      onClick={copyLink}
-      aria-live="polite"
-      className="min-h-11 rounded-lg border border-border bg-transparent px-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
-    >
-      {label}
-    </button>
+    <>
+      <Button type="button" variant="secondary" onClick={copyLink}>
+        {label}
+      </Button>
+
+      <Toast message={toast} onDone={() => setToast(null)} />
+    </>
   );
 }

@@ -4,10 +4,12 @@ import { ProfileEvents } from "@/components/profile/profile-events";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfileMenu } from "@/components/profile/profile-menu";
 import { ProfilePostGrid } from "@/components/profile/profile-post-grid";
+import { ProfileShareButton } from "@/components/profile/profile-share-button";
 import { ProfileTabs } from "@/components/profile/profile-tabs";
+import { buttonStyles } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { loadProfilePage } from "@/lib/profile-data";
-import type { ProfileRecord } from "@/lib/profile";
+import { profileDisplayName, type ProfileRecord } from "@/lib/profile";
 
 export default async function MePage() {
   const { user, displayName } = await getAuthenticatedUser();
@@ -53,7 +55,7 @@ export default async function MePage() {
 
   return (
     <AppShell actions={<ProfileMenu />} userId={user.id}>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <ProfileHeader
           profile={profile}
           avatarUrl={data.avatarUrl}
@@ -62,14 +64,22 @@ export default async function MePage() {
         >
           <Link
             href="/me/edit"
-            className="flex min-h-11 w-full items-center justify-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
+            className={buttonStyles({ variant: "secondary", className: "w-full" })}
           >
             Edit profile
           </Link>
+          <ProfileShareButton username={profile.username} />
         </ProfileHeader>
 
         <ProfileTabs
-          postsContent={<ProfilePostGrid posts={data.posts} />}
+          postsContent={
+            <ProfilePostGrid
+              posts={data.posts}
+              authorName={profileDisplayName(profile)}
+              authorUsername={profile.username}
+              authorAvatarUrl={data.avatarUrl}
+            />
+          }
           eventsContent={
             <ProfileEvents
               upcoming={data.upcomingEvents}

@@ -22,14 +22,19 @@ import {
 } from "@/lib/recurrence";
 import { createClient } from "@/lib/supabase/client";
 import { Switch } from "@/components/ui/switch";
+import {
+  Button,
+  buttonStyles,
+  Card,
+  Input,
+  Textarea,
+  inputClass,
+} from "@/components/ui";
 
 const COVER_WIDTH = 1600;
 const JPEG_QUALITY = 0.8;
 
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text [color-scheme:light]";
-
-const labelClass = "block text-sm text-muted mb-2";
+const labelClass = "block text-[13px] text-muted mb-2";
 
 type CoverPhase = "idle" | "preparing" | "uploading";
 
@@ -412,126 +417,137 @@ export function EventForm({
         <input type="hidden" name="idea_id" value={ideaId} readOnly />
       )}
 
-      <div>
-        <label htmlFor="title" className={labelClass}>
-          Title
-        </label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          required
-          autoComplete="off"
-          placeholder="Dinner at Rina's"
-          defaultValue={initialValues?.title ?? ""}
-          className={fieldClass}
-        />
-      </div>
+      <Card className="space-y-5 p-4">
+        <h2 className="text-base font-semibold text-text">Details</h2>
 
-      <div>
-        <label htmlFor="description" className={labelClass}>
-          Description (optional)
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={4}
-          placeholder="Bring something cold. We'll eat on the roof."
-          defaultValue={initialValues?.description ?? ""}
-          className={`${fieldClass} resize-y min-h-[112px]`}
-        />
-      </div>
-
-      <div>
-        <span className="block text-sm text-muted mb-2">
-          Cover photo (optional)
-        </span>
-
-        {coverPreviewUrl && (
-          <img draggable={false}
-            src={coverPreviewUrl}
-            alt="Event cover preview"
-            className="mb-3 aspect-video w-full rounded-lg border border-border bg-surface object-cover"
+        <div>
+          <label htmlFor="title" className={labelClass}>
+            Title
+          </label>
+          <Input
+            id="title"
+            name="title"
+            type="text"
+            required
+            autoComplete="off"
+            placeholder="Dinner at Rina's"
+            defaultValue={initialValues?.title ?? ""}
           />
-        )}
+        </div>
 
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={busy}
-          className="inline-flex min-h-11 items-center rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-        >
-          {coverPath ? "Change cover" : "Choose cover"}
-        </button>
+        <div>
+          <label htmlFor="description" className={labelClass}>
+            Description (optional)
+          </label>
+          <Textarea
+            id="description"
+            name="description"
+            rows={4}
+            placeholder="Bring something cold. We'll eat on the roof."
+            defaultValue={initialValues?.description ?? ""}
+            className="min-h-[112px] resize-y"
+          />
+        </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleCoverChange}
-          disabled={busy}
-          className="hidden"
-        />
+        <div>
+          <span className="mb-2 block text-[13px] text-muted">
+            Cover photo (optional)
+          </span>
 
-        {coverPhase === "preparing" && (
-          <p className="mt-2 text-sm text-muted">Preparing cover...</p>
-        )}
+          {coverPreviewUrl && (
+            <img draggable={false}
+              src={coverPreviewUrl}
+              alt="Event cover preview"
+              className="mb-3 aspect-video w-full rounded-lg border border-line bg-surface object-cover"
+            />
+          )}
 
-        {coverPhase === "uploading" && (
-          <div className="mt-3 space-y-2">
-            <div className="h-[2px] w-full bg-line" aria-hidden="true">
-              <div
-                className="h-full bg-text"
-                style={{ width: `${coverProgress}%` }}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+          >
+            {coverPath ? "Change cover" : "Choose cover"}
+          </Button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleCoverChange}
+            disabled={busy}
+            className="hidden"
+          />
+
+          {coverPhase === "preparing" && (
+            <p className="mt-2 text-sm text-muted">Preparing cover...</p>
+          )}
+
+          {coverPhase === "uploading" && (
+            <div className="mt-3 space-y-2">
+              <div className="h-[2px] w-full bg-line" aria-hidden="true">
+                <div
+                  className="h-full bg-primary"
+                  style={{ width: `${coverProgress}%` }}
+                />
+              </div>
+              <p className="text-sm text-muted">
+                Uploading cover {coverProgress}%
+              </p>
+            </div>
+          )}
+
+          {coverError && (
+            <p role="alert" className="mt-2 text-sm text-danger">
+              {coverError}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="location" className={labelClass}>
+            Location
+          </label>
+          <Input
+            id="location"
+            name="location"
+            type="text"
+            required
+            autoComplete="off"
+            placeholder="Rina's place, 42 Orchard St"
+            defaultValue={initialValues?.location ?? ""}
+          />
+        </div>
+      </Card>
+
+      <Card className="space-y-5 p-4">
+        <h2 className="text-base font-semibold text-text">Time</h2>
+
+        {!isEditing && (
+          <>
+            <input
+              type="hidden"
+              name="poll_open"
+              value={pollOpen ? "true" : "false"}
+              readOnly
+            />
+
+            <div className="flex min-h-11 items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-base text-text">Let people vote on a time</p>
+                <p className="mt-0.5 text-sm text-muted">
+                  Add a few options and everyone can answer.
+                </p>
+              </div>
+              <Switch
+                checked={pollOpen}
+                onChange={() => handlePollToggle(!pollOpen)}
+                label="Let people vote on a time"
               />
             </div>
-            <p className="text-sm text-muted">
-              Uploading cover {coverProgress}%
-            </p>
-          </div>
+          </>
         )}
-
-        {coverError && (
-          <p role="alert" className="mt-2 text-sm text-text">
-            {coverError}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="location" className={labelClass}>
-          Location
-        </label>
-        <input
-          id="location"
-          name="location"
-          type="text"
-          required
-          autoComplete="off"
-          placeholder="Rina's place, 42 Orchard St"
-          defaultValue={initialValues?.location ?? ""}
-          className={fieldClass}
-        />
-      </div>
-
-      {!isEditing && (
-        <>
-          <input
-            type="hidden"
-            name="poll_open"
-            value={pollOpen ? "true" : "false"}
-            readOnly
-          />
-
-          <Switch
-            checked={pollOpen}
-            onChange={() => handlePollToggle(!pollOpen)}
-            label="Let people vote on a time"
-          >
-            Let people vote on a time
-          </Switch>
-        </>
-      )}
 
       {!isEditing && pollOpen ? (
         <div className="space-y-4">
@@ -551,13 +567,14 @@ export function EventForm({
                   <p className="text-sm text-muted">Option {index + 1}</p>
 
                   {pollOptions.length > 2 && (
-                    <button
+                    <Button
                       type="button"
+                      variant="text"
+                      size="sm"
                       onClick={() => removePollOption(option.id)}
-                      className="min-h-11 px-1 text-sm text-muted transition-colors duration-150 ease-out hover:text-text cursor-pointer"
                     >
                       Remove
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -569,7 +586,7 @@ export function EventForm({
                     >
                       Date
                     </label>
-                    <input
+                    <Input
                       id={`option-date-${option.id}`}
                       name="option_date"
                       type="date"
@@ -578,7 +595,6 @@ export function EventForm({
                       onChange={(event) =>
                         updatePollOption(option.id, "date", event.target.value)
                       }
-                      className={fieldClass}
                     />
                   </div>
 
@@ -589,7 +605,7 @@ export function EventForm({
                     >
                       Time
                     </label>
-                    <input
+                    <Input
                       id={`option-time-${option.id}`}
                       name="option_time"
                       type="time"
@@ -598,7 +614,6 @@ export function EventForm({
                       onChange={(event) =>
                         updatePollOption(option.id, "time", event.target.value)
                       }
-                      className={fieldClass}
                     />
                   </div>
                 </div>
@@ -607,13 +622,9 @@ export function EventForm({
           </div>
 
           {pollOptions.length < 6 && (
-            <button
-              type="button"
-              onClick={addPollOption}
-              className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
-            >
+            <Button type="button" variant="secondary" onClick={addPollOption}>
               Add time
-            </button>
+            </Button>
           )}
         </div>
       ) : (
@@ -622,14 +633,13 @@ export function EventForm({
             <label htmlFor="date" className={labelClass}>
               Date
             </label>
-            <input
+            <Input
               id="date"
               name="date"
               type="date"
               required
               value={date}
               onChange={(event) => handleDateChange(event.target.value)}
-              className={fieldClass}
             />
           </div>
 
@@ -637,14 +647,13 @@ export function EventForm({
             <label htmlFor="time" className={labelClass}>
               Start time
             </label>
-            <input
+            <Input
               id="time"
               name="time"
               type="time"
               required
               value={time}
               onChange={(event) => setTime(event.target.value)}
-              className={fieldClass}
             />
           </div>
         </div>
@@ -667,7 +676,7 @@ export function EventForm({
                   handleRecurrenceChange(value);
                 }
               }}
-              className={fieldClass}
+              className={inputClass}
             >
               {RECURRENCE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -681,7 +690,7 @@ export function EventForm({
             <label htmlFor="until" className={labelClass}>
               Until
             </label>
-            <input
+            <Input
               id="until"
               name="until"
               type="date"
@@ -690,7 +699,6 @@ export function EventForm({
               min={date || undefined}
               disabled={recurrence === "none"}
               onChange={(event) => handleUntilChange(event.target.value)}
-              className={fieldClass}
             />
 
             {recurrence !== "none" &&
@@ -706,26 +714,31 @@ export function EventForm({
           </div>
         </>
       )}
+      </Card>
 
-      <div>
-        <label htmlFor="capacity" className={labelClass}>
-          Max people (optional)
-        </label>
-        <input
-          id="capacity"
-          name="capacity"
-          type="number"
-          min="1"
-          step="1"
-          inputMode="numeric"
-          placeholder="No limit"
-          defaultValue={initialValues?.capacity ?? ""}
-          className={fieldClass}
-        />
-      </div>
+      <Card className="space-y-4 p-4">
+        <h2 className="text-base font-semibold text-text">Capacity</h2>
+
+        <div>
+          <label htmlFor="capacity" className={labelClass}>
+            Max people (optional)
+          </label>
+          <Input
+            id="capacity"
+            name="capacity"
+            type="number"
+            min="1"
+            step="1"
+            inputMode="numeric"
+            placeholder="No limit"
+            defaultValue={initialValues?.capacity ?? ""}
+          />
+        </div>
+      </Card>
 
       {isEditing && hasSeries && (
-        <fieldset className="space-y-2 border-t border-line pt-5">
+        <Card className="p-4">
+        <fieldset className="space-y-2">
           <legend className="text-sm text-muted">Apply changes to</legend>
 
           <div className="space-y-1">
@@ -739,7 +752,7 @@ export function EventForm({
                   name="scope"
                   value={option.value}
                   defaultChecked={option.value === "only"}
-                  className="h-4 w-4 accent-text"
+                  className="h-4 w-4 accent-primary"
                 />
                 {option.label}
               </label>
@@ -750,6 +763,7 @@ export function EventForm({
             Date and time only change when you choose Only this event.
           </p>
         </fieldset>
+        </Card>
       )}
 
       {!pollOpen && isPastDate && (
@@ -759,19 +773,16 @@ export function EventForm({
       )}
 
       {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-border bg-surface px-3.5 py-3 text-sm text-text"
-        >
+        <p role="alert" className="text-sm text-danger">
           {error}
-        </div>
+        </p>
       )}
 
       <div className="pt-1 flex flex-col sm:flex-row gap-3">
-        <button
+        <Button
           type="submit"
           disabled={busy}
-          className="w-full sm:w-auto min-h-11 px-4 py-3 rounded-lg bg-text text-background font-sans font-medium text-sm transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+          className="w-full sm:w-auto"
         >
           {pending
             ? isEditing
@@ -780,7 +791,7 @@ export function EventForm({
             : isEditing
             ? "Save changes"
             : "Create event"}
-        </button>
+        </Button>
 
         <Link
           href={cancelHref}
@@ -790,9 +801,12 @@ export function EventForm({
               event.preventDefault();
             }
           }}
-          className={`w-full sm:w-auto text-center min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface ${
-            busy ? "pointer-events-none opacity-60" : ""
-          }`}
+          className={buttonStyles({
+            variant: "secondary",
+            className: `w-full sm:w-auto ${
+              busy ? "pointer-events-none opacity-40" : ""
+            }`,
+          })}
         >
           Cancel
         </Link>

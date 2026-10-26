@@ -97,13 +97,13 @@ export default async function TripPage({
   return (
     <AppShell userId={user.id}>
       <section className="space-y-6">
-        <Link href="/trips" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-150 ease-out">
-          <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+        <Link href="/trips" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out">
+          <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           Trips
         </Link>
 
         <div>
-          <h1 className="text-[28px] font-semibold leading-tight text-text">{record.title}</h1>
+          <h1 className="text-[22px] font-bold leading-tight text-text">{record.title}</h1>
           <p className="mt-2 text-sm text-muted">
             {record.destination ? `${record.destination} · ` : ""}
             {formatRange(record.start_date, record.end_date)}
@@ -111,13 +111,13 @@ export default async function TripPage({
           </p>
         </div>
 
-        <nav aria-label="Trip sections" className="-mx-4 flex gap-1 overflow-x-auto border-b border-line px-4">
+        <nav aria-label="Trip sections" className="-mx-4 flex gap-1 overflow-x-auto border-b border-line px-4" data-no-swipe>
           {TRIP_TABS.map((name) => (
             <Link
               key={name}
               href={`/trips/${id}?tab=${name}`}
               aria-current={activeTab === name ? "page" : undefined}
-              className={`min-h-11 shrink-0 px-3 py-3 text-sm capitalize ${activeTab === name ? "border-b-2 border-text font-medium text-text" : "text-muted hover:text-text"}`}
+              className={`min-h-11 shrink-0 border-b px-3 py-3 text-sm capitalize ${activeTab === name ? "border-text font-semibold text-text" : "border-transparent text-muted hover:text-text"}`}
             >
               {name}
             </Link>

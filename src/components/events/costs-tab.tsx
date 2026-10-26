@@ -9,6 +9,7 @@ import {
   undoEventSettlementAction,
 } from "@/app/actions/event-costs";
 import { PersonName } from "@/components/events/person-name";
+import { Button, Card, Input, inputClass } from "@/components/ui";
 import {
   formatCents,
   splitCents,
@@ -19,11 +20,7 @@ import {
   type ExpenseInput,
 } from "@/lib/event-costs";
 
-const fieldClass = "w-full rounded-lg border border-border bg-surface px-3 py-3 text-base text-text focus:outline-2 focus:outline-text";
 const labelClass = "mb-2 block text-sm text-muted";
-const primaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 hover:opacity-90 disabled:pointer-events-none disabled:opacity-60";
-const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface disabled:pointer-events-none disabled:opacity-60";
-const textButton = "inline-flex min-h-11 items-center px-1 text-sm text-muted transition-colors duration-150 hover:text-text disabled:pointer-events-none disabled:opacity-60";
 
 type FormMode = { type: "create" } | { type: "edit"; expense: EventExpense } | null;
 
@@ -76,7 +73,7 @@ export function CostsTab({
           <h2 className="text-lg font-semibold text-text">Costs</h2>
           <p className="mt-1 text-sm text-muted">Max tracks who owes whom but doesn&apos;t move money.</p>
         </div>
-        {!form && <button type="button" onClick={() => { setError(null); setForm({ type: "create" }); }} className={`${secondaryButton} gap-1.5`}><Plus size={20} strokeWidth={1.5} aria-hidden="true" />Add expense</button>}
+        {!form && <Button variant="secondary" onClick={() => { setError(null); setForm({ type: "create" }); }}><Plus size={24} strokeWidth={1.75} aria-hidden="true" />Add expense</Button>}
       </div>
 
       {snapshot.error && <p role="alert" className="text-sm text-text">{snapshot.error}</p>}
@@ -104,11 +101,11 @@ export function CostsTab({
               return Number(bMine) - Number(aMine);
             }).map((debt) => {
               const myDebt = debt.from.id === currentUserId || debt.to.id === currentUserId;
-              return <li key={`${debt.from.id}:${debt.to.id}`} className={`flex flex-col gap-2 border-b border-line py-4 ${myDebt ? "font-medium" : ""}`}>
+              return <li key={`${debt.from.id}:${debt.to.id}`} className={`flex flex-col gap-2 border-b border-line py-4 ${myDebt ? "font-semibold" : ""}`}>
                 <p className={`text-base ${myDebt ? "text-text" : "text-muted"}`}>
                   {debt.from.id === currentUserId ? <>You owe <PersonName person={debt.to} currentUserId={currentUserId} /> {formatCents(debt.amountCents)}</> : debt.to.id === currentUserId ? <><PersonName person={debt.from} currentUserId={currentUserId} /> owes you {formatCents(debt.amountCents)}</> : <><PersonName person={debt.from} currentUserId={currentUserId} /> owes <PersonName person={debt.to} currentUserId={currentUserId} /> {formatCents(debt.amountCents)}</>}
                 </p>
-                {myDebt && <button type="button" disabled={pending} onClick={() => void run(() => markEventDebtPaidAction(eventId, debt.from.id, debt.to.id, debt.amountCents))} className={`${secondaryButton} self-start`}>{pending ? "Saving..." : "Mark as paid"}</button>}
+                {myDebt && <Button variant="secondary" size="sm" disabled={pending} onClick={() => void run(() => markEventDebtPaidAction(eventId, debt.from.id, debt.to.id, debt.amountCents))} className="self-start">{pending ? "Saving..." : "Mark as paid"}</Button>}
               </li>;
             })}
           </ul>
@@ -122,14 +119,14 @@ export function CostsTab({
             {snapshot.expenses.map((expense) => <li key={expense.id} className="border-b border-line py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="break-words text-base font-medium text-text">{expense.description}</p>
+                  <p className="break-words text-base font-semibold text-text">{expense.description}</p>
                   <p className="mt-1 text-sm text-muted">Paid by <PersonName person={expense.paidBy} currentUserId={currentUserId} /> · split {expense.participantIds.length} ways</p>
                 </div>
                 <p className="shrink-0 text-base text-text">{formatCents(expense.amountCents)}</p>
               </div>
               {expense.paidBy.id === currentUserId && <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" disabled={pending} onClick={() => { setError(null); setForm({ type: "edit", expense }); }} className={secondaryButton}>Edit</button>
-                {confirmDeleteId === expense.id ? <><button type="button" disabled={pending} onClick={() => void run(() => deleteEventExpenseAction(eventId, expense.id)).then((ok) => ok && setConfirmDeleteId(null))} className={primaryButton}>Delete</button><button type="button" disabled={pending} onClick={() => setConfirmDeleteId(null)} className={secondaryButton}>Cancel</button></> : <button type="button" disabled={pending} onClick={() => setConfirmDeleteId(expense.id)} className={textButton}>Delete</button>}
+                <Button variant="secondary" size="sm" disabled={pending} onClick={() => { setError(null); setForm({ type: "edit", expense }); }}>Edit</Button>
+                {confirmDeleteId === expense.id ? <><Button variant="destructive" size="sm" disabled={pending} onClick={() => void run(() => deleteEventExpenseAction(eventId, expense.id)).then((ok) => ok && setConfirmDeleteId(null))}>Delete</Button><Button variant="secondary" size="sm" disabled={pending} onClick={() => setConfirmDeleteId(null)}>Cancel</Button></> : <Button variant="destructive" size="sm" disabled={pending} onClick={() => setConfirmDeleteId(expense.id)}>Delete</Button>}
               </div>}
             </li>)}
           </ul>
@@ -144,7 +141,7 @@ export function CostsTab({
               const canUndo = settlement.from.id === currentUserId || settlement.to.id === currentUserId;
               return <li key={settlement.id} className="flex items-center justify-between gap-3 border-b border-line py-3">
                 <p className="min-w-0 text-sm text-text"><PersonName person={settlement.from} currentUserId={currentUserId} /> paid <PersonName person={settlement.to} currentUserId={currentUserId} /> {formatCents(settlement.amountCents)}</p>
-                {canUndo && <button type="button" disabled={pending} onClick={() => void run(() => undoEventSettlementAction(eventId, settlement.id))} className={textButton}>{pending ? "Undoing..." : "Undo"}</button>}
+                {canUndo && <Button variant="text" size="sm" disabled={pending} onClick={() => void run(() => undoEventSettlementAction(eventId, settlement.id))}>{pending ? "Undoing..." : "Undo"}</Button>}
               </li>;
             })}
           </ul>
@@ -209,13 +206,15 @@ function ExpenseForm({
     }
   }
 
-  return <form onSubmit={handleSubmit} noValidate className="space-y-4 rounded-lg border border-border bg-surface p-4">
+  return <Card>
+  <form onSubmit={handleSubmit} noValidate className="space-y-4 p-4">
     <h3 className="text-lg font-semibold text-text">{expense ? "Edit expense" : "Add expense"}</h3>
-    <div><label htmlFor="expense-description" className={labelClass}>Description</label><input id="expense-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={120} disabled={busy} placeholder="Groceries" className={fieldClass} /></div>
-    <div><label htmlFor="expense-amount" className={labelClass}>Amount in dollars</label><input id="expense-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} disabled={busy} placeholder="24.50" className={fieldClass} /></div>
-    <div><label htmlFor="expense-payer" className={labelClass}>Paid by</label><select id="expense-payer" value={paidBy} onChange={(event) => setPaidBy(event.target.value)} disabled={busy} className={fieldClass}>{people.map((person) => <option key={person.id} value={person.id}>{person.id === currentUserId ? "Me" : person.name}</option>)}</select></div>
-    <fieldset><legend className={labelClass}>Split between</legend><label className="mb-2 flex min-h-11 items-center gap-3 text-sm text-text"><input type="checkbox" checked={goingIds.length > 0 && goingIds.every((id) => participantIds.includes(id))} disabled={busy} onChange={() => setParticipantIds((current) => { const allGoing = goingIds.every((id) => current.includes(id)); return allGoing ? current.filter((id) => !goingIds.includes(id)) : [...new Set([...current, ...goingIds])]; })} className="h-4 w-4 accent-text" />Everyone who&apos;s going</label><label htmlFor="cost-person-search" className={labelClass}>Add anyone else</label><input id="cost-person-search" value={search} onChange={(event) => setSearch(event.target.value)} disabled={busy} placeholder="Search people" className={`${fieldClass} mb-2`} /><div className="max-h-48 overflow-y-auto border-t border-line">{filteredPeople.map((person) => <label key={person.id} className="flex min-h-11 items-center gap-3 border-b border-line text-sm text-text"><input type="checkbox" checked={participantIds.includes(person.id)} onChange={() => toggleParticipant(person.id)} disabled={busy} className="h-4 w-4 accent-text" />{person.id === currentUserId ? "Me" : person.name}</label>)}</div>{search.trim() && filteredPeople.length === 0 && <p className="mt-2 text-sm text-muted">No people found.</p>}{sharePreview && <p className="mt-2 text-sm text-muted">{sharePreview}</p>}</fieldset>
+    <div><label htmlFor="expense-description" className={labelClass}>Description</label><Input id="expense-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={120} disabled={busy} placeholder="Groceries" /></div>
+    <div><label htmlFor="expense-amount" className={labelClass}>Amount in dollars</label><Input id="expense-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} disabled={busy} placeholder="24.50" /></div>
+    <div><label htmlFor="expense-payer" className={labelClass}>Paid by</label><select id="expense-payer" value={paidBy} onChange={(event) => setPaidBy(event.target.value)} disabled={busy} className={inputClass}>{people.map((person) => <option key={person.id} value={person.id}>{person.id === currentUserId ? "Me" : person.name}</option>)}</select></div>
+    <fieldset><legend className={labelClass}>Split between</legend><label className="mb-2 flex min-h-11 items-center gap-3 text-sm text-text"><input type="checkbox" checked={goingIds.length > 0 && goingIds.every((id) => participantIds.includes(id))} disabled={busy} onChange={() => setParticipantIds((current) => { const allGoing = goingIds.every((id) => current.includes(id)); return allGoing ? current.filter((id) => !goingIds.includes(id)) : [...new Set([...current, ...goingIds])]; })} className="h-4 w-4 accent-primary" />Everyone who&apos;s going</label><label htmlFor="cost-person-search" className={labelClass}>Add anyone else</label><Input id="cost-person-search" value={search} onChange={(event) => setSearch(event.target.value)} disabled={busy} placeholder="Search people" className="mb-2" /><div className="max-h-48 overflow-y-auto border-t border-line">{filteredPeople.map((person) => <label key={person.id} className="flex min-h-11 items-center gap-3 border-b border-line text-sm text-text"><input type="checkbox" checked={participantIds.includes(person.id)} onChange={() => toggleParticipant(person.id)} disabled={busy} className="h-4 w-4 accent-primary" />{person.id === currentUserId ? "Me" : person.name}</label>)}</div>{search.trim() && filteredPeople.length === 0 && <p className="mt-2 text-sm text-muted">No people found.</p>}{sharePreview && <p className="mt-2 text-sm text-muted">{sharePreview}</p>}</fieldset>
     {formError && <p role="alert" className="text-sm text-text">{formError}</p>}
-    <div className="flex flex-wrap gap-2"><button type="submit" disabled={busy} className={primaryButton}>{busy ? "Saving..." : "Save"}</button><button type="button" disabled={busy} onClick={onCancel} className={secondaryButton}>Cancel</button></div>
-  </form>;
+    <div className="flex flex-wrap gap-2"><Button type="submit" disabled={busy}>{busy ? "Saving..." : "Save"}</Button><Button variant="secondary" disabled={busy} onClick={onCancel}>Cancel</Button></div>
+  </form>
+  </Card>;
 }

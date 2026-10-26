@@ -11,11 +11,11 @@ import {
   deleteTripLinkAction,
   togglePackingItemAction,
 } from "@/app/actions/trip-tabs";
+import { Button, Input, inputClass } from "@/components/ui";
 import { TRIP_LINK_KINDS, TRIP_LINK_LABELS, type TripLinkKind } from "@/lib/trips";
 
-const fieldClass = "w-full rounded-lg border border-border bg-surface px-3 py-3 text-base text-text focus:outline-2 focus:outline-text";
-const buttonClass = "inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 py-3 text-sm font-medium text-text hover:bg-surface disabled:opacity-60 cursor-pointer";
-const rowClass = "flex min-h-11 items-center justify-between gap-3 border-b border-line py-3";
+const rowClass =
+  "-mx-4 flex min-h-14 items-center justify-between gap-3 border-b border-line px-4 py-3";
 
 type ItineraryItem = { id: string; day: string; title: string; time_label: string | null };
 type PackingItem = { id: string; label: string; packed: boolean };
@@ -65,12 +65,12 @@ export function ItineraryPanel({ tripId, items, days }: { tripId: string; items:
         }}
         className="space-y-3"
       >
-        <select aria-label="Day" value={day} onChange={(e) => setDay(e.target.value)} disabled={pending} className={fieldClass}>
+        <select aria-label="Day" value={day} onChange={(e) => setDay(e.target.value)} disabled={pending} className={inputClass}>
           {days.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
-        <input aria-label="Plan" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Dinner at the pier" disabled={pending} className={fieldClass} />
-        <input aria-label="Time" value={time} onChange={(e) => setTime(e.target.value)} maxLength={40} placeholder="7:00 PM (optional)" disabled={pending} className={fieldClass} />
-        <button type="submit" disabled={pending} className={buttonClass}>Add to itinerary</button>
+        <Input aria-label="Plan" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Dinner at the pier" disabled={pending} />
+        <Input aria-label="Time" value={time} onChange={(e) => setTime(e.target.value)} maxLength={40} placeholder="7:00 PM (optional)" disabled={pending} />
+        <Button type="submit" size="sm" disabled={pending}>Add to itinerary</Button>
       </form>
 
       {days.map((d) => {
@@ -83,7 +83,7 @@ export function ItineraryPanel({ tripId, items, days }: { tripId: string; items:
                 {dayItems.map((item) => (
                   <li key={item.id} className={rowClass}>
                     <span className="text-base text-text">{item.time_label ? `${item.time_label} · ` : ""}{item.title}</span>
-                    <button type="button" disabled={pending} onClick={() => void run(() => deleteItineraryItemAction(tripId, item.id))} className="min-h-11 px-2 text-sm text-muted hover:text-text cursor-pointer">Delete</button>
+                    <Button variant="destructive" size="sm" disabled={pending} onClick={() => void run(() => deleteItineraryItemAction(tripId, item.id))}>Delete</Button>
                   </li>
                 ))}
               </ul>
@@ -104,8 +104,8 @@ export function PackingPanel({ tripId, items }: { tripId: string; items: Packing
   return (
     <div className="space-y-6">
       <form onSubmit={(event) => { event.preventDefault(); void run(() => addPackingItemAction(tripId, label), () => setLabel("")); }} className="flex gap-2">
-        <input aria-label="Packing item" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={120} placeholder="Sunscreen" disabled={pending} className={fieldClass} />
-        <button type="submit" disabled={pending} className={buttonClass}>Add</button>
+        <Input aria-label="Packing item" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={120} placeholder="Sunscreen" disabled={pending} />
+        <Button type="submit" size="sm" disabled={pending}>Add</Button>
       </form>
 
       {items.length === 0 ? <p className="text-sm text-muted">Nothing on the list yet.</p> : (
@@ -113,10 +113,10 @@ export function PackingPanel({ tripId, items }: { tripId: string; items: Packing
           {items.map((item) => (
             <li key={item.id} className={rowClass}>
               <label className="flex min-w-0 flex-1 items-center gap-3 text-base text-text">
-                <input type="checkbox" checked={item.packed} disabled={pending} onChange={() => void run(() => togglePackingItemAction(tripId, item.id, !item.packed))} className="h-4 w-4 accent-text" />
+                <input type="checkbox" checked={item.packed} disabled={pending} onChange={() => void run(() => togglePackingItemAction(tripId, item.id, !item.packed))} className="h-4 w-4 accent-primary" />
                 <span className={item.packed ? "truncate text-muted line-through" : "truncate"}>{item.label}</span>
               </label>
-              <button type="button" disabled={pending} onClick={() => void run(() => deletePackingItemAction(tripId, item.id))} className="min-h-11 px-2 text-sm text-muted hover:text-text cursor-pointer">Delete</button>
+              <Button variant="destructive" size="sm" disabled={pending} onClick={() => void run(() => deletePackingItemAction(tripId, item.id))}>Delete</Button>
             </li>
           ))}
         </ul>
@@ -145,12 +145,12 @@ export function LinksPanel({ tripId, links }: { tripId: string; links: TripLink[
         }}
         className="space-y-3"
       >
-        <select aria-label="Link type" value={kind} onChange={(e) => setKind(e.target.value as TripLinkKind)} disabled={pending} className={fieldClass}>
+        <select aria-label="Link type" value={kind} onChange={(e) => setKind(e.target.value as TripLinkKind)} disabled={pending} className={inputClass}>
           {TRIP_LINK_KINDS.map((k) => <option key={k} value={k}>{TRIP_LINK_LABELS[k]}</option>)}
         </select>
-        <input aria-label="Link title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Booking confirmation" disabled={pending} className={fieldClass} />
-        <input aria-label="Link URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" disabled={pending} className={fieldClass} />
-        <button type="submit" disabled={pending} className={buttonClass}>Save link</button>
+        <Input aria-label="Link title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Booking confirmation" disabled={pending} />
+        <Input aria-label="Link URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" disabled={pending} />
+        <Button type="submit" size="sm" disabled={pending}>Save link</Button>
       </form>
 
       {TRIP_LINK_KINDS.map((k) => {
@@ -162,8 +162,8 @@ export function LinksPanel({ tripId, links }: { tripId: string; links: TripLink[
             <ul className="border-t border-line">
               {group.map((link) => (
                 <li key={link.id} className={rowClass}>
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="selectable min-w-0 truncate text-base text-text underline">{link.title}</a>
-                  <button type="button" disabled={pending} onClick={() => void run(() => deleteTripLinkAction(tripId, link.id))} className="min-h-11 px-2 text-sm text-muted hover:text-text cursor-pointer">Delete</button>
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="selectable min-w-0 truncate text-base text-link underline">{link.title}</a>
+                  <Button variant="destructive" size="sm" disabled={pending} onClick={() => void run(() => deleteTripLinkAction(tripId, link.id))}>Delete</Button>
                 </li>
               ))}
             </ul>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createTripAction } from "@/app/actions/trips";
+import { Button, Input, Sheet, Textarea } from "@/components/ui";
 import {
   MAX_UPLOAD_BYTES,
   resizeImageToWidth,
@@ -19,9 +20,6 @@ export const TRIP_COVER_BUCKET = "photos";
 const COVER_WIDTH = 1600;
 const JPEG_QUALITY = 0.8;
 
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text [color-scheme:light]";
-const labelClass = "mb-2 block text-sm text-muted";
 
 type FriendOption = { id: string; name: string };
 
@@ -180,60 +178,62 @@ export function CreateTripSheet({
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="New trip" className="fixed inset-0 z-50 flex items-end justify-center bg-scrim/40" onClick={onClose}>
-      <form onSubmit={submit} onClick={(event) => event.stopPropagation()} noValidate className="max-h-[90dvh] w-full max-w-[560px] space-y-5 overflow-y-auto rounded-t-lg border-t border-border bg-background p-4 pb-8">
+    <Sheet label="New trip" onClose={onClose}>
+      <form onSubmit={submit} noValidate className="space-y-5 pb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-text">New trip</h2>
-          <button type="button" onClick={onClose} disabled={busy} className="min-h-11 px-3 text-sm text-muted hover:text-text cursor-pointer disabled:opacity-60">Cancel</button>
+          <Button variant="text" size="sm" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
         </div>
 
         <div>
-          <label htmlFor="trip-title" className={labelClass}>Title</label>
-          <input id="trip-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={TRIP_TITLE_MAX} disabled={busy} placeholder="Lake week" className={fieldClass} />
+          <label htmlFor="trip-title" className="mb-2 block text-sm text-muted">Title</label>
+          <Input id="trip-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={TRIP_TITLE_MAX} disabled={busy} placeholder="Lake week" />
         </div>
 
         <div>
-          <label htmlFor="trip-destination" className={labelClass}>Destination (optional)</label>
-          <input id="trip-destination" value={destination} onChange={(e) => setDestination(e.target.value)} maxLength={TRIP_DESTINATION_MAX} disabled={busy} placeholder="Lake Tahoe, CA" className={fieldClass} />
+          <label htmlFor="trip-destination" className="mb-2 block text-sm text-muted">Destination (optional)</label>
+          <Input id="trip-destination" value={destination} onChange={(e) => setDestination(e.target.value)} maxLength={TRIP_DESTINATION_MAX} disabled={busy} placeholder="Lake Tahoe, CA" />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label htmlFor="trip-start" className={labelClass}>Start</label>
-            <input id="trip-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={busy} className={fieldClass} />
+            <label htmlFor="trip-start" className="mb-2 block text-sm text-muted">Start</label>
+            <Input id="trip-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={busy} />
           </div>
           <div>
-            <label htmlFor="trip-end" className={labelClass}>End</label>
-            <input id="trip-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={busy} className={fieldClass} />
+            <label htmlFor="trip-end" className="mb-2 block text-sm text-muted">End</label>
+            <Input id="trip-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={busy} />
           </div>
         </div>
 
         <div>
-          <label htmlFor="trip-description" className={labelClass}>Description (optional)</label>
-          <textarea id="trip-description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={TRIP_DESCRIPTION_MAX} rows={3} disabled={busy} className={`${fieldClass} resize-none`} />
+          <label htmlFor="trip-description" className="mb-2 block text-sm text-muted">Description (optional)</label>
+          <Textarea id="trip-description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={TRIP_DESCRIPTION_MAX} rows={3} disabled={busy} className="resize-none" />
         </div>
 
         <div>
-          <span className={labelClass}>Cover photo (optional)</span>
-          {coverPreview && <img draggable={false} src={coverPreview} alt="Cover preview" className="mb-3 aspect-video w-full rounded-lg border border-border object-cover" />}
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="min-h-11 rounded-lg border border-border px-4 py-3 text-sm text-text hover:bg-surface cursor-pointer disabled:opacity-60">
+          <span className="mb-2 block text-sm text-muted">Cover photo (optional)</span>
+          {coverPreview && <img draggable={false} src={coverPreview} alt="Cover preview" className="mb-3 aspect-video w-full rounded-lg border border-line object-cover" />}
+          <Button variant="secondary" onClick={() => fileRef.current?.click()} disabled={busy}>
             {cover ? "Change cover" : "Choose cover"}
-          </button>
+          </Button>
           <input ref={fileRef} type="file" accept="image/*" onChange={handleCover} className="hidden" />
         </div>
 
         {friends.length > 0 && (
           <fieldset>
-            <legend className={labelClass}>Add friends</legend>
+            <legend className="mb-2 block text-sm text-muted">Add friends</legend>
             <div className="max-h-48 overflow-y-auto border-t border-line">
               {friends.map((friend) => (
-                <label key={friend.id} className="flex min-h-11 items-center gap-3 border-b border-line text-sm text-text">
+                <label key={friend.id} className="flex min-h-11 items-center gap-3 border-b border-line text-base text-text">
                   <input
                     type="checkbox"
                     checked={friendIds.includes(friend.id)}
                     disabled={busy}
                     onChange={() => setFriendIds((current) => current.includes(friend.id) ? current.filter((id) => id !== friend.id) : [...current, friend.id])}
-                    className="h-4 w-4 accent-text"
+                    className="h-4 w-4 accent-primary"
                   />
                   {friend.name}
                 </label>
@@ -245,10 +245,10 @@ export function CreateTripSheet({
         {phase === "uploading" && <p className="text-sm text-muted">Uploading cover {progress}%</p>}
         {error && <p role="alert" className="text-sm text-text">{error}</p>}
 
-        <button type="submit" disabled={busy} className="min-h-11 w-full rounded-lg bg-text px-4 py-3 text-sm font-medium text-background cursor-pointer disabled:opacity-60">
-          {phase === "preparing" ? "Preparing..." : phase === "uploading" ? "Uploading..." : phase === "saving" ? "Creating..." : "Create trip"}
-        </button>
+        <Button type="submit" loading={busy} disabled={busy} className="w-full">
+          Create trip
+        </Button>
       </form>
-    </div>
+    </Sheet>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { respondToHangAction } from "@/app/actions/hangs";
+import { Card, Chip } from "@/components/ui";
 import type { HangResponse } from "@/lib/hangs";
 
 export type PendingHang = {
@@ -41,25 +42,21 @@ export function HangBanner({ hang }: { hang: PendingHang | null }) {
   }
 
   return (
-    <section
-      aria-label="Anyone down?"
-      className="space-y-3 rounded-lg border border-border bg-surface p-4"
-    >
-      <p className="text-base text-text break-words">
+    <Card aria-label="Anyone down?" className="space-y-3 p-4">
+      <p className="break-words text-base text-text">
         <span className="text-muted">{hang.creatorName}: </span>
         {hang.message}
       </p>
 
       <div className="flex flex-wrap gap-2">
         {RESPONSES.map((option) => (
-          <button
+          <Chip
             key={option.value}
-            type="button"
             onClick={() => void respond(option.value)}
-            className="min-h-11 rounded-lg border border-border bg-transparent px-4 text-sm text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer"
+            className="min-h-11 px-4"
           >
             {option.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -68,6 +65,6 @@ export function HangBanner({ hang }: { hang: PendingHang | null }) {
           {error}
         </p>
       )}
-    </section>
+    </Card>
   );
 }

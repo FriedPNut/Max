@@ -1,4 +1,4 @@
-export type CalendarView = "day" | "week" | "month";
+export type CalendarView = "week" | "month";
 
 export type DateParts = {
   year: number;
@@ -134,13 +134,6 @@ export function formatDayLong(key: string) {
   }).format(new Date(Date.UTC(year, month, day)));
 }
 
-export function formatHourLabel(hour: number) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(2020, 0, 1, hour)));
-}
-
 export function yearOfKey(key: string) {
   return parseDateKey(key).year;
 }
@@ -153,14 +146,4 @@ export function eventDateKey(iso: string) {
   }
 
   return dateKeyFromDate(date);
-}
-
-export function eventMinutes(iso: string) {
-  const date = new Date(iso);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date.getHours() * 60 + date.getMinutes();
 }

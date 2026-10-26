@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CommentMenu } from "@/components/posts/comment-menu";
 import { PostCard } from "@/components/posts/post-card";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar, Button, Input } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
+import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 import {
   COMMENT_MAX,
   nameInitial,
@@ -30,19 +31,24 @@ function sortByCreatedAt(comments: PostComment[]) {
 export function PostDetail({
   post,
   initialComments,
+  commentsError,
   currentUserId,
   currentUserName,
   currentUserUsername,
 }: {
   post: FeedPost;
   initialComments: PostComment[];
+  commentsError?: string;
   currentUserId: string;
   currentUserName: string;
   currentUserUsername: string | null;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-  const [comments, setComments] = useState<PostComment[]>(initialComments);
+  const keyboardInset = useKeyboardInset();
+  const [comments, setComments] = useState<PostComment[]>(
+    initialComments ?? []
+  );
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,23 +165,27 @@ export function PostDetail({
     setSending(true);
     setError(null);
 
-    const { data, error: insertError } = await supabase
-      .from("post_comments")
-      .insert({ post_id: post.id, user_id: currentUserId, body: text })
-      .select("id,post_id,user_id,body,created_at")
-      .single();
+    try {
+      const { data, error: insertError } = await supabase
+        .from("post_comments")
+        .insert({ post_id: post.id, user_id: currentUserId, body: text })
+        .select("id,post_id,user_id,body,created_at")
+        .single();
 
-    if (insertError || !data) {
+      if (insertError || !data) {
+        setError("Couldn't post that comment. Try again.");
+        return;
+      }
+
+      mergeComment(
+        toComment(data as CommentRow, currentUserName, currentUserUsername, null)
+      );
+      setBody("");
+    } catch {
       setError("Couldn't post that comment. Try again.");
+    } finally {
       setSending(false);
-      return;
     }
-
-    mergeComment(
-      toComment(data as CommentRow, currentUserName, currentUserUsername, null)
-    );
-    setBody("");
-    setSending(false);
   }
 
   async function handleDelete(commentId: string) {
@@ -186,29 +196,32 @@ export function PostDetail({
     setDeletingId(commentId);
     setError(null);
 
-    const { data, error: deleteError } = await supabase
-      .from("post_comments")
-      .delete()
-      .eq("id", commentId)
-      .select("id");
+    try {
+      const { data, error: deleteError } = await supabase
+        .from("post_comments")
+        .delete()
+        .eq("id", commentId)
+        .select("id");
 
-    if (deleteError) {
+      if (deleteError) {
+        setError("Couldn't delete that comment. Try again.");
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setError("That comment can't be deleted.");
+        return;
+      }
+
+      setComments((current) =>
+        current.filter((comment) => comment.id !== commentId)
+      );
+      setConfirmingId(null);
+    } catch {
       setError("Couldn't delete that comment. Try again.");
+    } finally {
       setDeletingId(null);
-      return;
     }
-
-    if (!data || data.length === 0) {
-      setError("That comment can't be deleted.");
-      setDeletingId(null);
-      return;
-    }
-
-    setComments((current) =>
-      current.filter((comment) => comment.id !== commentId)
-    );
-    setConfirmingId(null);
-    setDeletingId(null);
   }
 
   return (
@@ -219,16 +232,27 @@ export function PostDetail({
         showComments={false}
       />
 
-      <section className="space-y-2 border-b border-line py-6">
+      <section
+        id="comments"
+        className="scroll-mt-20 space-y-2 border-b border-line py-6"
+      >
         <h2 className="text-lg font-semibold text-text">Comments</h2>
 
+        {commentsError && (
+          <p role="alert" className="text-sm text-muted">
+            {commentsError}
+          </p>
+        )}
+
         {comments.length === 0 ? (
-          <p className="text-sm text-muted">No comments yet.</p>
+          commentsError ? null : (
+            <p className="text-sm text-muted">No comments yet.</p>
+          )
         ) : (
           <ul className="divide-y divide-line border-t border-line">
             {comments.map((comment) => (
               <li key={comment.id} className="flex gap-3 py-3">
-                <ProfileAvatar
+                <Avatar
                   src={comment.authorAvatarUrl}
                   initial={comment.authorInitial}
                   size={32}
@@ -239,12 +263,12 @@ export function PostDetail({
                     {comment.authorUsername ? (
                       <Link
                         href={`/u/${encodeURIComponent(comment.authorUsername)}`}
-                        className="truncate text-sm font-medium text-text transition-opacity duration-150 ease-out hover:opacity-80"
+                        className="truncate text-sm font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-80"
                       >
                         {comment.authorName}
                       </Link>
                     ) : (
-                      <span className="truncate text-sm font-medium text-text">
+                      <span className="truncate text-sm font-semibold text-text">
                         {comment.authorName}
                       </span>
                     )}
@@ -261,22 +285,22 @@ export function PostDetail({
                     <div className="mt-2 space-y-2">
                       <p className="text-sm text-text">Delete this comment?</p>
                       <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
+                        <Button
+                          variant="destructive"
+                          size="sm"
                           onClick={() => void handleDelete(comment.id)}
                           disabled={deletingId !== null}
-                          className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 disabled:pointer-events-none disabled:opacity-60 cursor-pointer"
                         >
                           {deletingId === comment.id ? "Deleting..." : "Delete"}
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => setConfirmingId(null)}
                           disabled={deletingId !== null}
-                          className="min-h-11 rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface disabled:pointer-events-none disabled:opacity-60 cursor-pointer"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -300,13 +324,18 @@ export function PostDetail({
 
       <div
         className="fixed inset-x-0 z-30 border-t border-line bg-background"
-        style={{ bottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
+        style={{
+          bottom:
+            keyboardInset > 0
+              ? keyboardInset
+              : "calc(72px + env(safe-area-inset-bottom, 0px))",
+        }}
       >
         <form
           onSubmit={handleSubmit}
           className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-3"
         >
-          <input
+          <Input
             type="text"
             value={body}
             onChange={(event) => setBody(event.target.value)}
@@ -315,16 +344,18 @@ export function PostDetail({
             aria-label="Add a comment"
             enterKeyHint="send"
             autoComplete="off"
-            className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-3 text-base leading-snug text-text placeholder:text-muted focus:outline-2 focus:outline-offset-0 focus:outline-text"
+            pill
+            className="min-w-0 flex-1"
           />
 
-          <button
+          <Button
             type="submit"
+            size="sm"
             disabled={sending || body.trim().length === 0}
-            className="min-h-11 shrink-0 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 disabled:pointer-events-none disabled:opacity-60 cursor-pointer"
+            className="shrink-0"
           >
             {sending ? "Adding..." : "Send"}
-          </button>
+          </Button>
         </form>
 
         {error && (

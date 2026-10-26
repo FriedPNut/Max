@@ -15,21 +15,17 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-background text-text">
-      <header className="border-b border-line">
-        <div className="mx-auto flex h-14 w-full max-w-[560px] items-center px-4">
-          <span className="text-lg font-semibold text-text">Max</span>
-        </div>
-      </header>
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-6 py-10 text-text">
+      <span className="story-gradient bg-clip-text text-[64px] font-extrabold leading-none tracking-[-0.03em] text-transparent sm:text-[72px]">
+        Max
+      </span>
 
-      <div className="mx-auto w-full max-w-[560px] px-4 py-10 sm:py-14">
-        <p className="text-sm text-muted">
-          Maximum potential. Maximum fun. Maximum productivity.
-        </p>
+      <p className="mt-3 text-center text-sm text-muted">
+        Maximum potential. Maximum fun. Maximum productivity.
+      </p>
 
-        <div className="mt-8">
-          <AuthForm />
-        </div>
+      <div className="mt-8 w-full max-w-[360px]">
+        <AuthForm />
       </div>
     </main>
   );

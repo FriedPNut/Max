@@ -4,7 +4,9 @@ import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { AddFriendButton } from "@/components/chat/add-friend-button";
 import { FriendRequestActions } from "@/components/chat/friend-request-actions";
 import { StartChatButton } from "@/components/chat/start-chat-button";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 import {
@@ -16,9 +18,6 @@ import {
   type FriendshipRecord,
   type SearchPerson,
 } from "@/lib/chat";
-
-const searchInputClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 
 export default async function FriendsPage({
   searchParams,
@@ -185,43 +184,35 @@ export default async function FriendsPage({
         <div>
           <Link
             href="/chat"
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-150 ease-out mb-6"
+            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-80"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
             Chat
           </Link>
-          <h1 className="text-[28px] font-semibold leading-tight text-text">
+          <h1 className="text-[22px] font-bold leading-tight text-text">
             Friends
           </h1>
         </div>
 
-        <form method="get" className="space-y-3">
-          <div>
-            <label htmlFor="friend-search" className="block text-sm text-muted mb-2">
-              Search by name or username
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="friend-search"
-                name="q"
-                type="search"
-                defaultValue={query}
-                autoComplete="off"
-                placeholder="Maya or maya"
-                className={searchInputClass}
-              />
-              <button
-                type="submit"
-                className="shrink-0 min-h-11 px-4 py-3 rounded-lg border border-border bg-transparent text-text font-sans font-medium text-sm transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
-              >
-                Search
-              </button>
-            </div>
-          </div>
+        <form method="get" className="flex items-center gap-2">
+          <Input
+            id="friend-search"
+            name="q"
+            type="search"
+            defaultValue={query}
+            autoComplete="off"
+            placeholder="Search by name or username"
+            aria-label="Search by name or username"
+            pill
+            className="min-w-0 flex-1"
+          />
+          <Button type="submit" variant="secondary" className="shrink-0">
+            Search
+          </Button>
         </form>
 
         {friendshipError && (
-          <p className="text-sm text-muted">
+          <p role="alert" className="text-sm text-danger">
             Couldn&apos;t load your friends. Refresh and try again.
           </p>
         )}
@@ -237,7 +228,7 @@ export default async function FriendsPage({
                 {results.map((person) => (
                   <div
                     key={person.id}
-                    className="flex items-center gap-3 border-b border-line py-3"
+                    className="flex min-h-14 items-center gap-3 border-b border-line py-3"
                   >
                     <PersonIdentity person={person} />
 
@@ -275,7 +266,7 @@ export default async function FriendsPage({
               {incoming.map((request) => (
                 <div
                   key={request.friendshipId}
-                  className="flex items-center gap-3 border-b border-line py-3"
+                  className="flex min-h-14 items-center gap-3 border-b border-line py-3"
                 >
                   <PersonIdentity person={request} />
 
@@ -296,7 +287,7 @@ export default async function FriendsPage({
               {sent.map((request) => (
                 <div
                   key={request.friendshipId}
-                  className="flex items-center gap-3 border-b border-line py-3"
+                  className="flex min-h-14 items-center gap-3 border-b border-line py-3"
                 >
                   <PersonIdentity person={request} />
 
@@ -330,14 +321,14 @@ export default async function FriendsPage({
 function PersonIdentity({ person }: { person: FriendListItem }) {
   const content = (
     <>
-      <ProfileAvatar
+      <Avatar
         src={person.avatarUrl}
         initial={person.initial}
         size={40}
       />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-base font-medium text-text">
+        <p className="truncate text-[15px] font-semibold text-text">
           {person.name}
         </p>
         {person.username && (
@@ -358,7 +349,7 @@ function PersonIdentity({ person }: { person: FriendListItem }) {
   return (
     <Link
       href={`/u/${encodeURIComponent(person.username)}`}
-      className="flex min-w-0 flex-1 items-center gap-3 transition-opacity duration-150 ease-out hover:opacity-80"
+      className="flex min-w-0 flex-1 items-center gap-3 transition-opacity duration-200 ease-out hover:opacity-80"
     >
       {content}
     </Link>

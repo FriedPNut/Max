@@ -4,20 +4,29 @@ import { FeedView } from "@/components/posts/feed-view";
 import { OnThisDayCard } from "@/components/posts/on-this-day-card";
 import { BestOfBanner } from "@/components/best-of/best-of-banner";
 import { NewPostButton } from "@/components/posts/new-post-button";
+import { StoriesRow } from "@/components/posts/stories-row";
 import { createClient } from "@/lib/supabase/server";
 import { loadPostPage } from "@/lib/posts-data";
+import { loadStories } from "@/lib/stories-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export default async function PostPage() {
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
-  const eventOptionsResult = await supabase
-    .from("events")
-    .select("id,title,starts_at")
-    .gte("starts_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-    .order("starts_at", { ascending: true })
-    .limit(50);
+  const [eventOptionsResult, stories] = await Promise.all([
+    supabase
+      .from("events")
+      .select("id,title,starts_at")
+      .gte(
+        "starts_at",
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      )
+      .order("starts_at", { ascending: true })
+      .limit(50),
+    loadStories(supabase, user.id),
+  ]);
   const eventOptions = (eventOptionsResult.data ?? []).map((event) => ({
     id: String(event.id),
     title: String(event.title),
@@ -28,12 +37,14 @@ export default async function PostPage() {
     <AppShell userId={user.id}>
       <section className="space-y-8">
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-[28px] font-semibold leading-tight text-text">
+          <h1 className="text-[22px] font-bold leading-tight text-text">
             Post
           </h1>
 
           <NewPostButton userId={user.id} events={eventOptions} />
         </div>
+
+        <StoriesRow groups={stories.groups} viewer={stories.viewer} />
 
         <BestOfBanner />
 
@@ -77,19 +88,15 @@ async function FeedSection({
 
 function FeedSkeleton() {
   return (
-    <div
-      className="animate-pulse space-y-6"
-      aria-busy="true"
-      aria-label="Loading posts"
-    >
+    <div className="space-y-6" aria-busy="true" aria-label="Loading posts">
       {[0, 1].map((index) => (
         <div key={index} className="space-y-3" aria-hidden="true">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-line/50" />
-            <div className="h-4 w-32 rounded bg-line/50" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-4 w-32 rounded" />
           </div>
-          <div className="h-64 rounded-lg bg-line/40" />
-          <div className="h-4 w-2/3 rounded bg-line/40" />
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-4 w-2/3 rounded" />
         </div>
       ))}
     </div>

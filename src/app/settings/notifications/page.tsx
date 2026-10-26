@@ -17,12 +17,18 @@ export default async function NotificationSettingsPage() {
 
   return (
     <AppShell userId={user.id}>
-      <section className="space-y-8">
+      <section className="space-y-6">
         <header>
-          <Link href="/settings" className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 hover:text-text">
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />Settings
+          <Link
+            href="/settings"
+            aria-label="Back to settings"
+            className="-ml-2 inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
+          >
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           </Link>
-          <h1 className="text-[28px] font-semibold leading-tight text-text">Notifications</h1>
+          <h1 className="mt-4 text-[22px] font-bold leading-tight text-text">
+            Notifications
+          </h1>
         </header>
         <NotificationSettings initialPreferences={data ?? null} />
       </section>

@@ -183,12 +183,12 @@ export default async function EventDetailPage({
         <img draggable={false}
           src={coverUrl}
           alt={`Cover for ${event.title}`}
-          className="aspect-video w-full rounded-lg border border-border bg-surface object-cover"
+          className="aspect-video w-full rounded-lg bg-surface-2 object-cover"
         />
       )}
 
-      <section className="border-t border-line">
-        <div className="border-b border-line py-4">
+      <section className="-mx-4 border-t border-line">
+        <div className="border-b border-line px-4 py-4">
           <p className="text-sm text-muted">When</p>
 
           {event.poll_open ? (
@@ -208,7 +208,7 @@ export default async function EventDetailPage({
         </div>
 
         {event.poll_open && (
-          <div className="border-b border-line py-4">
+          <div className="border-b border-line px-4 py-4">
             {pollResult?.snapshot ? (
               <PollTimePanel
                 eventId={event.id}
@@ -225,23 +225,23 @@ export default async function EventDetailPage({
           </div>
         )}
 
-        <div className="border-b border-line py-4">
+        <div className="border-b border-line px-4 py-4">
           <p className="text-sm text-muted">Where</p>
           <Link
             href={mapsUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 inline-flex flex-col text-base text-text transition-opacity duration-150 ease-out hover:opacity-80"
+            className="mt-1 inline-flex flex-col text-base text-text transition-opacity duration-200 ease-out hover:opacity-80"
           >
             <span className="selectable break-words whitespace-pre-line">
               {event.location}
             </span>
-            <span className="mt-1 text-sm text-muted">Open in Maps</span>
+            <span className="mt-1 text-sm text-link">Open in Maps</span>
           </Link>
         </div>
 
         {event.description && (
-          <div className="border-b border-line py-4">
+          <div className="border-b border-line px-4 py-4">
             <p className="text-sm text-muted">Details</p>
             <p className="selectable mt-1 text-base text-text leading-relaxed whitespace-pre-line break-words">
               {event.description}
@@ -300,9 +300,9 @@ export default async function EventDetailPage({
           <div className="mb-6 flex items-center justify-between gap-2">
             <Link
               href="/events"
-              className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-150 ease-out"
+              className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out"
             >
-              <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+              <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
               Events
             </Link>
 
@@ -321,7 +321,7 @@ export default async function EventDetailPage({
             {event.poll_open ? "Needs a time" : isPast ? "Past" : "Upcoming"}
           </p>
 
-          <h1 className="mt-1 text-[28px] font-semibold leading-tight text-text break-words">
+          <h1 className="mt-1 text-[22px] font-bold leading-tight text-text break-words">
             {event.title}
           </h1>
 

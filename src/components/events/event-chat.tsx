@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { useActiveEventTab } from "@/components/events/event-tabs";
+import { Button, Input } from "@/components/ui";
 import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -433,33 +434,34 @@ export function EventChat({
                     (username ? (
                       <Link
                         href={`/u/${encodeURIComponent(username)}`}
-                        className="mb-1 text-[13px] text-muted transition-colors duration-150 ease-out hover:text-text"
+                        className="mb-1 text-xs font-semibold text-muted transition-colors duration-200 ease-out hover:text-text"
                       >
                         {name}
                       </Link>
                     ) : (
-                      <p className="mb-1 text-[13px] text-muted">{name}</p>
+                      <p className="mb-1 text-xs font-semibold text-muted">{name}</p>
                     ))}
 
                   <div
-                    className={`max-w-[78%] whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-base leading-relaxed ${
+                    className={`max-w-[78%] whitespace-pre-wrap break-words rounded-[22px] px-3.5 py-2 text-base leading-relaxed ${
                       isOwn
-                        ? "bg-text text-background"
-                        : "border border-border bg-surface text-text"
+                        ? "bubble-gradient text-on-primary"
+                        : "bg-surface-2 text-text"
                     }`}
                   >
                     {message.body}
                   </div>
 
                   {isOwn && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       onClick={() => handleDelete(message.id)}
                       disabled={deletingId !== null}
-                      className="mt-1 min-h-11 px-1 text-sm text-muted transition-colors duration-150 ease-out hover:text-text cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+                      className="mt-1"
                     >
                       {deletingId === message.id ? "Deleting..." : "Delete"}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </Fragment>
@@ -476,14 +478,14 @@ export function EventChat({
           bottom:
             keyboardInset > 0
               ? keyboardInset
-              : "calc(56px + env(safe-area-inset-bottom, 0px))",
+              : "calc(72px + env(safe-area-inset-bottom, 0px))",
         }}
       >
         <form
           onSubmit={handleSend}
           className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-3"
         >
-          <input
+          <Input
             type="text"
             value={body}
             onChange={(event) => setBody(event.target.value)}
@@ -491,16 +493,18 @@ export function EventChat({
             aria-label="Message"
             enterKeyHint="send"
             autoComplete="off"
-            className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-3 text-base leading-snug text-text placeholder:text-muted focus:outline-2 focus:outline-offset-0 focus:outline-text"
+            pill
+            className="min-w-0 flex-1 px-4"
           />
 
-          <button
+          <Button
             type="submit"
+            variant="text"
             disabled={sending || body.trim().length === 0}
-            className="min-h-11 shrink-0 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
+            className="shrink-0 text-primary"
           >
             {sending ? "Sending..." : "Send"}
-          </button>
+          </Button>
         </form>
 
         {error && (

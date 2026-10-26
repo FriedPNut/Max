@@ -24,9 +24,9 @@ export default async function PostDetailPage({
       <section className="space-y-6">
         <Link
           href="/feed"
-          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
         >
-          <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+          <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           Feed
         </Link>
 
@@ -38,6 +38,7 @@ export default async function PostDetailPage({
           <PostDetail
             post={result.post}
             initialComments={result.comments}
+            commentsError={result.commentsError}
             currentUserId={user.id}
             currentUserName={displayName}
             currentUserUsername={myUsername}

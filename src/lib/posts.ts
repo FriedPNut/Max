@@ -37,9 +37,13 @@ export type PostComment = {
 export type FeedPost = {
   id: string;
   imageUrl: string | null;
+  // One entry per photo. The current posts table stores one image, so this is
+  // usually a single item, but the feed already knows how to page a carousel.
+  imageUrls: string[];
   caption: string | null;
   createdAt: string;
   relativeTime: string;
+  authorId: string;
   authorName: string;
   authorInitial: string;
   authorUsername: string | null;

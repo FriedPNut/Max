@@ -5,6 +5,7 @@ import {
   leaveConversationAction,
   type ChatActionState,
 } from "@/app/actions/chat";
+import { Button, Card } from "@/components/ui";
 
 export function LeaveGroupButton({
   conversationId,
@@ -19,20 +20,21 @@ export function LeaveGroupButton({
 
   if (!confirming) {
     return (
-      <button
-        type="button"
+      <Button
+        variant="destructive"
         onClick={() => setConfirming(true)}
-        className="w-full min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer"
+        className="w-full"
       >
         Leave group
-      </button>
+      </Button>
     );
   }
 
   return (
+    <Card className="p-4">
     <form
       action={formAction}
-      className="space-y-3 rounded-lg border border-border bg-surface p-4"
+      className="space-y-3"
     >
       <input type="hidden" name="conversation_id" value={conversationId} />
 
@@ -41,29 +43,25 @@ export function LeaveGroupButton({
       </p>
 
       {state.error && (
-        <p role="alert" className="text-sm text-text">
+        <p role="alert" className="text-sm text-danger">
           {state.error}
         </p>
       )}
 
       <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
-        >
+        <Button type="submit" variant="destructive" disabled={pending}>
           {pending ? "Leaving..." : "Leave group"}
-        </button>
+        </Button>
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => setConfirming(false)}
           disabled={pending}
-          className="min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
+    </Card>
   );
 }

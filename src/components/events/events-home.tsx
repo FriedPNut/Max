@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarSection } from "@/components/events/calendar-section";
+import { Card } from "@/components/ui";
 import { IdeaSheet } from "@/components/events/idea-sheet";
 import { IdeasWidget } from "@/components/events/ideas-widget";
 import { ComingUp } from "@/components/events/coming-up";
 import { QuickLinks } from "@/components/events/quick-links";
 import type { EventListItem, IdeaListItem } from "@/lib/events";
 import { formatBirthdayDate, nextBirthday } from "@/lib/birthdays";
+import { useAppRefreshSignal } from "@/lib/app-refresh";
+import { useNewIds } from "@/lib/use-new-ids";
 
 function toDateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
@@ -41,6 +44,17 @@ export function EventsHome({
   const [ideas, setIdeas] = useState(initialIdeas);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createdIdeaId, setCreatedIdeaId] = useState<string | null>(null);
+  const newIds = useNewIds(
+    ideas.map((idea) => idea.id),
+    initialIdeas.map((idea) => idea.id)
+  );
+  const refreshSignal = useAppRefreshSignal();
+
+  useEffect(() => {
+    if (refreshSignal) {
+      setIdeas(initialIdeas);
+    }
+  }, [refreshSignal, initialIdeas]);
 
   function handleCreated(idea: IdeaListItem) {
     setIdeas((current) => [...current, idea]);
@@ -69,7 +83,7 @@ export function EventsHome({
       <ComingUp items={comingUpEvents} onWayEtas={onWayEtas} />
 
       {upcomingBirthday && (
-        <section className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-3">
+        <Card className="flex items-center justify-between gap-3 px-4 py-3">
           <p className="min-w-0 text-base text-text">
             {upcomingBirthday.name}&apos;s birthday{" "}
             {upcomingBirthday.days === 0
@@ -81,11 +95,11 @@ export function EventsHome({
           </p>
           <Link
             href={`/events/new?title=${encodeURIComponent(`${upcomingBirthday.name}’s birthday`)}&date=${toDateKey(nextBirthday(upcomingBirthday.month, upcomingBirthday.day))}`}
-            className="inline-flex min-h-11 shrink-0 items-center text-sm font-medium text-text underline underline-offset-4"
+            className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-link"
           >
             Plan something
           </Link>
-        </section>
+        </Card>
       )}
 
       <div className="space-y-2">
@@ -94,6 +108,7 @@ export function EventsHome({
           onVoteChange={handleVoteChange}
           onAddIdea={() => setSheetOpen(true)}
           createdIdeaId={createdIdeaId}
+          newIds={newIds}
         />
 
         <div className="pt-2">
@@ -103,7 +118,7 @@ export function EventsHome({
         {pollVoteCount > 0 && (
           <Link
             href="/events/ideas?view=events#needs-a-time"
-            className="block px-1 text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
+            className="block px-1 text-sm font-semibold text-link transition-opacity duration-200 ease-out hover:opacity-80"
           >
             {pollVoteCount === 1
               ? "1 poll needs your vote"

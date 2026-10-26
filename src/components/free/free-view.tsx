@@ -13,12 +13,14 @@ import {
   startOfDay,
   type AvailabilityWindow,
 } from "@/lib/availability";
+import {
+  Avatar,
+  Button,
+  Input,
+  SegmentedControl,
+} from "@/components/ui";
 
-const fieldClass =
-  "w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text [color-scheme:light]";
 const labelClass = "block text-sm text-muted mb-2";
-const buttonClass =
-  "min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
 
 function quickWindows(now: Date) {
   const today = startOfDay(now);
@@ -172,27 +174,24 @@ export function FreeView({
         <h2 className="text-lg font-semibold text-text">Mark me as free</h2>
 
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className={buttonClass}
+          <Button
+            variant="secondary"
             onClick={() => void addWindow(quick.tonight.startsAt, quick.tonight.endsAt, null)}
           >
             Tonight
-          </button>
-          <button
-            type="button"
-            className={buttonClass}
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => void addWindow(quick.tomorrow.startsAt, quick.tomorrow.endsAt, null)}
           >
             Tomorrow
-          </button>
-          <button
-            type="button"
-            className={buttonClass}
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => void addWindow(quick.weekend.startsAt, quick.weekend.endsAt, null)}
           >
             This weekend
-          </button>
+          </Button>
         </div>
 
         {error && (
@@ -205,25 +204,23 @@ export function FreeView({
           <p className="text-sm text-muted">Pick a time</p>
           <div>
             <label htmlFor="free-date" className={labelClass}>Date</label>
-            <input id="free-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldClass} />
+            <Input id="free-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label htmlFor="free-start" className={labelClass}>Start</label>
-              <input id="free-start" type="time" value={start} onChange={(e) => setStart(e.target.value)} className={fieldClass} />
+              <Input id="free-start" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
             </div>
             <div>
               <label htmlFor="free-end" className={labelClass}>End</label>
-              <input id="free-end" type="time" value={end} onChange={(e) => setEnd(e.target.value)} className={fieldClass} />
+              <Input id="free-end" type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
             </div>
           </div>
           <div>
             <label htmlFor="free-note" className={labelClass}>Note (optional)</label>
-            <input id="free-note" type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Free after work" className={fieldClass} />
+            <Input id="free-note" type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Free after work" />
           </div>
-          <button
-            type="button"
-            className={buttonClass}
+          <Button
             disabled={!date || !start || !end}
             onClick={() => {
               const startsAt = new Date(`${date}T${start}`);
@@ -233,25 +230,21 @@ export function FreeView({
             }}
           >
             Add time
-          </button>
+          </Button>
         </div>
       </section>
 
       <section className="space-y-4">
-        <div role="tablist" className="inline-flex rounded-lg border border-border p-1">
-          {(["today", "week"] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="tab"
-              aria-selected={view === option}
-              onClick={() => setView(option)}
-              className={`min-h-11 rounded-md px-4 text-sm transition-colors duration-150 ease-out cursor-pointer ${view === option ? "bg-text text-background" : "text-muted hover:text-text"}`}
-            >
-              {option === "today" ? "Today" : "This week"}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          label="Free view"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "today", label: "Today" },
+            { value: "week", label: "This week" },
+          ]}
+          className="inline-flex"
+        />
 
         {windows.length === 0 ? (
           <p className="text-sm text-muted">Nobody has marked themselves free yet.</p>
@@ -261,10 +254,10 @@ export function FreeView({
           ) : (
             <ul className="border-t border-line">
               {todayList.map((w) => (
-                <li key={w.id} className="flex items-start gap-3 border-b border-line py-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text">{w.initial}</span>
+                <li key={w.id} className="-mx-4 flex items-start gap-3 border-b border-line px-4 py-3">
+                  <Avatar initial={w.initial} name={w.name} size={40} />
                   <div className="min-w-0">
-                    <p className="text-base font-medium text-text">{w.name}</p>
+                    <p className="text-base font-semibold text-text">{w.name}</p>
                     <p className="text-sm text-muted">{formatWindow(w.starts_at, w.ends_at)}</p>
                     {w.note && <p className="text-sm text-muted">{w.note}</p>}
                   </div>
@@ -290,16 +283,16 @@ export function FreeView({
                   {people.length > 0 && (
                     <ul className="border-t border-line">
                       {people.map((w) => (
-                        <li key={w.id} className="flex items-start gap-3 border-b border-line py-2">
+                        <li key={w.id} className="-mx-4 flex items-start gap-3 border-b border-line px-4 py-2">
                           <span className="text-base text-text">{w.name}</span>
                           <span className="text-sm text-muted">{formatWindow(w.starts_at, w.ends_at)}</span>
                         </li>
                       ))}
                     </ul>
                   )}
-                  <button type="button" onClick={() => planForDay(dayStart)} className="min-h-11 text-sm text-text underline underline-offset-4 cursor-pointer">
+                  <Button variant="text" size="sm" onClick={() => planForDay(dayStart)}>
                     Make a plan
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -314,14 +307,14 @@ export function FreeView({
         ) : (
           <ul className="border-t border-line">
             {myWindows.map((w) => (
-              <li key={w.id} className="flex items-center justify-between gap-3 border-b border-line py-3">
+              <li key={w.id} className="-mx-4 flex min-h-14 items-center justify-between gap-3 border-b border-line px-4 py-3">
                 <div className="min-w-0">
                   <p className="text-base text-text">{formatWindow(w.starts_at, w.ends_at)}</p>
                   {w.note && <p className="text-sm text-muted">{w.note}</p>}
                 </div>
-                <button type="button" onClick={() => void removeWindow(w.id)} className="min-h-11 shrink-0 px-2 text-sm text-muted hover:text-text cursor-pointer">
+                <Button variant="destructive" size="sm" onClick={() => void removeWindow(w.id)}>
                   Remove
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

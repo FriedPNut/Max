@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar } from "@/components/ui";
 import {
   nameInitial,
   profileDisplayName,
@@ -23,36 +23,48 @@ export function ProfileHeader({
   const name = profileDisplayName(profile);
 
   return (
-    <section className="space-y-6">
-      <div className="flex items-center gap-5">
-        <ProfileAvatar src={avatarUrl} initial={nameInitial(name)} />
+    <section>
+      <div className="flex items-start gap-5">
+        <Avatar
+          src={avatarUrl}
+          initial={nameInitial(name)}
+          size={88}
+          className="mt-1"
+        />
 
-        <div className="min-w-0 flex-1">
-          <h1 className="text-[28px] font-semibold leading-tight text-text break-words">
-            {name}
-          </h1>
-
-          {profile.username ? (
-            <p className="mt-1 text-sm text-muted">@{profile.username}</p>
-          ) : (
-            <p className="mt-1 text-sm text-muted">No username yet</p>
-          )}
-
-          {profile.bio && (
-            <p className="selectable mt-3 whitespace-pre-wrap break-words text-base text-text">
-              {profile.bio}
-            </p>
-          )}
+        <div className="grid min-w-0 flex-1 grid-cols-3 gap-1 pt-1">
+          <Stat value={stats.posts} label="Posts" />
+          <Stat value={stats.friends} label="Friends" href={friendsHref} />
+          <Stat value={stats.events} label="Events" />
         </div>
       </div>
 
-      <div className="grid grid-cols-3 border-y border-border py-4">
-        <Stat value={stats.posts} label="Posts" />
-        <Stat value={stats.friends} label="Friends" href={friendsHref} />
-        <Stat value={stats.events} label="Events" />
+      {/* Reserved for the level and streak line, directly under the stats. */}
+      <div aria-hidden="true" className="mt-2 min-h-5" />
+
+      <div className="mt-1">
+        <h1 className="break-words text-base font-semibold leading-snug text-text">
+          {name}
+        </h1>
+
+        {profile.username ? (
+          <p className="mt-0.5 truncate text-sm text-muted">
+            @{profile.username}
+          </p>
+        ) : (
+          <p className="mt-0.5 text-sm text-muted">No username yet</p>
+        )}
+
+        {profile.bio && (
+          <p className="selectable mt-2 whitespace-pre-wrap break-words text-base text-text">
+            {profile.bio}
+          </p>
+        )}
       </div>
 
-      {children}
+      <div className="mt-4 flex items-stretch gap-2 [&>*]:min-w-0 [&>*]:flex-1">
+        {children}
+      </div>
     </section>
   );
 }
@@ -68,8 +80,12 @@ function Stat({
 }) {
   const content = (
     <>
-      <span className="text-lg font-semibold text-text">{value}</span>
-      <span className="mt-0.5 text-sm text-muted">{label}</span>
+      <span className="text-lg font-bold leading-tight text-text">
+        {value}
+      </span>
+      <span className="mt-0.5 text-[13px] leading-tight text-muted">
+        {label}
+      </span>
     </>
   );
 
@@ -77,12 +93,16 @@ function Stat({
     return (
       <Link
         href={href}
-        className="flex flex-col items-center rounded-lg transition-colors duration-150 ease-out hover:bg-surface"
+        className="flex min-h-11 flex-col items-center justify-center rounded-lg transition-colors duration-200 ease-out hover:bg-surface-2"
       >
         {content}
       </Link>
     );
   }
 
-  return <div className="flex flex-col items-center">{content}</div>;
+  return (
+    <div className="flex min-h-11 flex-col items-center justify-center">
+      {content}
+    </div>
+  );
 }

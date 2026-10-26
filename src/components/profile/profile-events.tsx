@@ -46,9 +46,9 @@ function EventRow({ event }: { event: ProfileEvent }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className="block border-b border-line py-3 transition-colors duration-150 ease-out hover:bg-surface"
+      className="press-row block border-b border-line py-3 transition-colors duration-200 ease-out hover:bg-surface-2"
     >
-      <p className="text-base font-medium text-text break-words">
+      <p className="text-base font-semibold text-text break-words">
         {event.title}
       </p>
       <p className="mt-1 text-sm text-muted break-words">

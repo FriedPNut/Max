@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { IdeaVoteButton } from "@/components/events/idea-vote-button";
+import { Button, Card } from "@/components/ui";
 import type { IdeaListItem } from "@/lib/events";
 
 export function IdeasWidget({
@@ -10,6 +11,7 @@ export function IdeasWidget({
   onVoteChange,
   onAddIdea,
   createdIdeaId,
+  newIds,
 }: {
   ideas: IdeaListItem[];
   onVoteChange: (
@@ -18,6 +20,7 @@ export function IdeasWidget({
   ) => void;
   onAddIdea: () => void;
   createdIdeaId?: string | null;
+  newIds?: Set<string>;
 }) {
   const openIdeas = ideas.filter((idea) => idea.status === "open");
   const topIdeas = [...openIdeas]
@@ -39,11 +42,11 @@ export function IdeasWidget({
       : topIdeas;
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-surface">
-      <div className="flex items-center gap-1 px-2 py-1">
+    <Card className="overflow-hidden">
+      <div className="flex items-center gap-1 px-4 py-2">
         <Link
           href="/events/ideas"
-          className="flex min-h-11 flex-1 items-center justify-between gap-4 rounded-lg px-2 transition-colors duration-150 ease-out hover:bg-background"
+          className="press-row flex min-h-11 flex-1 items-center justify-between gap-4 transition-colors duration-200 ease-out hover:opacity-70"
         >
           <div className="flex items-baseline gap-2">
             <h2 className="text-lg font-semibold text-text">Ideas</h2>
@@ -52,18 +55,18 @@ export function IdeasWidget({
 
           <span className="flex items-center gap-1 text-sm text-muted">
             See all
-            <ChevronRight size={20} strokeWidth={1.5} aria-hidden="true" />
+            <ChevronRight size={24} strokeWidth={1.75} aria-hidden="true" />
           </span>
         </Link>
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={onAddIdea}
           aria-label="Add idea"
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-background cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+          className="h-11 w-11 shrink-0 px-0"
         >
-          <Plus size={20} strokeWidth={1.5} aria-hidden="true" />
-        </button>
+          <Plus size={24} strokeWidth={1.75} aria-hidden="true" />
+        </Button>
       </div>
 
       {shownIdeas.length === 0 ? (
@@ -74,10 +77,12 @@ export function IdeasWidget({
         shownIdeas.map((idea) => (
           <div
             key={idea.id}
-            className="flex items-start justify-between gap-3 border-t border-line px-4 py-3"
+            className={`flex min-h-14 items-start justify-between gap-3 border-t border-line px-4 py-3 ${
+              newIds?.has(idea.id) ? "row-enter" : ""
+            }`}
           >
             <div className="min-w-0">
-              <p className="text-base font-medium text-text break-words">
+              <p className="text-base font-semibold text-text break-words">
                 {idea.title}
               </p>
               <p className="mt-0.5 text-sm text-muted break-words">
@@ -95,6 +100,6 @@ export function IdeasWidget({
           </div>
         ))
       )}
-    </section>
+    </Card>
   );
 }

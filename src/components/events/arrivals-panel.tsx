@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cancelArrivalAction, setHereAction, setOnMyWayAction } from "@/app/actions/event-arrivals";
+import { Button, Chip } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import {
   ARRIVAL_ETA_OPTIONS,
@@ -11,11 +12,6 @@ import {
 } from "@/lib/event-arrivals";
 
 export type ArrivalPerson = { id: string; name: string };
-
-const buttonClass =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface disabled:pointer-events-none disabled:opacity-60 cursor-pointer";
-const primaryClass =
-  "inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 disabled:pointer-events-none disabled:opacity-60 cursor-pointer";
 
 export function ArrivalsPanel({
   eventId,
@@ -99,33 +95,31 @@ export function ArrivalsPanel({
               <p className="text-sm text-muted">How far away are you?</p>
               <div className="flex flex-wrap gap-2">
                 {ARRIVAL_ETA_OPTIONS.map((minutes) => (
-                  <button
+                  <Chip
                     key={minutes}
-                    type="button"
                     disabled={pending}
                     onClick={() => void run(() => setOnMyWayAction(eventId, minutes))}
-                    className={buttonClass}
                   >
                     {minutes} min
-                  </button>
+                  </Chip>
                 ))}
-                <button type="button" onClick={() => setPicking(false)} disabled={pending} className="inline-flex min-h-11 items-center px-3 text-sm text-muted hover:text-text cursor-pointer">
+                <Button variant="text" size="sm" onClick={() => setPicking(false)} disabled={pending}>
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={pending} onClick={() => setPicking(true)} className={buttonClass}>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="secondary" disabled={pending} onClick={() => setPicking(true)}>
                 On my way
-              </button>
-              <button type="button" disabled={pending} onClick={() => void run(() => setHereAction(eventId))} className={primaryClass}>
+              </Button>
+              <Button disabled={pending} onClick={() => void run(() => setHereAction(eventId))}>
                 I&apos;m here
-              </button>
+              </Button>
               {mine && (
-                <button type="button" disabled={pending} onClick={() => void run(() => cancelArrivalAction(eventId))} className="inline-flex min-h-11 items-center px-3 text-sm text-muted hover:text-text cursor-pointer">
+                <Button variant="text" size="sm" disabled={pending} onClick={() => void run(() => cancelArrivalAction(eventId))}>
                   Cancel
-                </button>
+                </Button>
               )}
             </div>
           )}

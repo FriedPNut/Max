@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateBirthdayAction } from "@/app/actions/profile";
+import { Button, Input, inputClass } from "@/components/ui";
 import { isValidMonthDay } from "@/lib/birthdays";
 
 const MONTHS = [
@@ -12,11 +13,7 @@ const MONTHS = [
 // Longest possible month length, so 29 February is selectable.
 const MONTH_DAY_COUNTS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-const fieldClass =
-  "w-full bg-surface text-text border border-border rounded-lg px-3 py-3 text-base leading-snug focus:outline-2 focus:outline-offset-0 focus:outline-text";
 const labelClass = "block text-sm text-muted mb-2";
-const buttonClass =
-  "min-h-11 rounded-lg border border-border bg-transparent px-4 py-3 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface cursor-pointer disabled:opacity-60 disabled:pointer-events-none";
 
 export function BirthdayForm({
   initial,
@@ -85,6 +82,7 @@ export function BirthdayForm({
         <div>
           <label htmlFor="birth-month" className={labelClass}>Month</label>
           <select
+            className={inputClass}
             id="birth-month"
             value={month ?? ""}
             disabled={pending}
@@ -93,7 +91,6 @@ export function BirthdayForm({
               setMonth(next);
               if (next && day && day > MONTH_DAY_COUNTS[next - 1]) setDay(null);
             }}
-            className={fieldClass}
           >
             <option value="">Month</option>
             {MONTHS.map((name, index) => (
@@ -105,11 +102,11 @@ export function BirthdayForm({
         <div>
           <label htmlFor="birth-day" className={labelClass}>Day</label>
           <select
+            className={inputClass}
             id="birth-day"
             value={day ?? ""}
             disabled={pending}
             onChange={(event) => setDay(event.target.value ? Number(event.target.value) : null)}
-            className={fieldClass}
           >
             <option value="">Day</option>
             {Array.from({ length: maxDay }, (_, index) => index + 1).map((value) => (
@@ -121,7 +118,7 @@ export function BirthdayForm({
 
       <div>
         <label htmlFor="birth-year" className={labelClass}>Year (optional)</label>
-        <input
+        <Input
           id="birth-year"
           type="text"
           inputMode="numeric"
@@ -129,7 +126,6 @@ export function BirthdayForm({
           disabled={pending}
           onChange={(event) => setYear(event.target.value.replace(/\D/g, "").slice(0, 4))}
           placeholder="1994"
-          className={fieldClass}
         />
         <p className="mt-1 text-sm text-muted">Only you see this. It&apos;s never shown to anyone.</p>
       </div>
@@ -138,12 +134,16 @@ export function BirthdayForm({
       {saved && !error && <p className="text-sm text-muted">Birthday saved.</p>}
 
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={pending} className="min-h-11 rounded-lg bg-text px-4 py-3 text-sm font-medium text-background transition-opacity duration-150 ease-out hover:opacity-90 cursor-pointer disabled:opacity-60 disabled:pointer-events-none">
+        <Button type="submit" disabled={pending}>
           {pending ? "Saving..." : "Save birthday"}
-        </button>
-        <button type="button" disabled={pending} onClick={() => void save(null, null, null)} className={buttonClass}>
+        </Button>
+        <Button
+          variant="secondary"
+          disabled={pending}
+          onClick={() => void save(null, null, null)}
+        >
           Clear birthday
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
+import { buttonStyles } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import {
   daysUntilBirthday,
@@ -73,12 +74,12 @@ export default async function BirthdaysPage() {
         <div>
           <Link
             href="/events"
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-150 ease-out hover:text-text"
+            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
           >
-            <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
             Events
           </Link>
-          <h1 className="text-[28px] font-semibold leading-tight text-text">Birthdays</h1>
+          <h1 className="text-[22px] font-bold leading-tight text-text">Birthdays</h1>
         </div>
 
         {upcoming.length === 0 ? (
@@ -93,14 +94,14 @@ export default async function BirthdaysPage() {
               const planDate = toDateKey(nextBirthday(person.month, person.day));
 
               return (
-                <li key={person.id} className="flex items-center justify-between gap-3 border-b border-line py-4">
+                <li key={person.id} className="-mx-4 flex min-h-14 items-center justify-between gap-3 border-b border-line px-4 py-4">
                   <div className="min-w-0">
                     {person.username ? (
-                      <Link href={`/u/${encodeURIComponent(person.username)}`} className="block truncate text-base font-medium text-text hover:opacity-80">
+                      <Link href={`/u/${encodeURIComponent(person.username)}`} className="block truncate text-base font-semibold text-text hover:opacity-80">
                         {person.name}
                       </Link>
                     ) : (
-                      <p className="truncate text-base font-medium text-text">{person.name}</p>
+                      <p className="truncate text-base font-semibold text-text">{person.name}</p>
                     )}
                     <p className="text-sm text-muted">
                       {dateLabel} · {untilLabel(person.days)}
@@ -108,7 +109,7 @@ export default async function BirthdaysPage() {
                   </div>
                   <Link
                     href={`/events/new?title=${encodeURIComponent(planTitle)}&date=${planDate}`}
-                    className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-border px-4 text-sm font-medium text-text transition-colors duration-150 ease-out hover:bg-surface"
+                    className={`${buttonStyles({ variant: "secondary", size: "sm" })} shrink-0`}
                   >
                     Plan something
                   </Link>

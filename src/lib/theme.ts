@@ -4,8 +4,8 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_STORAGE_KEY = "max-theme";
 
 export const THEME_COLORS: Record<ResolvedTheme, string> = {
-  light: "#EFEEE9",
-  dark: "#0F0F0E",
+  light: "#F4F4F4",
+  dark: "#000000",
 };
 
 export function readThemeChoice(): ThemeChoice {

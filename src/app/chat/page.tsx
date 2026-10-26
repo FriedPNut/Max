@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { SquarePen, Users } from "lucide-react";
+import { Search, SquarePen, Users } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { LocalTime } from "@/components/local-time";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import { OnlineDot } from "@/components/presence-provider";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
@@ -47,17 +48,17 @@ export default async function ChatPage({
         href="/chat/new"
         aria-label="New message"
         title="New message"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
       >
-        <SquarePen size={24} strokeWidth={1.5} aria-hidden="true" />
+        <SquarePen size={24} strokeWidth={1.75} aria-hidden="true" />
       </Link>
       <Link
         href="/chat/friends"
         aria-label="Friends"
         title="Friends"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-colors duration-150 ease-out hover:bg-surface"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
       >
-        <Users size={24} strokeWidth={1.5} aria-hidden="true" />
+        <Users size={24} strokeWidth={1.75} aria-hidden="true" />
       </Link>
     </>
   );
@@ -65,10 +66,32 @@ export default async function ChatPage({
   if (conversationIds.length === 0) {
     return (
       <AppShell actions={actions}>
-        <section className="space-y-8">
-          <h1 className="text-[28px] font-semibold leading-tight text-text">
-            Chat
+        <section className="space-y-6">
+          <h1 className="text-[22px] font-bold leading-tight text-text">
+            Messages
           </h1>
+
+          <form method="get" role="search" className="relative">
+            <Search
+              size={20}
+              strokeWidth={1.75}
+              aria-hidden="true"
+              className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-muted"
+            />
+            <Input
+              id="chat-global-search"
+              name="q"
+              type="search"
+              defaultValue={query}
+              autoComplete="off"
+              placeholder="Search messages"
+              aria-label="Search all chats"
+              pill
+              className="bg-surface-2"
+              style={{ paddingLeft: "2.75rem" }}
+            />
+          </form>
+
           <p className="text-sm text-muted">
             {membershipError
               ? "Couldn't load chats. Refresh and try again."
@@ -149,6 +172,32 @@ export default async function ChatPage({
     ])
   );
 
+  // Group rows show the first two other people as overlapping circles. This is
+  // derived from the members and avatars already loaded above.
+  const groupAvatarsByConversation = new Map<
+    string,
+    { src: string | null; initial: string }[]
+  >();
+
+  for (const [conversationId, conversationMembers] of membersByConversation) {
+    const people = conversationMembers
+      .filter((member) => member.user_id !== user.id)
+      .slice(0, 2)
+      .map((member) => {
+        const profile = profilesById.get(member.user_id);
+        const name = profileName(profile);
+
+        return {
+          src: avatarUrls.get(member.user_id) ?? null,
+          initial: nameInitial(name),
+        };
+      });
+
+    if (people.length > 0) {
+      groupAvatarsByConversation.set(conversationId, people);
+    }
+  }
+
   const items: ChatListItem[] = conversations
     .map((conversation) => {
       const conversationMembers =
@@ -214,43 +263,49 @@ export default async function ChatPage({
 
   return (
     <AppShell actions={actions}>
-      <section className="space-y-8">
-        <h1 className="text-[28px] font-semibold leading-tight text-text">
-          Chat
+      <section className="space-y-6">
+        <h1 className="text-[22px] font-bold leading-tight text-text">
+          Messages
         </h1>
 
-        <form method="get" className="space-y-3">
-          <label htmlFor="chat-global-search" className="block text-sm text-muted">
-            Search all chats
-          </label>
-          <input
+        <form method="get" role="search" className="relative">
+          <Search
+            size={20}
+            strokeWidth={1.75}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-muted"
+          />
+          <Input
             id="chat-global-search"
             name="q"
             type="search"
             defaultValue={query}
             autoComplete="off"
-            placeholder="Find a message"
-            className="w-full bg-surface text-text placeholder:text-muted border border-border rounded-lg px-3 py-3 text-base focus:outline-2 focus:outline-offset-0 focus:outline-text"
+            placeholder="Search messages"
+            aria-label="Search all chats"
+            pill
+            className="bg-surface-2"
+            style={{ paddingLeft: "2.75rem" }}
           />
         </form>
 
         {query.length >= 2 && (
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold text-text">Results</h2>
+          <section className="space-y-2">
+            <h2 className="text-base font-semibold text-text">Results</h2>
             {searchHits.length === 0 ? (
               <p className="text-sm text-muted">No messages match that.</p>
             ) : (
-              <ul className="border-t border-line">
+              <ul className="space-y-1">
                 {searchHits.map((hit) => (
-                  <li key={hit.id} className="border-b border-line">
+                  <li key={hit.id}>
                     <Link
                       href={`/chat/${hit.conversation_id}?m=${hit.id}`}
-                      className="flex flex-col gap-1 py-3 transition-colors duration-150 ease-out hover:text-muted"
+                      className="flex flex-col gap-1 rounded-lg px-3 py-3 transition-colors duration-200 ease-out hover:bg-surface-2"
                     >
-                      <span className="text-sm text-muted">
+                      <span className="text-xs text-muted">
                         {hit.conversation_name} · <LocalTime iso={hit.created_at} format="card" />
                       </span>
-                      <span className="truncate text-base text-text">{hit.body}</span>
+                      <span className="truncate text-[14px] text-text">{hit.body}</span>
                     </Link>
                   </li>
                 ))}
@@ -266,90 +321,145 @@ export default async function ChatPage({
         ) : items.length === 0 ? (
           <p className="text-sm text-muted">No chats yet.</p>
         ) : (
-          <div className="border-t border-line">
-            {items.map((conversation) => (
-              <div
-                key={conversation.id}
-                className="relative flex items-center gap-3 border-b border-line py-4 transition-colors duration-150 ease-out hover:bg-surface"
-              >
-                <Link
-                  href={`/chat/${conversation.id}`}
-                  aria-label={`Open ${conversation.name}`}
-                  className="absolute inset-0 z-0"
-                />
+          <div className="space-y-1">
+            {items.map((conversation) => {
+              const groupAvatars =
+                groupAvatarsByConversation.get(conversation.id) ?? [];
 
-                {conversation.isGroup ? (
-                  <span className="pointer-events-none relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-muted shrink-0">
-                    <Users size={20} strokeWidth={1.5} aria-hidden="true" />
-                  </span>
-                ) : conversation.profileUsername ? (
+              return (
+                <div
+                  key={conversation.id}
+                  className="press-row relative flex items-center gap-3 rounded-lg py-2 transition-colors duration-200 ease-out hover:bg-surface-2"
+                >
                   <Link
-                    href={`/u/${encodeURIComponent(
-                      conversation.profileUsername
-                    )}`}
-                    aria-label={`View ${conversation.name}'s profile`}
-                    className="relative z-10 shrink-0 transition-opacity duration-150 ease-out hover:opacity-80"
-                  >
-                    <ProfileAvatar
-                      src={conversation.avatarUrl}
-                      initial={conversation.initial ?? "?"}
-                      size={40}
-                    />
-                  </Link>
-                ) : (
-                  <span className="pointer-events-none relative z-10 shrink-0 block">
-                    <ProfileAvatar
-                      src={conversation.avatarUrl}
-                      initial={conversation.initial ?? "?"}
-                      size={40}
-                    />
-                    <OnlineDot userId={conversation.otherUserId} />
-                  </span>
-                )}
+                    href={`/chat/${conversation.id}`}
+                    aria-label={`Open ${conversation.name}`}
+                    className="absolute inset-0 z-0 rounded-lg"
+                  />
 
-                <div className="pointer-events-none relative z-10 min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-3">
-                    {!conversation.isGroup && conversation.profileUsername ? (
-                      <Link
-                        href={`/u/${encodeURIComponent(
-                          conversation.profileUsername
-                        )}`}
-                        className="pointer-events-auto truncate text-base font-medium text-text transition-opacity duration-150 ease-out hover:opacity-80"
-                      >
-                        {conversation.name}
-                      </Link>
-                    ) : (
-                      <p className="truncate text-base font-medium text-text">
-                        {conversation.name}
-                      </p>
-                    )}
+                  {conversation.isGroup ? (
+                    <span className="pointer-events-none relative z-10 block h-14 w-14 shrink-0">
+                      {groupAvatars.length >= 2 ? (
+                        <>
+                          <span className="absolute left-0 top-0 block rounded-full ring-2 ring-background">
+                            <Avatar
+                              src={groupAvatars[0].src}
+                              initial={groupAvatars[0].initial}
+                              size={32}
+                            />
+                          </span>
+                          <span className="absolute bottom-0 right-0 block rounded-full ring-2 ring-background">
+                            <Avatar
+                              src={groupAvatars[1].src}
+                              initial={groupAvatars[1].initial}
+                              size={32}
+                            />
+                          </span>
+                        </>
+                      ) : groupAvatars.length === 1 ? (
+                        <Avatar
+                          src={groupAvatars[0].src}
+                          initial={groupAvatars[0].initial}
+                          size={56}
+                        />
+                      ) : (
+                        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-2 text-muted">
+                          <Users
+                            size={24}
+                            strokeWidth={1.75}
+                            aria-hidden="true"
+                          />
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="relative z-10 block shrink-0">
+                      {conversation.profileUsername ? (
+                        <Link
+                          href={`/u/${encodeURIComponent(
+                            conversation.profileUsername
+                          )}`}
+                          aria-label={`View ${conversation.name}'s profile`}
+                          className="block transition-opacity duration-200 ease-out hover:opacity-80"
+                        >
+                          <Avatar
+                            src={conversation.avatarUrl}
+                            initial={conversation.initial ?? "?"}
+                            size={56}
+                          />
+                        </Link>
+                      ) : (
+                        <Avatar
+                          src={conversation.avatarUrl}
+                          initial={conversation.initial ?? "?"}
+                          size={56}
+                        />
+                      )}
+                      <OnlineDot userId={conversation.otherUserId} />
+                    </span>
+                  )}
 
-                    <LocalTime
-                      iso={conversation.lastMessageAt ?? conversation.createdAt}
-                      format="time"
-                      className="shrink-0 text-sm text-muted"
-                    />
-                  </div>
+                  <div className="pointer-events-none relative z-10 min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      {!conversation.isGroup && conversation.profileUsername ? (
+                        <Link
+                          href={`/u/${encodeURIComponent(
+                            conversation.profileUsername
+                          )}`}
+                          className={`pointer-events-auto truncate text-[15px] text-text transition-opacity duration-200 ease-out hover:opacity-80 ${
+                            conversation.unread ? "font-semibold" : "font-normal"
+                          }`}
+                        >
+                          {conversation.name}
+                        </Link>
+                      ) : (
+                        <p
+                          className={`truncate text-[15px] text-text ${
+                            conversation.unread ? "font-semibold" : "font-normal"
+                          }`}
+                        >
+                          {conversation.name}
+                        </p>
+                      )}
 
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <p className="truncate text-sm text-muted">
-                      {conversation.lastMessage ?? "No messages yet."}
-                    </p>
-                    {conversation.unread && (
-                      <span
-                        aria-label="Unread messages"
-                        className="h-2 w-2 shrink-0 rounded-full bg-accent"
-                      />
-                    )}
-                    {conversation.mentionsMe && (
-                      <span aria-label="Mentioned you" className="shrink-0 text-sm font-semibold text-text">
-                        @
+                      <span className="flex shrink-0 items-center gap-2">
+                        <LocalTime
+                          iso={conversation.lastMessageAt ?? conversation.createdAt}
+                          format="time"
+                          className="text-xs text-muted"
+                        />
+                        {conversation.unread && (
+                          <span
+                            aria-label="Unread messages"
+                            className="h-2 w-2 rounded-full bg-primary"
+                          />
+                        )}
                       </span>
-                    )}
+                    </div>
+
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <p
+                        className={`truncate text-[14px] ${
+                          conversation.unread
+                            ? "font-semibold text-text"
+                            : "text-muted"
+                        }`}
+                      >
+                        {conversation.lastMessage ?? "No messages yet."}
+                      </p>
+                      {conversation.mentionsMe && (
+                        <span
+                          aria-label="Mentioned you"
+                          className="shrink-0 text-sm font-semibold text-text"
+                        >
+                          @
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
