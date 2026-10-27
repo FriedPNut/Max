@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { NativeApp } from "@/components/native-app";
+import { SessionGuard } from "@/components/session-guard";
 import { THEME_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
 
@@ -18,7 +19,7 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F4F4F4" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: dark)", color: "#0C1014" },
   ],
 };
 
@@ -37,6 +38,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-dvh bg-background text-text font-sans antialiased">
         <NativeApp />
+        <SessionGuard />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

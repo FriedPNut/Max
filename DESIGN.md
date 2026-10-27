@@ -7,7 +7,7 @@ Max should feel like a native iPhone social app in the spirit of Instagram: edge
 All colors are CSS variables on :root, overridden under html[data-theme="dark"], mapped into the Tailwind theme. Never hard-code colors.
 Light: background #F4F4F4, surface #FBFBFB, surface-2 #EFEFEF, text #262626, muted #737373, line #DBDBDB, border #C7C7C7, primary #0095F6, primary-pressed #1877F2, link #00376B, danger #FF3040, today #C8434F.
 Dark: background #000000, surface #121212, surface-2 #262626, text #F5F5F5, muted #A8A8A8, line #262626, border #363636, primary #0095F6, primary-pressed #1877F2, link #E0F1FF, danger #FF3040, today #E5676F.
-Gradient: --story-gradient: linear-gradient(45deg, #FEDA75 0%, #FA7E1E 25%, #D62976 50%, #962FBF 75%, #4F5BD5 100%). Use it ONLY for unseen story rings and the login wordmark.
+Gradient: --brand-gradient: linear-gradient(45deg, #FEDA75 0%, #FA7E1E 25%, #D62976 50%, #962FBF 75%, #4F5BD5 100%). Use it ONLY for the login and welcome wordmark.
 Glass: light rgba(251,251,251,0.72), dark rgba(24,24,24,0.68), with backdrop-filter blur(24px) saturate(180%) (include the -webkit- prefix).
 Usage: primary blue for main buttons, links, toggles, and selected RSVP. Today’s date uses the today color. Danger red for likes, unread dots, and badges. Active navigation and selected tabs use the text color, not blue. No other accent colors.
 
@@ -16,7 +16,7 @@ System font stack only: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe
 Sizes: page title 22px/700, section heading 16px/600, body 15px/400 (line-height 1.4), secondary 13px/400 muted, meta 12px/400 muted, button 15px/600. Inputs are at least 16px. Names and usernames are 600 weight. Sentence case. No uppercase labels, no letter-spacing except the Max wordmark (-0.03em).
 
 ## 4. Shape
-Radius: buttons 10px, inputs 10px, cards and widgets 14px, sheets 20px (top corners), chips and the island bar fully rounded (pill), avatars and story circles fully round, photos 0px when edge-to-edge or 10px inside a card. Hairlines are 1px.
+Radius: buttons 10px, inputs 10px, cards and widgets 14px, sheets 20px (top corners), chips and the island bar fully rounded (pill), avatars fully round, photos 0px when edge-to-edge or 10px inside a card. Hairlines are 1px.
 
 ## 5. Components
 - Primary button: primary fill, white text, 44px tall, 10px radius, pressed uses primary-pressed. Secondary button: surface-2 fill, text color, no border. Destructive: danger-colored text on a secondary button. Text button: link color, no fill. Disabled: 40% opacity.
@@ -30,10 +30,11 @@ Radius: buttons 10px, inputs 10px, cards and widgets 14px, sheets 20px (top corn
 - Bottom sheets: surface fill, 20px top radius, a 36x4 grabber, backdrop dim, drag down to dismiss.
 - Toasts: dark pill (inverted colors), floating above the island bar, 2.5s.
 - Skeletons: surface-2 blocks with a shimmer sweep.
+- Calendar: Month view: selected day is a rounded box (radius 10, surface-2). Week view: no selection box. Today is the today-colored number in both.
 
 ## 6. Navigation
 - Top bar: sticky, glass background, 48px plus safe area, "Max" wordmark left (system font, 800 weight, 24px, -0.03em), page actions right as 24px icons with 44px tap areas. A hairline appears only after scrolling.
-- Island bar: a floating pill at the bottom, 16px from each side (max width 420px, centered), 12px above the bottom safe area, 60px tall, glass background with a 1px hairline border and a very soft shadow (light: 0 8px 32px rgba(0,0,0,0.12); dark: 0 8px 32px rgba(0,0,0,0.5)). Four icon-only tabs: Events, Chat, Post, Profile (the avatar). Inactive icons are outline, the active one is filled and in the text color, with a soft pill highlight that slides under the active tab. A red badge slot sits on each icon. It hides when scrolling down and returns when scrolling up, and is hidden on full-screen screens (open conversations, story viewer, composers, login).
+- Island bar: a floating pill at the bottom, 16px from each side (max width 420px, centered), 12px above the bottom safe area, 60px tall, glass background with a 1px hairline border and a very soft shadow (light: 0 8px 32px rgba(0,0,0,0.12); dark: 0 8px 32px rgba(0,0,0,0.5)). Four icon-only tabs: Events, Chat, Post, Profile (the avatar). Inactive icons are outline, the active one is filled and in the text color, with a soft pill highlight that slides under the active tab. A red badge slot sits on each icon. It hides when scrolling down and returns when scrolling up, and is hidden on full-screen screens (open conversations, composers, login).
 - Content gets bottom padding so nothing is hidden behind the island bar.
 
 ## 7. Motion
@@ -51,3 +52,21 @@ Short, friendly, plain. Sentence case. Tagline: "Maximum potential. Maximum fun.
 
 ## 11. Agent guide
 Read this whole file before writing UI code. Use tokens and shared components only. If something looks like a generic template, simplify it toward Instagram's patterns. Keep everything fast: animate only transform and opacity, and avoid heavy animation libraries unless required.
+
+
+## 12. Screenshot reference (OVERRIDES any conflicting earlier section)
+Source: four Instagram Android dark-mode screenshots (home feed, messages inbox, profile, chat thread). Match them as closely as possible in layout, proportions, spacing, and feel. Never use Instagram's logo, name, or custom font. Sizes are dp on a 360dp-wide screen.
+
+### Colors (match by eye)
+Dark: background #0C1014 (feed, inbox, profile), thread #000000 (open chat only), surface #12171C, surface-2 #262B32 (search pill, secondary buttons, nav pill, note bubbles), received bubble #262626, text #F5F5F5, muted #A8ADB3, line #1E242B, primary #4A5DFF (Create buttons, Send, unread dots, camera button), link #7C8CFF (Requests, Older posts, links in bios), danger #FF3040 (badges, red dots, likes).
+Light mode keeps the existing soft light tokens, with primary and link #3F51F5 and surface-2 #EAECEF.
+Sent chat bubbles: gradient from #A81BE0 (top of the screen) to #5A55F5 (bottom of the screen), anchored to the viewport (background-attachment: fixed) so bubbles change color as they scroll; if that janks or misbehaves, fall back to a fixed #8B3BEB. Received bubbles #262626.
+
+### Navigation
+- Android and other: a docked full-width bottom bar, 56 tall plus the safe area, page-background color, 1px top line. Four icon-only tabs. The active tab has a filled icon and a rounded pill behind it (64x36, radius 18, surface-2) that slides between tabs. Inactive icons are outline. Red badges on icons, and the Profile tab shows my avatar. Always visible except in open chats and composers.
+- iOS: keep the floating glass island bar with hide-on-scroll.
+- Top bar: 56 tall, solid page background, 24px icons with 44px tap areas. Post and Events show a centered "Max" wordmark (system font, 800, 26px, -0.03em). Chat and Profile show my @username centered, bold 22sp. Notifications use an outline heart icon with a red count badge. "More" menus use the two-line icon (a long line over a shorter one).
+
+### Layout rules
+Feed: posts edge-to-edge. Inbox: search pill, a notes/friends row, "Messages" heading with a "Requests" link, rows without dividers. Profile: avatar left, name and stats right, bio, two secondary buttons, tab strip, content. Thread: pure black, bubbles with a 22 radius, input pill pinned to the bottom.
+

@@ -3,9 +3,6 @@ import Link from "next/link";
 const QUICK_LINKS = [
   { label: "Hang now", href: "/hang" },
   { label: "Who’s free", href: "/free" },
-  { label: "Lists", href: "/lists" },
-  { label: "Trips", href: "/trips" },
-  { label: "Birthdays", href: "/birthdays" },
 ];
 
 export function QuickLinks() {

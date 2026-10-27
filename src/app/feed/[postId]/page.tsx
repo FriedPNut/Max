@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
+import { MissingContent } from "@/components/shell/unavailable";
 import { PostDetail } from "@/components/posts/post-detail";
 import { createClient } from "@/lib/supabase/server";
 import { loadPostDetail } from "@/lib/posts-data";
@@ -21,7 +22,7 @@ export default async function PostDetailPage({
 
   return (
     <AppShell userId={user.id}>
-      <section className="space-y-6">
+      <section key={postId} className="space-y-6">
         <Link
           href="/feed"
           className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
@@ -31,7 +32,7 @@ export default async function PostDetailPage({
         </Link>
 
         {"gone" in result ? (
-          <p className="text-base text-text">This post is gone.</p>
+          <MissingContent tab="post" />
         ) : "error" in result ? (
           <p className="text-sm text-muted">{result.error}</p>
         ) : (

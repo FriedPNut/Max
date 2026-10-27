@@ -1,28 +1,30 @@
-import { TABS, type TabKey } from "@/lib/tabs";
-
-type TabMemory = Record<TabKey, { path: string; scroll: number }>;
+import { TAB_KEYS, type TabKey } from "@/lib/tabs";
 
 export type PendingNavigation = {
+  /** Always a tab root; a stale path never applies to another page. */
   path: string;
   scroll: number;
   direction: -1 | 0 | 1;
   at: number;
 };
 
-const STORAGE_KEY = "max:tab-memory:v1";
+// Only scroll positions live here. A tab's page is always its root.
+const STORAGE_KEY = "max:tab-scroll:v2";
 
-function defaults(): TabMemory {
-  return TABS.reduce((memory, tab) => {
-    memory[tab.key] = { path: tab.root, scroll: 0 };
-    return memory;
-  }, {} as TabMemory);
-}
+type TabScroll = Record<TabKey, number>;
 
-let cache: TabMemory | null = null;
+let cache: TabScroll | null = null;
 let pending: PendingNavigation | null = null;
 let lastPersist = 0;
 
-function readCache(): TabMemory {
+function defaults(): TabScroll {
+  return TAB_KEYS.reduce((scroll, key) => {
+    scroll[key] = 0;
+    return scroll;
+  }, {} as TabScroll);
+}
+
+function readCache(): TabScroll {
   if (cache) {
     return cache;
   }
@@ -31,22 +33,13 @@ function readCache(): TabMemory {
 
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    const stored = raw ? (JSON.parse(raw) as Partial<TabMemory>) : null;
+    const stored = raw ? (JSON.parse(raw) as Partial<TabScroll>) : null;
 
-    for (const tab of TABS) {
-      const entry = stored?.[tab.key];
+    for (const key of TAB_KEYS) {
+      const value = stored?.[key];
 
-      if (
-        entry &&
-        typeof entry.path === "string" &&
-        entry.path.startsWith("/") &&
-        typeof entry.scroll === "number" &&
-        Number.isFinite(entry.scroll)
-      ) {
-        cache[tab.key] = {
-          path: entry.path,
-          scroll: Math.max(0, entry.scroll),
-        };
+      if (typeof value === "number" && Number.isFinite(value)) {
+        cache[key] = Math.max(0, Math.round(value));
       }
     }
   } catch {
@@ -72,25 +65,25 @@ function persist(force: boolean) {
   }
 }
 
-export function getTabMemory(): TabMemory {
-  return readCache();
+export function getTabScroll(key: TabKey): number {
+  return readCache()[key];
 }
 
-export function rememberTabPage(tab: TabKey, path: string, scroll: number) {
+export function rememberTabScroll(key: TabKey, scroll: number) {
   const memory = readCache();
-  const nextScroll = Math.max(0, Math.round(scroll));
+  const next = Math.max(0, Math.round(scroll));
 
-  if (memory[tab].path === path && memory[tab].scroll === nextScroll) {
+  if (memory[key] === next) {
     return;
   }
 
-  memory[tab] = { path, scroll: nextScroll };
+  memory[key] = next;
   persist(false);
 }
 
-export function resetTabToRoot(tab: TabKey) {
-  const root = TABS.find((entry) => entry.key === tab)?.root ?? "/events";
-  rememberTabPage(tab, root, 0);
+export function resetTabScroll(key: TabKey) {
+  const memory = readCache();
+  memory[key] = 0;
   persist(true);
 }
 

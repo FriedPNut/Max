@@ -24,7 +24,7 @@ export default async function WrappedPage({
   return (
     <AppShell userId={user.id} noIsland={available}>
       {available ? (
-        <WrappedView year={year} />
+        <WrappedView key={year} year={year} />
       ) : (
         <section className="space-y-6">
           <Link

@@ -327,13 +327,5 @@ export async function loadProfileRelationship(
     return "none";
   }
 
-  if (data.status === "accepted") {
-    return "friend";
-  }
-
-  if (data.status === "pending") {
-    return data.requester_id === currentUserId ? "sent" : "incoming";
-  }
-
-  return "none";
+  return "friend";
 }

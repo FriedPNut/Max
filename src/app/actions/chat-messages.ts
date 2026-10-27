@@ -129,7 +129,7 @@ export async function sendPhotoMessageAction(input: {
 
   if (
     !imagePath.startsWith(prefix) ||
-    !/^\d+\.jpg$/.test(imagePath.slice(prefix.length))
+    !/^\d+\.(jpg|png|webp|gif|heic|heif)$/.test(imagePath.slice(prefix.length))
   ) {
     return { error: "That photo didn't upload right. Try again." };
   }

@@ -119,6 +119,7 @@ export default async function ListDetailPage({
           </p>
         ) : (
           <ListDetailView
+            key={list.id}
             listId={list.id}
             listTitle={list.title}
             listKind={list.kind as ListKind}

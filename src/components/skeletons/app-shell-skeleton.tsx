@@ -21,7 +21,7 @@ export function AppShellSkeleton({
           className="glass sticky top-0 z-40"
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
         >
-          <div className="mx-auto flex h-12 w-full max-w-[560px] items-center justify-between gap-2 px-4">
+          <div className="mx-auto flex h-14 w-full max-w-[560px] items-center justify-between gap-2 px-4">
             <Skeleton className="h-6 w-14 rounded" />
             <Skeleton className="h-6 w-6 rounded-full" />
           </div>

@@ -18,7 +18,7 @@ export default async function BestOfMonthPage({
 
   return (
     <AppShell userId={user.id}>
-      <BestOfResult monthKey={month} />
+      <BestOfResult key={month} monthKey={month} />
     </AppShell>
   );
 }

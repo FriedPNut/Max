@@ -163,16 +163,6 @@ export type FriendListItem = {
   avatarUrl: string | null;
 };
 
-export type FriendRequestItem = FriendListItem & {
-  friendshipId: string;
-  createdAt: string;
-};
-
-export type SearchPerson = FriendListItem & {
-  relation: "none" | "friend" | "sent" | "incoming";
-  friendshipId: string | null;
-};
-
 export function profileName(profile: ChatProfile | undefined) {
   return (
     profile?.display_name?.trim() ||

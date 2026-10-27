@@ -49,3 +49,16 @@ export function useIslandHidden(active: boolean) {
 export function useIslandHiddenState(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
+
+/**
+ * Drops every overlay hold. Called on each route change so a viewer or sheet
+ * that never cleaned up can't leave the bar hidden on the next page.
+ */
+export function resetIslandHidden() {
+  if (hiddenCount === 0) {
+    return;
+  }
+
+  hiddenCount = 0;
+  emit();
+}

@@ -12,6 +12,7 @@ import {
 import { LocalTime } from "@/components/local-time";
 import { Button, SegmentedControl, Skeleton } from "@/components/ui";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useToday } from "@/lib/use-today";
 import {
   WEEKDAY_LABELS,
   addDaysToKey,
@@ -106,14 +107,14 @@ function CalendarSkeleton() {
 
 export function CalendarSection({ events }: { events: EventListItem[] }) {
   const hydrated = useHydrated();
-  const [now, setNow] = useState<Date | null>(null);
+  const localToday = useToday();
   const [view, setView] = useState<CalendarView>("month");
   const [cursorKey, setCursorKey] = useState<string | null>(null);
   const initialized = useRef(false);
   const selectedRef = useRef<string | null>(null);
   const previousTodayRef = useRef<string | null>(null);
 
-  const today = now ? dateKeyFromDate(now) : null;
+  const today = localToday ? dateKeyFromDate(localToday) : null;
 
   const selectKey = useCallback((key: string) => {
     selectedRef.current = key;
@@ -121,16 +122,12 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
   }, []);
 
   useEffect(() => {
-    if (!hydrated || initialized.current) {
+    if (!hydrated || initialized.current || !localToday) {
       return;
     }
 
     initialized.current = true;
-    const current = new Date();
-    const key = dateKeyFromDate(current);
-
-    setNow(current);
-    selectKey(key);
+    selectKey(dateKeyFromDate(localToday));
 
     try {
       const stored = window.localStorage.getItem(VIEW_STORAGE_KEY);
@@ -141,42 +138,7 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
     } catch {
       // Remembering the view is a convenience; ignore blocked storage.
     }
-  }, [hydrated, selectKey]);
-
-  useEffect(() => {
-    if (!hydrated || !today) {
-      return;
-    }
-
-    let timer = 0;
-
-    function scheduleMidnight() {
-      const current = new Date();
-      const nextMidnight = new Date(
-        current.getFullYear(),
-        current.getMonth(),
-        current.getDate() + 1,
-        0,
-        0,
-        0,
-        200
-      );
-      const delay = Math.max(1_000, nextMidnight.getTime() - current.getTime());
-
-      timer = window.setTimeout(() => {
-        const fresh = new Date();
-        setNow(fresh);
-
-        if (dateKeyFromDate(fresh) === today) {
-          scheduleMidnight();
-        }
-      }, delay);
-    }
-
-    scheduleMidnight();
-
-    return () => window.clearTimeout(timer);
-  }, [hydrated, today]);
+  }, [hydrated, localToday, selectKey]);
 
   useEffect(() => {
     if (!today) {
@@ -191,31 +153,6 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
 
     previousTodayRef.current = today;
   }, [today, selectKey]);
-
-  useEffect(() => {
-    if (!hydrated) {
-      return;
-    }
-
-    function resetToToday() {
-      const current = new Date();
-      const key = dateKeyFromDate(current);
-
-      setNow(current);
-      selectKey(key);
-    }
-
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        resetToToday();
-      }
-    }
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [hydrated, selectKey]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, EventListItem[]>();
@@ -254,11 +191,11 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
     return map;
   }, [events, hydrated]);
 
-  if (!hydrated || !now || !cursorKey || !today) {
+  if (!hydrated || !localToday || !cursorKey || !today) {
     return <CalendarSkeleton />;
   }
 
-  const currentYear = now.getFullYear();
+  const currentYear = localToday.getFullYear();
   const selectedKey = cursorKey;
   const currentToday = today;
   const isOnToday = selectedKey === currentToday;
@@ -403,26 +340,28 @@ function MonthView({
                 aria-pressed={isSelected}
                 aria-current={isToday ? "date" : undefined}
                 aria-label={formatDayLong(key)}
-                className={`relative flex min-h-11 flex-col items-center justify-center rounded-lg text-sm text-text transition-colors duration-200 ease-out cursor-pointer hover:bg-surface-2 ${
-                  isSelected ? "font-semibold" : ""
-                }`}
+                className="group relative flex min-h-11 flex-col items-center justify-center rounded-[10px] text-sm text-text cursor-pointer transition-[opacity,transform] duration-100 ease-out active:scale-[0.97] active:opacity-90"
               >
                 <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-full ${
-                    isSelected ? "bg-surface-2 font-bold" : ""
-                  } ${isToday ? "text-today" : "text-text"} ${
-                    isToday && !isSelected ? "font-semibold" : ""
+                  className={`relative flex h-11 w-10 flex-col items-center justify-center rounded-[10px] group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary ${
+                    isSelected ? "day-box-selected bg-surface-2" : ""
                   }`}
                 >
-                  {Number(key.slice(-2))}
-                </span>
-
-                {hasEvents && (
                   <span
-                    aria-hidden="true"
-                    className="absolute bottom-1 h-1 w-1 rounded-full bg-primary"
-                  />
-                )}
+                    className={`leading-none ${isToday ? "text-today" : "text-text"} ${
+                      isSelected || (isToday && !isSelected) ? "font-semibold" : ""
+                    } ${isSelected ? "font-bold" : ""}`}
+                  >
+                    {Number(key.slice(-2))}
+                  </span>
+
+                  {hasEvents && (
+                    <span
+                      aria-hidden="true"
+                      className="mt-1 h-1 w-1 rounded-full bg-primary"
+                    />
+                  )}
+                </span>
               </button>
             );
           })}

@@ -191,16 +191,32 @@ export async function resizeImageSquare(
   }
 }
 
+const EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/heic": "heic",
+  "image/heif": "heif",
+};
+
+// Original files keep a file extension that matches their real content type.
+export function extensionFor(contentType: string) {
+  return EXTENSIONS[contentType] ?? "jpg";
+}
+
 export function uploadImageWithProgress({
   file,
   bucket,
   path,
+  contentType = "image/jpeg",
   token,
   onProgress,
 }: {
   file: Blob;
   bucket: string;
   path: string;
+  contentType?: string;
   token: string;
   onProgress: (percent: number) => void;
 }) {
@@ -225,7 +241,7 @@ export function uploadImageWithProgress({
     );
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.setRequestHeader("apikey", anonKey);
-    xhr.setRequestHeader("Content-Type", "image/jpeg");
+    xhr.setRequestHeader("Content-Type", contentType);
     xhr.setRequestHeader("x-upsert", "false");
     xhr.timeout = 90_000;
 

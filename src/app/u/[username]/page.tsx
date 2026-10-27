@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { Ellipsis } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ProfileBackButton } from "@/components/profile/profile-back-button";
 import { ProfileEvents } from "@/components/profile/profile-events";
@@ -40,7 +41,7 @@ export default async function PublicProfilePage({
 
   if (profileError) {
     return (
-      <AppShell actions={<ProfileBackButton />}>
+      <AppShell left={<ProfileBackButton />}>
         <p className="text-sm text-muted">
           Couldn&apos;t load this profile. Refresh and try again.
         </p>
@@ -65,7 +66,7 @@ export default async function PublicProfilePage({
 
   if (result.error || !result.data) {
     return (
-      <AppShell actions={<ProfileBackButton />}>
+      <AppShell left={<ProfileBackButton />}>
         <p className="text-sm text-muted">
           {result.error ?? "Couldn't load this profile. Refresh and try again."}
         </p>
@@ -76,8 +77,19 @@ export default async function PublicProfilePage({
   const data = result.data;
 
   return (
-    <AppShell actions={<ProfileBackButton />}>
-      <div className="space-y-6">
+    <AppShell
+      left={<ProfileBackButton />}
+      title={profile.username ? `@${profile.username}` : undefined}
+      actions={
+        <span
+          aria-label="More"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text"
+        >
+          <Ellipsis size={24} strokeWidth={1.75} aria-hidden="true" />
+        </span>
+      }
+    >
+      <div key={profile.id} className="space-y-6">
         <ProfileHeader
           profile={profile}
           avatarUrl={data.avatarUrl}
@@ -90,6 +102,7 @@ export default async function PublicProfilePage({
         >
           <ProfileFriendButton
             profileId={profile.id}
+            name={profileDisplayName(profile)}
             initialRelationship={relationship}
           />
 
@@ -105,6 +118,11 @@ export default async function PublicProfilePage({
               authorName={profileDisplayName(profile)}
               authorUsername={profile.username}
               authorAvatarUrl={data.avatarUrl}
+              emptyState={
+                <p className="py-8 text-center text-sm text-muted">
+                  No posts yet.
+                </p>
+              }
             />
           }
           eventsContent={

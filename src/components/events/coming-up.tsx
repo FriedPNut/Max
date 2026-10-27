@@ -1,41 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
 import { LocalTime } from "@/components/local-time";
 import { Card } from "@/components/ui";
 import type { EventListItem } from "@/lib/events";
+import { localDayKey } from "@/lib/local-day";
+import { useToday } from "@/lib/use-today";
 
-const subscribe = () => () => {};
-
-function dayKey(date: Date, timeZone?: string) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const values = new Map(parts.map((part) => [part.type, part.value]));
-  return `${values.get("year")}-${values.get("month")}-${values.get("day")}`;
-}
-
-function labelFor(iso: string, timeZone?: string) {
-  const now = new Date();
-  const eventDate = new Date(iso);
-  const todayKey = dayKey(now, timeZone);
-  const eventKey = dayKey(eventDate, timeZone);
-
-  return eventKey === todayKey ? "Today" : "Tomorrow";
-}
-
+/** Hydration-safe: nothing until the viewer's own day is known. */
 function LocalDayLabel({ iso }: { iso: string }) {
-  const label = useSyncExternalStore(
-    subscribe,
-    () => labelFor(iso),
-    () => labelFor(iso, "UTC")
-  );
+  const today = useToday();
 
-  return <>{label}</>;
+  if (!today) {
+    return null;
+  }
+
+  const label =
+    localDayKey(new Date(iso)) === localDayKey(today) ? "Today" : "Tomorrow";
+
+  return <>{label} at </>;
 }
 
 export function ComingUp({
@@ -68,7 +51,7 @@ export function ComingUp({
                   <>On my way · {onWayEtas[event.id]}</>
                 ) : (
                   <>
-                    <LocalDayLabel iso={event.starts_at} /> at{" "}
+                    <LocalDayLabel iso={event.starts_at} />
                     <LocalTime iso={event.starts_at} format="time" />
                   </>
                 )}

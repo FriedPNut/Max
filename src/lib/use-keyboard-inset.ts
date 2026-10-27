@@ -26,13 +26,32 @@ export function useKeyboardInset() {
       setInset(covered > 80 ? Math.round(covered) : 0);
     }
 
+    // Leaving a field can close the keyboard without a resize event on some
+    // browsers, so re-measure on blur too.
+    function onFocusOut(event: FocusEvent) {
+      const next = event.relatedTarget as HTMLElement | null;
+
+      if (
+        next &&
+        (next.tagName === "INPUT" ||
+          next.tagName === "TEXTAREA" ||
+          next.isContentEditable)
+      ) {
+        return;
+      }
+
+      window.setTimeout(update, 80);
+    }
+
     update();
     viewport.addEventListener("resize", update);
     viewport.addEventListener("scroll", update);
+    document.addEventListener("focusout", onFocusOut);
 
     return () => {
       viewport.removeEventListener("resize", update);
       viewport.removeEventListener("scroll", update);
+      document.removeEventListener("focusout", onFocusOut);
     };
   }, []);
 

@@ -2,16 +2,13 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
-import { bestOfBannerFor, type BestOfBanner as Banner } from "@/lib/best-of";
+import { bestOfBannerFor } from "@/lib/best-of";
+import { useToday } from "@/lib/use-today";
 
 export function BestOfBanner() {
-  const [banner, setBanner] = useState<Banner | null>(null);
-
-  // Computed after mount so server and client markup match.
-  useEffect(() => {
-    setBanner(bestOfBannerFor(new Date()));
-  }, []);
+  // After mount so server and client markup match, and re-read each local day.
+  const today = useToday();
+  const banner = today ? bestOfBannerFor(today) : null;
 
   if (!banner) {
     return null;

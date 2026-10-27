@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { AuthForm } from "@/components/auth-form";
+import { ONBOARDED_COOKIE } from "@/lib/onboarding";
 
 export default async function LoginPage() {
   if (isSupabaseConfigured()) {
@@ -10,13 +12,16 @@ export default async function LoginPage() {
     } = await supabase.auth.getUser();
 
     if (user) {
-      redirect("/events");
+      const cookieStore = await cookies();
+      redirect(
+        cookieStore.get(ONBOARDED_COOKIE) ? "/events" : "/welcome"
+      );
     }
   }
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-6 py-10 text-text">
-      <span className="story-gradient bg-clip-text text-[64px] font-extrabold leading-none tracking-[-0.03em] text-transparent sm:text-[72px]">
+      <span className="brand-gradient bg-clip-text text-[64px] font-extrabold leading-none tracking-[-0.03em] text-transparent sm:text-[72px]">
         Max
       </span>
 

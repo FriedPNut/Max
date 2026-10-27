@@ -59,6 +59,7 @@ export default async function EditEventPage({
         </div>
 
         <EventForm
+          key={event.id}
           mode="edit"
           action={updateEventAction.bind(null, event.id)}
           cancelHref={`/events/${event.id}`}

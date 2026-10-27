@@ -81,6 +81,8 @@ export default async function NewEventPage({
         </div>
 
         <EventForm
+          // Each prefill source gets its own form, so values never carry over.
+          key={`${idea?.id ?? ""}|${hangParam ?? ""}|${plannedTitle ?? ""}|${prefillStartsAt ?? ""}`}
           mode="create"
           action={createEventAction}
           cancelHref={idea ? "/events/ideas" : "/events"}

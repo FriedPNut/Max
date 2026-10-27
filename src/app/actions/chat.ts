@@ -159,135 +159,67 @@ async function createDmConversation(
   return { id: conversation.id as string };
 }
 
-export async function sendFriendRequestAction(
+export async function addFriendAction(
   _prevState: ChatActionState,
   formData: FormData
 ): Promise<ChatActionState> {
-  const addresseeId = readText(formData, "addressee_id");
+  const friendId = readText(formData, "friend_id");
   const { supabase, user } = await requireUser();
 
-  if (!addresseeId || addresseeId === user.id) {
-    return { error: "That request can't be sent." };
-  }
-
-  const { data: outgoing, error: outgoingError } = await supabase
-    .from("friendships")
-    .select("id,status")
-    .eq("requester_id", user.id)
-    .eq("addressee_id", addresseeId)
-    .maybeSingle();
-
-  if (outgoingError) {
-    return { error: "Couldn't send that request. Try again." };
-  }
-
-  if (outgoing) {
-    return {
-      error:
-        outgoing.status === "accepted"
-          ? "You're already friends."
-          : "You already sent a request.",
-    };
-  }
-
-  const { data: incoming, error: incomingError } = await supabase
-    .from("friendships")
-    .select("id,status")
-    .eq("requester_id", addresseeId)
-    .eq("addressee_id", user.id)
-    .maybeSingle();
-
-  if (incomingError) {
-    return { error: "Couldn't send that request. Try again." };
-  }
-
-  if (incoming) {
-    return {
-      error:
-        incoming.status === "accepted"
-          ? "You're already friends."
-          : "They already sent you a request.",
-    };
+  if (!friendId || friendId === user.id) {
+    return { error: "Couldn't add that person. Try again." };
   }
 
   const { error } = await supabase.from("friendships").insert({
     requester_id: user.id,
-    addressee_id: addresseeId,
-    status: "pending",
+    addressee_id: friendId,
+    status: "accepted",
   });
 
-  if (error) {
-    if (error.code === "23505") {
-      return { error: "You already sent a request." };
-    }
-
-    return { error: "Couldn't send that request. Try again." };
+  // 23505 = the pair already has a row, so they are already friends.
+  if (error && error.code !== "23505") {
+    return { error: "Couldn't add that person. Try again." };
   }
 
-  revalidatePath("/chat/friends");
+  revalidatePath("/people");
+  revalidatePath("/chat");
+  revalidatePath("/chat/new");
+  revalidatePath("/me");
+  revalidatePath("/me/friends");
+  revalidatePath("/u/[username]", "page");
+  revalidatePath("/u/[username]/friends", "page");
   return { success: true };
 }
 
-export async function acceptFriendRequestAction(
+export async function removeFriendAction(
   _prevState: ChatActionState,
   formData: FormData
 ): Promise<ChatActionState> {
-  const friendshipId = readText(formData, "friendship_id");
+  const friendId = readText(formData, "friend_id");
   const { supabase, user } = await requireUser();
 
-  if (!friendshipId) {
-    return { error: "We couldn't find that request. Try again." };
+  if (!friendId) {
+    return { error: "Couldn't remove that person. Try again." };
   }
 
-  const { data, error } = await supabase
-    .from("friendships")
-    .update({ status: "accepted" })
-    .eq("id", friendshipId)
-    .eq("addressee_id", user.id)
-    .eq("status", "pending")
-    .select("id")
-    .maybeSingle();
-
-  if (error) {
-    return { error: "Couldn't accept that request. Try again." };
-  }
-
-  if (!data) {
-    return { error: "That request is no longer available." };
-  }
-
-  revalidatePath("/chat/friends");
-  return { success: true };
-}
-
-export async function declineFriendRequestAction(
-  _prevState: ChatActionState,
-  formData: FormData
-): Promise<ChatActionState> {
-  const friendshipId = readText(formData, "friendship_id");
-  const { supabase, user } = await requireUser();
-
-  if (!friendshipId) {
-    return { error: "We couldn't find that request. Try again." };
-  }
-
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("friendships")
     .delete()
-    .eq("id", friendshipId)
-    .eq("addressee_id", user.id)
-    .eq("status", "pending")
-    .select("id");
+    .or(
+      `and(requester_id.eq.${user.id},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${user.id})`
+    );
 
   if (error) {
-    return { error: "Couldn't decline that request. Try again." };
+    return { error: "Couldn't remove that person. Try again." };
   }
 
-  if (!data || data.length === 0) {
-    return { error: "That request is no longer available." };
-  }
-
-  revalidatePath("/chat/friends");
+  revalidatePath("/people");
+  revalidatePath("/chat");
+  revalidatePath("/chat/new");
+  revalidatePath("/me");
+  revalidatePath("/me/friends");
+  revalidatePath("/u/[username]", "page");
+  revalidatePath("/u/[username]/friends", "page");
   return { success: true };
 }
 

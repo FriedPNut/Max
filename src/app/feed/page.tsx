@@ -4,10 +4,9 @@ import { FeedView } from "@/components/posts/feed-view";
 import { OnThisDayCard } from "@/components/posts/on-this-day-card";
 import { BestOfBanner } from "@/components/best-of/best-of-banner";
 import { NewPostButton } from "@/components/posts/new-post-button";
-import { StoriesRow } from "@/components/posts/stories-row";
+import { CreatePostSheetButton } from "@/components/posts/create-sheet";
 import { createClient } from "@/lib/supabase/server";
 import { loadPostPage } from "@/lib/posts-data";
-import { loadStories } from "@/lib/stories-data";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -15,18 +14,15 @@ type ServerClient = Awaited<ReturnType<typeof createClient>>;
 export default async function PostPage() {
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
-  const [eventOptionsResult, stories] = await Promise.all([
-    supabase
-      .from("events")
-      .select("id,title,starts_at")
-      .gte(
-        "starts_at",
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      )
-      .order("starts_at", { ascending: true })
-      .limit(50),
-    loadStories(supabase, user.id),
-  ]);
+  const eventOptionsResult = await supabase
+    .from("events")
+    .select("id,title,starts_at")
+    .gte(
+      "starts_at",
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    )
+    .order("starts_at", { ascending: true })
+    .limit(50);
   const eventOptions = (eventOptionsResult.data ?? []).map((event) => ({
     id: String(event.id),
     title: String(event.title),
@@ -34,7 +30,7 @@ export default async function PostPage() {
   }));
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} left={<CreatePostSheetButton />}>
       <section className="space-y-8">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-[22px] font-bold leading-tight text-text">
@@ -44,11 +40,9 @@ export default async function PostPage() {
           <NewPostButton userId={user.id} events={eventOptions} />
         </div>
 
-        <StoriesRow groups={stories.groups} viewer={stories.viewer} />
-
         <BestOfBanner />
 
-        <OnThisDayCard />
+        <OnThisDayCard userId={user.id} />
 
         <Suspense fallback={<FeedSkeleton />}>
           <FeedSection
@@ -80,6 +74,7 @@ async function FeedSection({
   return (
     <FeedView
       key={page.posts[0]?.id ?? "empty"}
+      userId={userId}
       initialPosts={page.posts}
       initialHasMore={page.hasMore}
     />

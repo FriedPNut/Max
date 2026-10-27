@@ -162,7 +162,6 @@ export async function updateProfileAction(input: {
   revalidatePath("/me");
   revalidatePath("/feed");
   revalidatePath("/chat");
-  revalidatePath("/chat/friends");
   revalidatePath("/events");
   revalidatePath(`/u/${username}`);
 
@@ -206,92 +205,4 @@ export async function updateBirthdayAction(input: {
   revalidatePath("/birthdays");
   revalidatePath("/events");
   return { success: true };
-}
-
-export async function requestProfileFriendshipAction(
-  profileId: string
-): Promise<ProfileActionState> {
-  const targetId = String(profileId ?? "").trim();
-  const { supabase, user } = await requireUser();
-
-  if (!targetId || targetId === user.id) {
-    return { error: "That request can't be sent." };
-  }
-
-  const { data: target, error: targetError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", targetId)
-    .maybeSingle();
-
-  if (targetError) {
-    return { error: "Couldn't send that request. Try again." };
-  }
-
-  if (!target) {
-    return { error: "That profile is gone." };
-  }
-
-  const { data: existing, error: existingError } = await supabase
-    .from("friendships")
-    .select("id,requester_id,addressee_id,status")
-    .or(
-      `and(requester_id.eq.${user.id},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${user.id})`
-    )
-    .limit(1)
-    .maybeSingle();
-
-  if (existingError) {
-    return { error: "Couldn't send that request. Try again." };
-  }
-
-  if (existing) {
-    if (existing.status === "accepted") {
-      return { relationship: "friend" };
-    }
-
-    if (existing.status === "pending") {
-      if (existing.requester_id === user.id) {
-        return { relationship: "sent" };
-      }
-
-      const { data: accepted, error } = await supabase
-        .from("friendships")
-        .update({ status: "accepted" })
-        .eq("id", existing.id)
-        .eq("addressee_id", user.id)
-        .eq("status", "pending")
-        .select("id")
-        .maybeSingle();
-
-      if (error) {
-        return { error: "Couldn't accept that request. Try again." };
-      }
-
-      if (!accepted) {
-        return { error: "That request is no longer available." };
-      }
-
-      revalidatePath("/me");
-      revalidatePath("/chat/friends");
-      revalidatePath("/chat/new");
-      return { relationship: "friend" };
-    }
-
-    return { error: "Couldn't send that request. Try again." };
-  }
-
-  const { error } = await supabase.from("friendships").insert({
-    requester_id: user.id,
-    addressee_id: targetId,
-    status: "pending",
-  });
-
-  if (error) {
-    return { error: "Couldn't send that request. Try again." };
-  }
-
-  revalidatePath("/chat/friends");
-  revalidatePath("/chat/new");
-  return { relationship: "sent" };
 }

@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { Button, Card } from "@/components/ui";
 import { useNotificationSetup } from "@/lib/use-notification-setup";
 
-const DISMISSED_KEY = "max-push-prompt-dismissed-until";
+/** Per account: one person's snooze never hides another person's prompt. */
+function dismissedKey(userId: string) {
+  return `max-push-prompt-dismissed-until:${userId}`;
+}
 const IOS_HELP = "To get notifications on iPhone, tap Share, then Add to Home Screen, open Max from your home screen, and turn notifications on here.";
 
-export function PushPrompt() {
+export function PushPrompt({ userId }: { userId: string }) {
   const { state, busy, error, turnOn } = useNotificationSetup();
   // Start snoozed so the banner never flashes before storage is read.
   const [snoozed, setSnoozed] = useState(true);
@@ -15,16 +18,19 @@ export function PushPrompt() {
   useEffect(() => {
     let until = 0;
     try {
-      until = Number(localStorage.getItem(DISMISSED_KEY) || 0);
+      until = Number(localStorage.getItem(dismissedKey(userId)) || 0);
     } catch {
       // Storage can be unavailable; show the prompt.
     }
     setSnoozed(Date.now() < until);
-  }, []);
+  }, [userId]);
 
   function dismiss() {
     try {
-      localStorage.setItem(DISMISSED_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      localStorage.setItem(
+        dismissedKey(userId),
+        String(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      );
     } catch {
       // The prompt stays hidden for this render.
     }

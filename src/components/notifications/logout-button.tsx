@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signOutAction, removeCurrentPushSubscriptionAction } from "@/app/actions/auth";
+import { clearClientData } from "@/lib/client-state";
 import { disablePush } from "@/lib/push-client";
 
 export function LogoutButton() {
@@ -10,30 +11,42 @@ export function LogoutButton() {
   async function handleClick() {
     if (pending) return;
     setPending(true);
+
     if (!("serviceWorker" in navigator)) {
       await signOutAction();
+      clearClientData();
+      window.location.assign("/login");
       return;
     }
+
     try {
       const registration = await navigator.serviceWorker.getRegistration("/");
       const subscription = await registration?.pushManager.getSubscription();
+
       if (subscription) {
         const endpoint = subscription.endpoint;
         const result = await removeCurrentPushSubscriptionAction(endpoint);
+
         if (result.error) {
           setPending(false);
           return;
         }
+
         await subscription.unsubscribe();
       }
     } catch {
       const result = await disablePush();
+
       if (result.error) {
         setPending(false);
         return;
       }
     }
+
     await signOutAction();
+    // Drop this account's caches, then reload so the router cache is gone too.
+    clearClientData();
+    window.location.assign("/login");
   }
 
   return <button

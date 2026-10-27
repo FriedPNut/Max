@@ -1,11 +1,11 @@
 "use client";
 
-import { CalendarDays, Grid3x3 } from "lucide-react";
 import { useState } from "react";
+import { CalendarIcon, GridIcon } from "@/components/icons";
 
 const TABS = [
-  { id: "posts", label: "Posts", Icon: Grid3x3 },
-  { id: "events", label: "Events", Icon: CalendarDays },
+  { id: "posts", label: "Posts", Icon: GridIcon },
+  { id: "events", label: "Events", Icon: CalendarIcon },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
@@ -56,7 +56,7 @@ export function ProfileTabs({
 
         <span
           aria-hidden="true"
-          className="absolute bottom-0 left-0 h-px w-1/2 bg-text transition-transform duration-200 ease-out"
+          className="absolute bottom-0 left-0 h-0.5 w-1/2 bg-text transition-transform duration-200 ease-out"
           style={{
             transform: `translate3d(${activeIndex * 100}%, 0, 0)`,
           }}

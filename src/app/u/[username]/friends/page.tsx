@@ -56,7 +56,7 @@ export default async function PublicFriendsPage({
 
   return (
     <AppShell>
-      <section className="space-y-6">
+      <section key={profile.id} className="space-y-6">
         <div>
           <Link
             href={`/u/${encodeURIComponent(username)}`}

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -26,12 +27,15 @@ export function Sheet({
   children,
   className = "",
   fullHeight = false,
+  tall = false,
 }: {
   label: string;
   onClose: () => void;
   children: ReactNode;
   className?: string;
   fullHeight?: boolean;
+  /** Opens to about 85% of the screen height. */
+  tall?: boolean;
 }) {
   const keyboardInset = useKeyboardInset();
   const [closing, setClosing] = useState(false);
@@ -77,6 +81,20 @@ export function Sheet({
     setClosing(true);
     closeTimer.current = window.setTimeout(onClose, CLOSE_MS);
   }, [closing, onClose]);
+
+  // A route change (including browser back) closes the sheet instead of
+  // leaving it over the next page.
+  const pathname = usePathname();
+  const pathRef = useRef(pathname);
+
+  useEffect(() => {
+    if (pathRef.current === pathname) {
+      return;
+    }
+
+    pathRef.current = pathname;
+    requestClose();
+  }, [pathname, requestClose]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -233,6 +251,8 @@ export function Sheet({
           className={`w-full rounded-t-sheet bg-surface pb-[calc(1rem+env(safe-area-inset-bottom,0px))] ${
             fullHeight
               ? "flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden"
+              : tall
+              ? "h-[85dvh] max-h-[85dvh] flex flex-col overflow-hidden"
               : "max-h-[92dvh] overflow-y-auto"
           } ${closing ? "" : "sheet-panel-inner"}`}
           style={
@@ -264,7 +284,7 @@ export function Sheet({
 
           <div
             className={`px-4 pt-2 ${
-              fullHeight ? "min-h-0 flex-1 overflow-y-auto" : ""
+              fullHeight || tall ? "min-h-0 flex-1 overflow-y-auto" : ""
             } ${className}`.trim()}
             onClick={(event) => {
               // A drag that ends on content must not also activate that content.

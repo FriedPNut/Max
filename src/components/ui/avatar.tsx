@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 
-export type AvatarSize = 24 | 32 | 40 | 56 | 88;
+export type AvatarSize = 24 | 32 | 40 | 48 | 64 | 88 | 96;
 
 const SIZES: Record<AvatarSize, { box: string; text: string }> = {
   24: { box: "h-6 w-6", text: "text-[10px]" },
   32: { box: "h-8 w-8", text: "text-xs" },
   40: { box: "h-10 w-10", text: "text-sm" },
-  56: { box: "h-14 w-14", text: "text-lg" },
+  48: { box: "h-12 w-12", text: "text-base" },
+  64: { box: "h-16 w-16", text: "text-xl" },
   88: { box: "h-[88px] w-[88px]", text: "text-2xl" },
+  96: { box: "h-24 w-24", text: "text-3xl" },
 };
 
 export function Avatar({

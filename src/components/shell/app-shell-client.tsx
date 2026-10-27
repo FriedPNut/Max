@@ -13,6 +13,8 @@ import {
 } from "react";
 import { requestClientRefresh } from "@/lib/app-refresh";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { DockBar } from "@/components/shell/dock-bar";
+import { TopBar } from "@/components/shell/top-bar";
 import { IslandBar } from "@/components/shell/island-bar";
 import {
   consumeRouteMotion,
@@ -22,30 +24,44 @@ import {
 } from "@/lib/nav-motion";
 import {
   consumePendingNavigation,
-  getTabMemory,
-  rememberTabPage,
-  resetTabToRoot,
+  getTabScroll,
+  rememberTabScroll,
   setPendingNavigation,
 } from "@/lib/tab-memory";
+import { rememberPageScroll, pageScroll } from "@/lib/scroll-memory";
+import { resetPageScrollLock } from "@/lib/scroll-lock";
 import {
   TAB_KEYS,
+  TAB_ROOTS,
   TABS,
+  getOriginTab,
   isRootTabPath,
-  isTabPath,
+  setOriginTab,
   tabForPath,
+  tabRoot,
   type TabKey,
 } from "@/lib/tabs";
-import { useIslandHiddenState } from "@/lib/use-island-hidden";
+import { resetIslandHidden, useIslandHiddenState } from "@/lib/use-island-hidden";
 import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-function initialHrefs(): Record<TabKey, string> {
-  return TABS.reduce((hrefs, tab) => {
-    hrefs[tab.key] = tab.root;
-    return hrefs;
-  }, {} as Record<TabKey, string>);
+/**
+ * The platform the head script set on <html>. Defaults to "ios" so the
+ * server render and first client render match and keep the island.
+ */
+function usePlatform(): "ios" | "android" | "other" {
+  const [platform, setPlatform] = useState<"ios" | "android" | "other">("ios");
+
+  useEffect(() => {
+    const value = document.documentElement.dataset.platform;
+    if (value === "android" || value === "other") {
+      setPlatform(value);
+    }
+  }, []);
+
+  return platform;
 }
 
 /** Scrolls the main container to a remembered position while content loads. */
@@ -97,6 +113,8 @@ function restoreScroll(
 export function AppShellClient({
   children,
   actions,
+  left,
+  title,
   userId,
   name,
   initial,
@@ -105,6 +123,8 @@ export function AppShellClient({
 }: {
   children: ReactNode;
   actions?: ReactNode;
+  left?: ReactNode;
+  title?: string;
   userId: string;
   name: string;
   initial: string;
@@ -116,24 +136,27 @@ export function AppShellClient({
   const mainRef = useRef<HTMLElement | null>(null);
   const restoringRef = useRef(false);
   const handledPathRef = useRef<string | null>(null);
+  const currentPathRef = useRef(pathname);
   const suppressClickUntilRef = useRef(0);
   const [scrolled, setScrolled] = useState(false);
   const [scrollHidden, setScrollHidden] = useState(false);
   const [enterClass, setEnterClass] = useState("");
-  const [hrefs, setHrefs] = useState<Record<TabKey, string>>(initialHrefs);
+  const [activeTab, setActiveTab] = useState<TabKey | null>(() =>
+    tabForPath(pathname)
+  );
   const [pullDistance, setPullDistance] = useState(0);
   const [pulling, setPulling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const keyboardInset = useKeyboardInset();
   const overlayHidden = useIslandHiddenState();
-  const activeTab = tabForPath(pathname);
+  const platform = usePlatform();
   const islandHidden =
     noIsland || overlayHidden || keyboardInset > 0 || scrollHidden;
 
-  // Restore the tab's page and scroll position after an island tap, and keep
-  // the tab hrefs pointed at each tab's last page.
+  // Every route change: pick the highlight, place the new page at the top,
+  // and put the bar back in its resting state.
   useIsomorphicLayoutEffect(() => {
-    // React Strict Mode runs effects twice in development; restore once.
+    // React Strict Mode runs effects twice in development; handle once.
     if (handledPathRef.current === pathname) {
       return;
     }
@@ -144,7 +167,28 @@ export function AppShellClient({
     const context = takeRouteContext(pathname);
     const previousPath = context.previousPath;
     const routeMotion = consumeRouteMotion() ?? context.inferred;
+
+    // A freshly pushed page always opens at the top; a back or forward
+    // navigation returns to where that page was left.
+    if (previousPath && previousPath !== pathname && element) {
+      rememberPageScroll(previousPath, element.scrollTop);
+    }
+
+    // Scroll events from here on belong to the incoming page.
+    currentPathRef.current = pathname;
+
     setScrollHidden(false);
+    resetIslandHidden();
+    // An overlay that navigated away must never leave the page locked.
+    resetPageScrollLock();
+
+    const ownTab = tabForPath(pathname);
+
+    if (ownTab) {
+      setOriginTab(ownTab);
+    }
+
+    setActiveTab(ownTab ?? getOriginTab());
 
     if (pending) {
       const canSlide = isRootTabPath(pathname);
@@ -176,26 +220,18 @@ export function AppShellClient({
       );
 
       if (element) {
-        element.scrollTop = 0;
-      }
+        const restored = routeMotion === "back" ? pageScroll(pathname) : 0;
 
-      const tab = tabForPath(pathname);
-
-      if (tab) {
-        rememberTabPage(tab, pathname, 0);
+        if (restored > 0) {
+          restoringRef.current = true;
+          restoreScroll(element, restored, () => {
+            restoringRef.current = false;
+          });
+        } else {
+          element.scrollTop = 0;
+        }
       }
     }
-
-    const memory = getTabMemory();
-    setHrefs(
-      TABS.reduce((next, tab) => {
-        const remembered = memory[tab.key]?.path;
-        next[tab.key] = remembered && isTabPath(tab.key, remembered)
-          ? remembered
-          : tab.root;
-        return next;
-      }, {} as Record<TabKey, string>)
-    );
   }, [pathname]);
 
   // The main column is the app's scroller, so the chrome listens to it rather
@@ -218,8 +254,19 @@ export function AppShellClient({
       frame = requestAnimationFrame(() => {
         frame = 0;
 
+        const path = currentPathRef.current;
         const y = element.scrollTop;
         setScrolled(y > 4);
+        rememberPageScroll(path, y);
+
+        // Only a tab's root page keeps a scroll position.
+        if (isRootTabPath(path)) {
+          const tab = tabForPath(path);
+
+          if (tab) {
+            rememberTabScroll(tab, y);
+          }
+        }
 
         if (restoringRef.current) {
           lastY = y;
@@ -240,12 +287,6 @@ export function AppShellClient({
         }
 
         lastY = y;
-
-        const tab = tabForPath(pathname);
-
-        if (tab) {
-          rememberTabPage(tab, pathname, y);
-        }
       });
     };
 
@@ -264,47 +305,35 @@ export function AppShellClient({
   const openTab = useCallback(
     (key: TabKey) => {
       const element = mainRef.current;
-      const tab = TABS.find((entry) => entry.key === key);
+      const root = tabRoot(key);
 
-      if (!tab) {
-        return;
-      }
-
-      if (key === activeTab) {
+      // Tapping the tab you are on scrolls to the top; at the top, it goes
+      // back to that tab's root.
+      if (pathname === root) {
         if (element && element.scrollTop > 8) {
           element.scrollTo({ top: 0, behavior: "smooth" });
-          rememberTabPage(key, pathname, 0);
+          rememberTabScroll(key, 0);
           return;
         }
 
-        if (pathname !== tab.root) {
-          resetTabToRoot(key);
-          setPendingNavigation(tab.root, 0, 0);
-          setHrefs((current) => ({ ...current, [key]: tab.root }));
-          router.push(tab.root);
-          return;
-        }
-
-        element?.scrollTo({ top: 0, behavior: "smooth" });
+        element?.scrollTo({ top: 0 });
         return;
       }
 
-      if (element && activeTab) {
-        rememberTabPage(activeTab, pathname, element.scrollTop);
+      const owner = tabForPath(pathname);
+
+      if (owner && pathname === tabRoot(owner) && element) {
+        rememberTabScroll(owner, element.scrollTop);
       }
 
-      const memory = getTabMemory()[key];
-      const target =
-        memory && isTabPath(key, memory.path) ? memory.path : tab.root;
-      const scroll = memory && target === memory.path ? memory.scroll : 0;
       const from = activeTab ? TAB_KEYS.indexOf(activeTab) : -1;
       const to = TAB_KEYS.indexOf(key);
       const direction: -1 | 0 | 1 =
-        from < 0 ? 0 : to > from ? 1 : to < from ? -1 : 0;
+        from < 0 || from === to ? 0 : to > from ? 1 : -1;
 
-      setPendingNavigation(target, scroll, direction);
-      setHrefs((current) => ({ ...current, [key]: target }));
-      router.push(target);
+      setOriginTab(key);
+      setPendingNavigation(root, getTabScroll(key), direction);
+      router.push(root);
     },
     [activeTab, pathname, router]
   );
@@ -394,21 +423,11 @@ export function AppShellClient({
       }
 
       suppressClickUntilRef.current = Date.now() + 400;
-      rememberTabPage(current, pathname, element.scrollTop);
+      rememberTabScroll(current, element.scrollTop);
 
-      const memory = getTabMemory()[next.key];
-      const target =
-        memory && isTabPath(next.key, memory.path)
-          ? memory.path
-          : next.root;
-      const scroll = memory && target === memory.path ? memory.scroll : 0;
-
-      setPendingNavigation(target, scroll, dx < 0 ? 1 : -1);
-      setHrefs((currentHrefs) => ({
-        ...currentHrefs,
-        [next.key]: target,
-      }));
-      router.push(target);
+      setOriginTab(next.key);
+      setPendingNavigation(next.root, getTabScroll(next.key), dx < 0 ? 1 : -1);
+      router.push(next.root);
     };
 
     const onTouchEnd = () => {
@@ -618,20 +637,28 @@ export function AppShellClient({
           data-no-swipe
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
         >
-          <div className="mx-auto flex h-12 w-full max-w-[560px] items-center justify-between gap-2 px-4">
-            <Link
-              href="/events"
-              aria-label="Max"
-              className="inline-flex min-h-11 items-center text-[24px] font-extrabold leading-none tracking-[-0.03em] text-text"
-            >
-              Max
-            </Link>
-
-            <div className="flex items-center gap-1">
-              <NotificationBell userId={userId} />
-              {actions}
-            </div>
-          </div>
+          <TopBar
+            left={left}
+            center={
+              title ? (
+                <span className="truncate text-base font-semibold text-text">{title}</span>
+              ) : (
+                <Link
+                  href="/events"
+                  aria-label="Max"
+                  className="inline-flex min-h-11 items-center text-[26px] font-extrabold leading-none tracking-[-0.03em] text-text"
+                >
+                  Max
+                </Link>
+              )
+            }
+            right={
+              <>
+                <NotificationBell userId={userId} />
+                {actions}
+              </>
+            }
+          />
 
           <div
             aria-hidden="true"
@@ -644,7 +671,9 @@ export function AppShellClient({
           className="mx-auto w-full max-w-[560px] px-4 pt-6"
           style={{
             paddingBottom:
-              "calc(60px + 12px + env(safe-area-inset-bottom, 0px))",
+              platform === "ios"
+                ? "calc(60px + 12px + env(safe-area-inset-bottom, 0px))"
+                : "calc(56px + env(safe-area-inset-bottom, 0px) + 12px)",
           }}
         >
           <div key={pathname} className={enterClass}>
@@ -656,7 +685,7 @@ export function AppShellClient({
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-x-0 top-0 z-30 flex justify-center"
-        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 48px)" }}
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 56px)" }}
       >
         <div
           className="pull-indicator flex h-9 w-9 items-center justify-center rounded-full bg-surface shadow-control"
@@ -685,13 +714,23 @@ export function AppShellClient({
         </div>
       </div>
 
-      <IslandBar
-        activeTab={activeTab}
-        hidden={islandHidden}
-        hrefs={hrefs}
-        profile={{ src: avatarUrl, initial, name }}
-        onSelect={openTab}
-      />
+      {platform === "ios" ? (
+        <IslandBar
+          activeTab={activeTab}
+          hidden={islandHidden}
+          hrefs={TAB_ROOTS}
+          profile={{ src: avatarUrl, initial, name }}
+          onSelect={openTab}
+        />
+      ) : (
+        <DockBar
+          activeTab={activeTab}
+          hidden={islandHidden}
+          hrefs={TAB_ROOTS}
+          profile={{ src: avatarUrl, initial, name }}
+          onSelect={openTab}
+        />
+      )}
     </div>
   );
 }

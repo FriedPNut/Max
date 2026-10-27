@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, MessageCircle } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { deletePostAction } from "@/app/actions/posts";
 import { DeletePostMenu } from "@/components/posts/delete-post-menu";
@@ -33,8 +33,7 @@ export function PostCard({
   const [imageIndex, setImageIndex] = useState(0);
   const likeRef = useRef<LikeButtonHandle | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const lastTap = useRef<{ at: number; x: number; y: number } | null>(null);
-  const photoTapStart = useRef<{ x: number; y: number } | null>(null);
+  const lastTap = useRef<number | null>(null);
   const lastDoubleTap = useRef(0);
   const heartTimer = useRef<number | null>(null);
   const [heart, setHeart] = useState<{ key: number } | null>(null);
@@ -81,43 +80,23 @@ export function PostCard({
     heartTimer.current = window.setTimeout(() => setHeart(null), 700);
   }
 
-  function handlePhotoPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    photoTapStart.current = { x: event.clientX, y: event.clientY };
-  }
-
-  function handlePhotoPointerUp(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.pointerType === "mouse") {
-      return;
-    }
-
-    const tapStart = photoTapStart.current;
-    photoTapStart.current = null;
-
-    // A scroll that happens to end on the photo is not a tap.
-    if (
-      !tapStart ||
-      Math.abs(event.clientX - tapStart.x) > 12 ||
-      Math.abs(event.clientY - tapStart.y) > 12
-    ) {
+  function handlePhotoClick(event: React.MouseEvent<HTMLDivElement>) {
+    // Arrows and dots are controls, not part of the photo.
+    if ((event.target as Element).closest("button")) {
       return;
     }
 
     const now = Date.now();
-    const previous = lastTap.current;
 
-    if (
-      previous &&
-      now - previous.at < 300 &&
-      Math.abs(event.clientX - previous.x) < 30 &&
-      Math.abs(event.clientY - previous.y) < 30
-    ) {
+    if (lastTap.current !== null && now - lastTap.current < 300) {
       lastTap.current = null;
       showDoubleTapHeart();
       return;
     }
 
-    lastTap.current = { at: now, x: event.clientX, y: event.clientY };
+    lastTap.current = now;
   }
+
 
   function handleScroll(event: React.UIEvent<HTMLDivElement>) {
     const width = event.currentTarget.clientWidth;
@@ -132,6 +111,16 @@ export function PostCard({
         Math.max(0, Math.round(event.currentTarget.scrollLeft / width))
       )
     );
+  }
+
+  function handleCarouselKey(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      goToImage(Math.max(0, imageIndex - 1));
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      goToImage(Math.min(images.length - 1, imageIndex + 1));
+    }
   }
 
   function goToImage(index: number) {
@@ -171,12 +160,12 @@ export function PostCard({
   );
 
   return (
-    <article className="space-y-2">
-      <div className="flex items-center gap-3">
+    <article className="space-y-2.5">
+      <div className="flex items-center gap-3 px-1">
         <Avatar
           src={post.authorAvatarUrl}
           initial={post.authorInitial}
-          size={32}
+          size={40}
         />
 
         <div className="min-w-0 flex-1">
@@ -255,21 +244,33 @@ export function PostCard({
 
       {hasPhotos ? (
         <div
-          className="relative -mx-4 overflow-hidden bg-surface-2"
-          onPointerDown={handlePhotoPointerDown}
-          onPointerUp={handlePhotoPointerUp}
-          onDoubleClick={(event) => {
-            event.preventDefault();
-            showDoubleTapHeart();
-          }}
+          className="group relative -mx-4 overflow-hidden bg-surface-2"
+          style={{ touchAction: "manipulation" }}
+          onClick={handlePhotoClick}
         >
+          {images.length === 1 ? (
+            <div className="w-full">
+              <img
+                draggable={false}
+                src={images[0]}
+                alt={alt}
+                loading="lazy"
+                decoding="async"
+                onError={() => setImageFailed(true)}
+                className="aspect-[4/5] w-full select-none object-cover"
+                style={{ WebkitUserDrag: "none" } as React.CSSProperties}
+              />
+            </div>
+          ) : (
           <div
             ref={trackRef}
+            data-carousel
             data-no-swipe
+            tabIndex={0}
+            aria-label="Photos"
             onScroll={handleScroll}
-            className={`flex snap-x snap-mandatory overflow-x-auto ${
-              images.length > 1 ? "touch-pan-x" : ""
-            }`}
+            onKeyDown={handleCarouselKey}
+            className="flex"
           >
             {images.map((imageUrl, index) => (
               <div
@@ -283,14 +284,36 @@ export function PostCard({
                   loading="lazy"
                   decoding="async"
                   onError={() => setImageFailed(true)}
-                  className="aspect-[4/5] w-full object-cover"
+                  className="aspect-[4/5] w-full select-none object-cover"
+                  style={{ WebkitUserDrag: "none" } as React.CSSProperties}
                 />
               </div>
             ))}
           </div>
+          )}
 
           {images.length > 1 && (
             <>
+              {imageIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={() => goToImage(imageIndex - 1)}
+                  aria-label="Previous photo"
+                  className="absolute left-2 top-1/2 carousel-arrow"
+                >
+                  <ChevronLeft size={20} strokeWidth={2} aria-hidden="true" />
+                </button>
+              )}
+              {imageIndex < images.length - 1 && (
+                <button
+                  type="button"
+                  onClick={() => goToImage(imageIndex + 1)}
+                  aria-label="Next photo"
+                  className="absolute right-2 top-1/2 carousel-arrow"
+                >
+                  <ChevronRight size={20} strokeWidth={2} aria-hidden="true" />
+                </button>
+              )}
               <div className="pointer-events-none absolute right-2 top-2 rounded-full bg-scrim/60 px-2 py-1 text-xs font-semibold text-on-primary">
                 {imageIndex + 1}/{images.length}
               </div>
@@ -375,7 +398,7 @@ export function PostCard({
         <PostCopyLinkButton postId={post.id} />
       </div>
 
-      <p className="text-[14px] font-semibold text-text">
+      <p className="px-1 text-[14px] font-semibold text-text">
         {likeCount} {likeCount === 1 ? "like" : "likes"}
       </p>
 
@@ -438,7 +461,7 @@ export function PostCard({
         </ul>
       )}
 
-      <p className="text-xs text-muted">{post.relativeTime}</p>
+      <p className="px-1 text-xs text-muted">{post.relativeTime}</p>
 
       {commentsOpen && (
         <PostCommentsSheet

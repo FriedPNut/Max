@@ -176,6 +176,7 @@ export function ChatRoom({
   const [menuId, setMenuId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [failedPhotoPaths, setFailedPhotoPaths] = useState<string[]>([]);
   const [fullscreenUrl, setFullscreenUrl] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionedIds, setMentionedIds] = useState<string[]>([]);
@@ -258,6 +259,45 @@ export function ChatRoom({
       .eq("user_id", currentUserId);
   }, [conversationId, currentUserId, supabase]);
 
+  const latestShownRef = useRef<string | null>(null);
+  latestShownRef.current = messages[messages.length - 1]?.created_at ?? null;
+
+  // Pulls anything newer than the last shown message, so a missed Realtime
+  // event (before subscribe or while the tab was hidden) can't leave us stale.
+  const refetchNewer = useCallback(async () => {
+    const since = latestShownRef.current;
+    let query = supabase
+      .from("messages")
+      .select(MESSAGE_SELECT)
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(100);
+
+    if (since) {
+      query = query.gt("created_at", since);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.log("[chat:recv] refetch failed", error.message);
+      return;
+    }
+
+    const newer = (data ?? []) as unknown as MessageRecord[];
+    console.log("[chat:recv] refetch newer", newer.length);
+
+    if (newer.length > 0) {
+      setMessages((current) => {
+        const existingIds = new Set(current.map((message) => message.id));
+        const fresh = newer.filter((message) => !existingIds.has(message.id));
+        return fresh.length > 0 ? [...current, ...fresh] : current;
+      });
+      shouldScrollToBottom.current = true;
+      void markRead();
+    }
+  }, [conversationId, markRead, supabase]);
+
   useEffect(() => {
     void markRead();
   }, [markRead]);
@@ -336,6 +376,7 @@ export function ChatRoom({
         },
         (payload) => {
           const updated = payload.new as MessageRecord;
+          console.log("[chat:recv] realtime update", updated.id, updated.image_path);
           setMessages((current) =>
             current.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
           );
@@ -351,6 +392,7 @@ export function ChatRoom({
         },
         (payload) => {
           const message = payload.new as MessageRecord;
+          console.log("[chat:recv] realtime insert", message.id, message.image_path);
           const nearBottom =
             pageScrollTop() + pageViewportHeight() >=
             pageScrollHeight() - 160;
@@ -370,12 +412,25 @@ export function ChatRoom({
           void markRead();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[chat:recv] subscription status", status);
+        if (status === "SUBSCRIBED") {
+          void refetchNewer();
+        }
+      });
+
+    const onFocus = () => {
+      if (document.visibilityState === "visible") {
+        void refetchNewer();
+      }
+    };
+    document.addEventListener("visibilitychange", onFocus);
 
     return () => {
+      document.removeEventListener("visibilitychange", onFocus);
       void supabase.removeChannel(channel);
     };
-  }, [conversationId, markRead, supabase]);
+  }, [conversationId, markRead, refetchNewer, supabase]);
 
   useEffect(() => {
     const channel = supabase
@@ -416,16 +471,33 @@ export function ChatRoom({
   useEffect(() => {
     const missing = messages
       .map((m) => m.image_path)
-      .filter((p): p is string => Boolean(p) && !imageUrls[p as string]);
+      .filter(
+        (p): p is string =>
+          Boolean(p) &&
+          !imageUrls[p as string] &&
+          !failedPhotoPaths.includes(p as string)
+      );
 
     if (missing.length === 0) return;
 
+    console.log("[chat:recv] signing photo urls", missing.length);
     void signChatImagesAction(missing).then((result) => {
+      if (result.error) {
+        console.log("[chat:recv] signing failed", result.error);
+      }
       if (result.urls) {
         setImageUrls((current) => ({ ...current, ...result.urls }));
       }
+      const failed = missing.filter((p) => !result.urls?.[p]);
+      if (failed.length > 0) {
+        console.log("[chat:recv] no signed url for", failed);
+        setFailedPhotoPaths((current) => [
+          ...current,
+          ...failed.filter((p) => !current.includes(p)),
+        ]);
+      }
     });
-  }, [messages, imageUrls]);
+  }, [messages, imageUrls, failedPhotoPaths]);
 
   // Reactions for every loaded message, fetched once per message in one query.
   useEffect(() => {
@@ -925,7 +997,7 @@ export function ChatRoom({
 
     const { data, error: olderLoadError } = await supabase
       .from("messages")
-      .select("id,conversation_id,user_id,body,created_at")
+      .select("id,conversation_id,user_id,body,created_at,image_path,edited_at,deleted_at,mentions")
       .eq("conversation_id", conversationId)
       .lt("created_at", oldest.created_at)
       .order("created_at", { ascending: false })
@@ -1300,8 +1372,24 @@ export function ChatRoom({
                               <button type="button" onClick={() => setFullscreenUrl(imageUrls[message.image_path as string])} aria-label="Open photo" className="block cursor-pointer">
                                 <img draggable={false} src={imageUrls[message.image_path]} alt={message.body ?? "Photo"} loading="lazy" className="max-h-[320px] w-auto max-w-full rounded-lg object-cover" />
                               </button>
+                            ) : failedPhotoPaths.includes(message.image_path) ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log("[chat:recv] retry photo", message.image_path);
+                                  setFailedPhotoPaths((current) =>
+                                    current.filter((p) => p !== message.image_path)
+                                  );
+                                }}
+                                className="flex aspect-[3/4] w-40 items-center justify-center rounded-lg bg-surface-2 p-3 text-center text-sm text-muted"
+                              >
+                                Couldn't load photo. Tap to retry.
+                              </button>
                             ) : (
-                              <span className="block h-40 w-40 rounded-lg bg-surface-2" aria-label="Loading photo" />
+                              <span
+                                aria-label="Loading photo"
+                                className="block aspect-[3/4] w-40 animate-pulse rounded-lg bg-surface-2"
+                              />
                             )
                           )}
                           {message.body && (

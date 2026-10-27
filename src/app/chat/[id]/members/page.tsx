@@ -147,7 +147,7 @@ export default async function GroupMembersPage({
 
   return (
     <AppShell>
-      <section className="space-y-8">
+      <section key={conversation.id} className="space-y-8">
         <div>
           <Link
             href={`/chat/${conversation.id}`}

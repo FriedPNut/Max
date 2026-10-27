@@ -12,11 +12,14 @@ export function ProfilePostGrid({
   authorName,
   authorUsername,
   authorAvatarUrl,
+  emptyState,
 }: {
   posts: ProfilePost[];
   authorName?: string;
   authorUsername?: string | null;
   authorAvatarUrl?: string | null;
+  /** Rendered when there are no posts (own profile shows the create prompt). */
+  emptyState?: React.ReactNode;
 }) {
   const [selected, setSelected] = useState<ProfilePost | null>(null);
   useIslandHidden(selected !== null);
@@ -43,7 +46,11 @@ export function ProfilePostGrid({
   }, [selected]);
 
   if (posts.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted">No posts yet.</p>;
+    return (
+      emptyState ?? (
+        <p className="py-8 text-center text-sm text-muted">No posts yet.</p>
+      )
+    );
   }
 
   return (

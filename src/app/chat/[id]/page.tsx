@@ -112,7 +112,7 @@ export default async function ConversationPage({
   const MESSAGE_PAGE_SIZE = 30;
   const { data: messageData, error: messageError } = await supabase
     .from("messages")
-    .select("id,conversation_id,user_id,body,created_at")
+    .select("id,conversation_id,user_id,body,created_at,image_path,edited_at,deleted_at,mentions")
     .eq("conversation_id", conversation.id)
     .order("created_at", { ascending: false })
     .limit(MESSAGE_PAGE_SIZE);

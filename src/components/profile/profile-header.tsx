@@ -24,41 +24,29 @@ export function ProfileHeader({
 
   return (
     <section>
-      <div className="flex items-start gap-5">
-        <Avatar
-          src={avatarUrl}
-          initial={nameInitial(name)}
-          size={88}
-          className="mt-1"
-        />
+      <div className="flex items-center gap-4">
+        <Avatar src={avatarUrl} initial={nameInitial(name)} size={96} />
 
-        <div className="grid min-w-0 flex-1 grid-cols-3 gap-1 pt-1">
-          <Stat value={stats.posts} label="Posts" />
-          <Stat value={stats.friends} label="Friends" href={friendsHref} />
-          <Stat value={stats.events} label="Events" />
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-sm font-bold leading-snug text-text">
+            {name}
+          </h1>
+          <div className="mt-2 grid grid-cols-3 gap-1">
+            <Stat value={stats.posts} label="posts" />
+            <Stat value={stats.friends} label="friends" href={friendsHref} />
+            <Stat value={stats.events} label="events" />
+          </div>
         </div>
       </div>
 
-      {/* Reserved for the level and streak line, directly under the stats. */}
-      <div aria-hidden="true" className="mt-2 min-h-5" />
-
-      <div className="mt-1">
-        <h1 className="break-words text-base font-semibold leading-snug text-text">
-          {name}
-        </h1>
-
-        {profile.username ? (
-          <p className="mt-0.5 truncate text-sm text-muted">
-            @{profile.username}
-          </p>
-        ) : (
-          <p className="mt-0.5 text-sm text-muted">No username yet</p>
-        )}
-
+      <div className="mt-3">
         {profile.bio && (
-          <p className="selectable mt-2 whitespace-pre-wrap break-words text-base text-text">
+          <p className="selectable whitespace-pre-wrap break-words text-[15px] text-text">
             {profile.bio}
           </p>
+        )}
+        {!profile.username && (
+          <p className="mt-0.5 text-sm text-muted">No username yet</p>
         )}
       </div>
 
@@ -80,12 +68,8 @@ function Stat({
 }) {
   const content = (
     <>
-      <span className="text-lg font-bold leading-tight text-text">
-        {value}
-      </span>
-      <span className="mt-0.5 text-[13px] leading-tight text-muted">
-        {label}
-      </span>
+      <span className="text-lg font-bold leading-tight text-text">{value}</span>
+      <span className="text-sm leading-tight text-muted">{label}</span>
     </>
   );
 

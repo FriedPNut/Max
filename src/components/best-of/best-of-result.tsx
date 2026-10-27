@@ -7,6 +7,7 @@ import { loadBestOfAction } from "@/app/actions/best-of";
 import { BestOfResultSkeleton } from "@/components/best-of/skeletons";
 import { useViewerTimeZone } from "@/components/recap/use-viewer-time-zone";
 import { addMonthsToKey, type BestOfMonth } from "@/lib/best-of";
+import { useToday } from "@/lib/use-today";
 
 function localMonthKey(now: Date) {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -14,13 +15,10 @@ function localMonthKey(now: Date) {
 
 export function BestOfResult({ monthKey }: { monthKey: string }) {
   const timeZone = useViewerTimeZone();
-  const [currentKey, setCurrentKey] = useState<string | null>(null);
+  const today = useToday();
+  const currentKey = today ? localMonthKey(today) : null;
   const [data, setData] = useState<BestOfMonth | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCurrentKey(localMonthKey(new Date()));
-  }, []);
 
   useEffect(() => {
     if (!timeZone || !currentKey || monthKey >= currentKey) {

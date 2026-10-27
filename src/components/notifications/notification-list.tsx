@@ -65,7 +65,7 @@ function NotificationRow({
       <button
         type="button"
         onClick={onOpen}
-        className="press-row flex w-full items-start gap-3 px-1 py-3.5 text-left transition-colors duration-200 ease-out hover:bg-surface-2"
+        className="press-row flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors duration-200 ease-out hover:bg-surface-2"
       >
         <span className="relative shrink-0">
           {avatarUrl ? (
@@ -84,21 +84,21 @@ function NotificationRow({
           {!item.read_at && (
             <span
               aria-label="Unread"
-              className="absolute -right-1 top-0 h-2 w-2 rounded-full border-2 border-surface bg-primary"
+              className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary"
             />
           )}
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block text-[14px] font-semibold leading-snug text-text">
+          <span className="block text-[15px] font-semibold leading-snug text-text">
             {notificationTitle(item)}
           </span>
           {body && (
-            <span className="mt-0.5 block text-[14px] leading-snug text-muted">
+            <span className="mt-0.5 block text-[13px] leading-snug text-muted">
               {body}
             </span>
           )}
-          <span className="mt-1 block text-xs text-muted">
+          <span className="mt-0.5 block text-xs text-muted">
             {notificationRelativeTime(item.created_at)}
           </span>
         </span>
@@ -123,9 +123,9 @@ function NotificationGroup({
   }
 
   return (
-    <section className="space-y-1">
-      <h2 className="px-1 text-lg font-semibold text-text">{title}</h2>
-      <ul className="divide-y divide-line">
+    <section className="space-y-2">
+      <h2 className="px-4 text-base font-semibold text-text">{title}</h2>
+      <ul>
         {items.map((item) => (
           <NotificationRow
             key={item.id}
@@ -235,7 +235,7 @@ export function NotificationList({
       {items.length === 0 ? (
         <p className="text-sm text-muted">You’re all caught up.</p>
       ) : (
-        <div className="space-y-6">
+        <div className="-mx-4 space-y-5">
           <NotificationGroup
             title="New"
             items={newItems}

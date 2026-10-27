@@ -96,7 +96,7 @@ export default async function TripPage({
 
   return (
     <AppShell userId={user.id}>
-      <section className="space-y-6">
+      <section key={id} className="space-y-6">
         <Link href="/trips" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out">
           <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
           Trips

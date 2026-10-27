@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { TopBar } from "@/components/shell/top-bar";
 
 export default function EventsError({ reset }: { reset: () => void }) {
   return (
     <div className="min-h-dvh bg-background text-text pb-24">
       <header className="glass sticky top-0 z-40">
-        <div className="mx-auto flex h-12 w-full max-w-[560px] items-center px-4">
-          <Link
-            href="/events"
-            className="text-[24px] font-extrabold tracking-[-0.03em] text-text"
-          >
-            Max
-          </Link>
-        </div>
+        <TopBar
+          center={
+            <Link
+              href="/events"
+              className="text-[26px] font-extrabold leading-none tracking-[-0.03em] text-text"
+            >
+              Max
+            </Link>
+          }
+        />
       </header>
 
       <div className="mx-auto w-full max-w-[560px] space-y-4 px-4 pt-6">

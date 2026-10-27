@@ -8,6 +8,7 @@ import {
   MAX_UPLOAD_BYTES,
   resizeImageToWidth,
   uploadImageWithProgress,
+  extensionFor,
 } from "@/lib/client-image";
 import { CHAT_BUCKET, type MessageRecord } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/client";
@@ -79,8 +80,14 @@ export function PhotoComposer({
       previewRef.current = url;
       setPreview(url);
       setPhoto(resized);
-    } catch {
-      setLocalError("Couldn't read that photo. Try another one.");
+    } catch (error) {
+      // Canvas can't decode some formats (e.g. HEIC). Send the original bytes.
+      console.log("[chat:send] resize failed, using original", error);
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+      const url = URL.createObjectURL(file);
+      previewRef.current = url;
+      setPreview(url);
+      setPhoto(file);
     } finally {
       setPhase("idle");
     }
@@ -97,30 +104,37 @@ export function PhotoComposer({
       return;
     }
 
-    const path = `chat/${userId}/${Date.now()}.jpg`;
+    const extension = extensionFor(photo.type);
+    const path = `chat/${userId}/${Date.now()}.${extension}`;
     setLocalError(null);
     setPhase("uploading");
+    console.log("[chat:send] uploading", path, photo.type, photo.size);
 
     try {
       await uploadImageWithProgress({
         file: photo,
         bucket: CHAT_BUCKET,
         path,
+        contentType: photo.type || "image/jpeg",
         token: session.access_token,
         onProgress: setProgress,
       });
-    } catch {
-      setLocalError("Couldn't upload that photo. Try again.");
+    } catch (error) {
+      console.log("[chat:send] upload failed", error);
+      setLocalError("Photo didn't send. Tap to retry.");
       setPhase("idle");
       return;
     }
 
+    console.log("[chat:send] upload ok, inserting row");
     setPhase("sending");
     const result = await sendPhotoMessageAction({
       conversationId,
       imagePath: path,
       caption,
     });
+
+    console.log("[chat:send] insert result", result.error ?? "ok");
 
     if (result.error || !result.message) {
       setLocalError(result.error ?? "Couldn't send that photo. Try again.");

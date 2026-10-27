@@ -1,12 +1,18 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useToday } from "@/lib/use-today";
 
 type TimeFormat = "card" | "date" | "time";
 
 const subscribe = () => () => {};
 
-function formatValue(iso: string, format: TimeFormat, timeZone?: string) {
+function formatValue(
+  iso: string,
+  format: TimeFormat,
+  timeZone?: string,
+  now: Date = new Date()
+) {
   const date = new Date(iso);
 
   if (Number.isNaN(date.getTime())) {
@@ -46,7 +52,7 @@ function formatValue(iso: string, format: TimeFormat, timeZone?: string) {
   const currentYear = new Intl.DateTimeFormat("en-US", {
     ...base,
     year: "numeric",
-  }).format(new Date());
+  }).format(now);
   const time = new Intl.DateTimeFormat("en-US", {
     ...base,
     hour: "numeric",
@@ -65,11 +71,15 @@ export function LocalTime({
   format?: TimeFormat;
   className?: string;
 }) {
+  // The shared day re-renders at local midnight, so the year suffix can't go
+  // stale in a long-lived tab.
+  const today = useToday();
+
   // The server renders a UTC fallback so hydration stays stable, then the
   // browser swaps in the viewer's own timezone after mount.
   const text = useSyncExternalStore(
     subscribe,
-    () => formatValue(iso, format),
+    () => formatValue(iso, format, undefined, today ?? new Date()),
     () => formatValue(iso, format, "UTC")
   );
 

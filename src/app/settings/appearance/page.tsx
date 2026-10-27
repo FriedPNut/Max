@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
-import { Card } from "@/components/ui";
 
 export default async function AppearancePage() {
   const { user } = await getAuthenticatedUser();
@@ -23,14 +22,14 @@ export default async function AppearancePage() {
           </h1>
         </header>
 
-        <Card className="overflow-hidden">
+        <div className="overflow-hidden rounded-card bg-surface">
           <div className="p-4">
             <ThemeSwitcher />
           </div>
           <p className="border-t border-line px-4 py-3 text-sm leading-relaxed text-muted">
             System follows your phone or computer.
           </p>
-        </Card>
+        </div>
       </section>
     </AppShell>
   );

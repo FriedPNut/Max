@@ -7,7 +7,7 @@ import {
   type NotificationPreferenceKey,
 } from "@/app/actions/notifications";
 import { useNotificationSetup } from "@/lib/use-notification-setup";
-import { Button, Card, Switch } from "@/components/ui";
+import { Button, Switch } from "@/components/ui";
 
 type Preferences = Record<NotificationPreferenceKey, boolean>;
 
@@ -181,7 +181,7 @@ export function NotificationSettings({
       <section className="space-y-2">
         <h2 className={sectionLabel}>Push notifications</h2>
 
-        <Card className="overflow-hidden">
+        <div className="overflow-hidden rounded-card bg-surface">
           <div className="divide-y divide-line">
             <div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
               <div className="min-w-0">
@@ -219,13 +219,13 @@ export function NotificationSettings({
               </div>
             ))}
           </div>
-        </Card>
+        </div>
       </section>
 
       <section className="space-y-2">
         <h2 className={sectionLabel}>This device</h2>
 
-        <Card className="overflow-hidden">
+        <div className="overflow-hidden rounded-card bg-surface">
           <div className="divide-y divide-line">
             <p className="px-4 py-3 text-sm leading-relaxed text-muted">
               {deviceMessage}
@@ -264,7 +264,7 @@ export function NotificationSettings({
               </div>
             )}
           </div>
-        </Card>
+        </div>
       </section>
 
       {(error || deviceError) && (

@@ -4,18 +4,24 @@
   color-scheme: light;
 
   --background: #f4f4f4;
+  --thread: #f4f4f4;
   --surface: #fbfbfb;
-  --surface-2: #efefef;
+  --surface-2: #eaecef;
   --text: #262626;
   --muted: #737373;
   --line: #dbdbdb;
   --border: #c7c7c7;
-  --primary: #0095f6;
-  --primary-pressed: #1877f2;
-  --link: #00376b;
+  --primary: #3f51f5;
+  --primary-pressed: #3345e0;
+  --link: #3f51f5;
   --danger: #ff3040;
   --today: #c8434f;
   --on-primary: #ffffff;
+  --received-bubble: #eaecef;
+  --bubble-from: #a81be0;
+  --bubble-to: #5a55f5;
+  --badge: #ff3040;
+  --day-box-border: #c7c7c7;
 
   /* Motion tokens (DESIGN.md §7). Only transform and opacity animate. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -32,44 +38,51 @@
   --glass: rgba(251, 251, 251, 0.72);
   --island-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   --control-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  --story-gradient: linear-gradient(
+  --brand-gradient: linear-gradient(
     45deg,
-    #feda75 0%,
-    #fa7e1e 25%,
-    #d62976 50%,
-    #962fbf 75%,
-    #4f5bd5 100%
+    #ffb800 0%,
+    #ff6a00 22%,
+    #ff2e63 50%,
+    #d10fa3 76%,
+    #a100e0 100%
   );
-  --bubble-gradient: linear-gradient(135deg, #7a3ff2, #3797f0);
+  --bubble-gradient: linear-gradient(180deg, #a81be0 0%, #5a55f5 100%);
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --background: #000000;
-  --surface: #121212;
-  --surface-2: #262626;
+  --background: #0c1014;
+  --thread: #000000;
+  --surface: #12171c;
+  --surface-2: #262b32;
   --text: #f5f5f5;
-  --muted: #a8a8a8;
-  --line: #262626;
+  --muted: #a8adb3;
+  --line: #1e242b;
   --border: #363636;
-  --primary: #0095f6;
-  --primary-pressed: #1877f2;
-  --link: #e0f1ff;
+  --primary: #4a5dff;
+  --primary-pressed: #3a4de6;
+  --link: #7c8cff;
   --danger: #ff3040;
   --today: #e5676f;
+  --day-box-border: transparent;
   --on-primary: #ffffff;
+  --received-bubble: #262626;
+  --bubble-from: #a81be0;
+  --bubble-to: #5a55f5;
+  --badge: #ff3040;
 
   --shimmer: rgba(255, 255, 255, 0.08);
 
   --scrim: #000000;
-  --glass: rgba(24, 24, 24, 0.68);
+  --glass: rgba(12, 16, 20, 0.72);
   --island-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   --control-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-thread: var(--thread);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-text: var(--text);
@@ -143,9 +156,9 @@ body {
   backdrop-filter: blur(24px) saturate(180%);
 }
 
-/* The one sanctioned gradient, used for story rings and the login wordmark. */
-.story-gradient {
-  background-image: var(--story-gradient);
+/* The one sanctioned gradient, used only for the Max wordmark. */
+.brand-gradient {
+  background-image: var(--brand-gradient);
 }
 
 /* Own chat bubbles. */
@@ -199,12 +212,62 @@ a {
   -webkit-user-drag: none;
 }
 
-/* Inner scroll areas never chain their rubber-band to the page behind. */
-main,
-[class*="overflow-y-auto"],
-[class*="overflow-x-auto"] {
-  overscroll-behavior: contain;
+/*
+ * Only the main column scrolls vertically. Photo carousels are horizontal-only
+ * scrollers that never trap vertical wheel or touch movement.
+ */
+main {
+  overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+}
+
+[data-carousel] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+[data-carousel]::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * Selected calendar day: a rounded box (radius 10, surface-2). Light mode adds a
+ * 1px outline token so the edge reads against the page; dark mode needs none.
+ */
+.day-box-selected {
+  box-shadow: inset 0 0 0 1px var(--day-box-border, transparent);
+}
+
+/* Desktop carousel arrows: hidden on touch, shown on hover with a mouse. */
+.carousel-arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+@media (hover: hover) {
+  .carousel-arrow {
+    display: inline-flex;
+  }
+
+  .group:hover .carousel-arrow,
+  .carousel-arrow:focus-visible {
+    opacity: 0.8;
+  }
 }
 
 /* A pointer cursor is a desktop affordance. */
@@ -358,16 +421,8 @@ html.theme-changing *::after {
   animation: tab-enter-fade 200ms var(--ease-out) both;
 }
 
-/* Story rings and the full-screen story viewer. */
-.story-ring-unseen {
-  background-image: var(--story-gradient);
-}
-
-.story-ring-seen {
-  background-color: var(--line);
-}
-
-@keyframes story-slide-forward {
+/* Full-width screen slides, used by onboarding. */
+@keyframes screen-slide-forward {
   from {
     opacity: 0.6;
     transform: translate3d(100%, 0, 0);
@@ -378,7 +433,7 @@ html.theme-changing *::after {
   }
 }
 
-@keyframes story-slide-back {
+@keyframes screen-slide-back {
   from {
     opacity: 0.6;
     transform: translate3d(-100%, 0, 0);
@@ -389,26 +444,12 @@ html.theme-changing *::after {
   }
 }
 
-.story-slide-forward {
-  animation: story-slide-forward var(--duration-page) var(--ease-spring) both;
+.screen-slide-forward {
+  animation: screen-slide-forward var(--duration-page) var(--ease-spring) both;
 }
 
-.story-slide-back {
-  animation: story-slide-back var(--duration-page) var(--ease-spring) both;
-}
-
-@keyframes story-progress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-.story-progress-fill {
-  transform-origin: left center;
-  animation: story-progress 5s linear forwards;
+.screen-slide-back {
+  animation: screen-slide-back var(--duration-page) var(--ease-spring) both;
 }
 
 /*
@@ -654,9 +695,8 @@ html.theme-changing *::after {
     scroll-behavior: auto !important;
   }
 
-  .story-slide-forward,
-  .story-slide-back,
-  .story-progress-fill,
+  .screen-slide-forward,
+  .screen-slide-back,
   .page-push-in,
   .page-back-in,
   .tab-enter-right,

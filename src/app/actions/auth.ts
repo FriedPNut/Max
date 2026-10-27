@@ -1,12 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import {
+  ONBOARDED_COOKIE,
+  ONBOARDED_COOKIE_OPTIONS,
+  ONBOARDED_SET,
+} from "@/lib/onboarding";
 
 export type AuthActionState = {
   error?: string;
-  notice?: string;
+  /** Where the client should land, using a full navigation. */
+  redirectTo?: string;
 };
 
 function formatAuthError(message: string): string {
@@ -15,7 +21,7 @@ function formatAuthError(message: string): string {
     lower.includes("invalid login credentials") ||
     lower.includes("invalid credentials")
   ) {
-    return "That password doesn't match, or we couldn't find that email.";
+    return "That email or password doesn't match.";
   }
   if (lower.includes("user already registered")) {
     return "That email already has an account. Sign in instead.";
@@ -45,10 +51,14 @@ export async function signInAction(
 
   if (!email || !password) return { error: "Enter both your email and password." };
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error) return { error: formatAuthError(error.message) };
+  if (!data.user) return { error: "Couldn't sign you in. Try again." };
   revalidatePath("/", "layout");
-  redirect("/events");
+  return routeAfterAuth(supabase, data.user.id);
 }
 
 export async function signUpAction(
@@ -76,11 +86,56 @@ export async function signUpAction(
     options: { data: { display_name: displayName } },
   });
   if (error) return { error: formatAuthError(error.message) };
-  if (data.session) {
-    revalidatePath("/", "layout");
-    redirect("/events");
+
+  if (!data.session) {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (signInError) return { error: formatAuthError(signInError.message) };
   }
-  return { notice: "Check your inbox to confirm your email, then sign in." };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  revalidatePath("/", "layout");
+
+  if (!user) return { error: "Account made. Log in to continue." };
+
+  return routeAfterAuth(supabase, user.id);
+}
+
+/**
+ * One profile read after signing in picks the first screen, and stores the
+ * cookie that keeps every later page from asking the database again.
+ */
+async function routeAfterAuth(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<AuthActionState> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("onboarded_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const cookieStore = await cookies();
+
+  if (data?.onboarded_at) {
+    cookieStore.set(
+      ONBOARDED_COOKIE,
+      ONBOARDED_SET,
+      ONBOARDED_COOKIE_OPTIONS
+    );
+    return { redirectTo: "/events" };
+  }
+
+  cookieStore.set(ONBOARDED_COOKIE, "", {
+    ...ONBOARDED_COOKIE_OPTIONS,
+    maxAge: 0,
+  });
+  return { redirectTo: "/welcome" };
 }
 
 export async function removeCurrentPushSubscriptionAction(endpoint: string) {
@@ -115,6 +170,13 @@ export async function signOutAction() {
     const supabase = await createClient();
     await supabase.auth.signOut();
   }
+  const cookieStore = await cookies();
+  cookieStore.set(ONBOARDED_COOKIE, "", {
+    ...ONBOARDED_COOKIE_OPTIONS,
+    maxAge: 0,
+  });
   revalidatePath("/", "layout");
-  redirect("/login");
+  // The client wipes its caches and does a full navigation to /login, so no
+  // router entry or in-memory list can survive the account switch.
+  return { signedOut: true };
 }

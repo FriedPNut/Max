@@ -60,12 +60,11 @@ export type ProfilePageResult = {
   error?: string;
 };
 
-export type ProfileRelationship = "none" | "friend" | "sent" | "incoming";
+export type ProfileRelationship = "none" | "friend";
 
 export type ProfileActionState = {
   error?: string;
   success?: boolean;
-  relationship?: "sent" | "friend";
 };
 
 export function normalizeUsername(value: string) {

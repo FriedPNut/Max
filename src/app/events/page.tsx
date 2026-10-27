@@ -187,7 +187,7 @@ export default async function EventsPage({
           )}
 
           <HangBanner hang={pendingHang} />
-          <PushPrompt />
+          <PushPrompt userId={user.id} />
           <EventsHome
             initialIdeas={ideasResult.items}
             events={eventsResult.items}

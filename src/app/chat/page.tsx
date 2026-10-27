@@ -40,6 +40,12 @@ export default async function ChatPage({
     .eq("user_id", user.id);
 
   const myMemberships = (membershipData ?? []) as MyMembership[];
+  const { data: ownProfile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .maybeSingle();
+  const ownTitle = ownProfile?.username ? `@${ownProfile.username}` : "Messages";
   const conversationIds = myMemberships.map((row) => row.conversation_id);
 
   const actions = (
@@ -65,8 +71,8 @@ export default async function ChatPage({
 
   if (conversationIds.length === 0) {
     return (
-      <AppShell actions={actions}>
-        <section className="space-y-6">
+      <AppShell actions={actions} title={ownTitle}>
+      <section className="space-y-6">
           <h1 className="text-[22px] font-bold leading-tight text-text">
             Messages
           </h1>
@@ -236,7 +242,13 @@ export default async function ChatPage({
           ? null
           : otherProfile?.username?.trim() || null,
         mentionsMe: mentionedByConversation.get(conversation.id) ?? false,
-        lastMessage: lastMessage?.body ?? null,
+        lastMessage: lastMessage
+          ? lastMessage.image_path
+            ? lastMessage.user_id === user.id
+              ? "You sent a photo"
+              : "Sent a photo"
+            : lastMessage.body ?? null
+          : null,
         lastMessageAt: lastMessage?.created_at ?? null,
         createdAt: conversation.created_at,
         unread,
@@ -262,7 +274,7 @@ export default async function ChatPage({
   }));
 
   return (
-    <AppShell actions={actions}>
+    <AppShell actions={actions} title={ownTitle}>
       <section className="space-y-6">
         <h1 className="text-[22px] font-bold leading-tight text-text">
           Messages
@@ -360,10 +372,10 @@ export default async function ChatPage({
                         <Avatar
                           src={groupAvatars[0].src}
                           initial={groupAvatars[0].initial}
-                          size={56}
+                          size={64}
                         />
                       ) : (
-                        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-2 text-muted">
+                        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-2 text-muted">
                           <Users
                             size={24}
                             strokeWidth={1.75}
@@ -385,14 +397,14 @@ export default async function ChatPage({
                           <Avatar
                             src={conversation.avatarUrl}
                             initial={conversation.initial ?? "?"}
-                            size={56}
+                            size={64}
                           />
                         </Link>
                       ) : (
                         <Avatar
                           src={conversation.avatarUrl}
                           initial={conversation.initial ?? "?"}
-                          size={56}
+                          size={64}
                         />
                       )}
                       <OnlineDot userId={conversation.otherUserId} />
@@ -479,9 +491,8 @@ async function loadLatestMessages(
   if (conversationIds.length === 0) return byConversation;
 
   const { data } = await supabase
-    .from("messages")
-    .select("id,conversation_id,user_id,body,created_at,mentions")
-    .in("conversation_id", conversationIds)
+    .from("messages")      .select("id,conversation_id,user_id,body,created_at,image_path,mentions")
+      .in("conversation_id", conversationIds)
     .order("created_at", { ascending: false })
     .limit(Math.min(conversationIds.length * 4, 400));
 
@@ -498,7 +509,7 @@ async function loadLatestMessages(
       missing.map(async (conversationId) => {
         const { data: latest } = await supabase
           .from("messages")
-          .select("id,conversation_id,user_id,body,created_at,mentions")
+          .select("id,conversation_id,user_id,body,created_at,image_path,mentions")
           .eq("conversation_id", conversationId)
           .order("created_at", { ascending: false })
           .limit(1)

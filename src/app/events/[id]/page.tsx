@@ -295,7 +295,7 @@ export default async function EventDetailPage({
 
   return (
     <AppShell>
-      <article className="space-y-6">
+      <article key={event.id} className="space-y-6">
         <header>
           <div className="mb-6 flex items-center justify-between gap-2">
             <Link

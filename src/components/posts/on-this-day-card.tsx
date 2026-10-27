@@ -8,12 +8,14 @@ import {
   type OnThisDayYear,
 } from "@/app/actions/on-this-day";
 import { Button, Card } from "@/components/ui";
+import { localDayKey } from "@/lib/local-day";
+import { useToday } from "@/lib/use-today";
 
-const DISMISS_KEY = "on-this-day-dismissed";
 const LOOKBACK_YEARS = 5;
 
-function localDayKey(date: Date) {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+/** Per account: dismissing for one person never hides it for another. */
+function dismissKey(userId: string) {
+  return `on-this-day-dismissed:${userId}`;
 }
 
 function buildRanges(now: Date): OnThisDayRange[] {
@@ -38,17 +40,21 @@ function yearsAgoLabel(years: number) {
   return years === 1 ? "1 year ago" : `${years} years ago`;
 }
 
-export function OnThisDayCard({ currentYear }: { currentYear?: number }) {
+export function OnThisDayCard({ userId }: { userId: string }) {
+  const today = useToday();
   const [items, setItems] = useState<OnThisDayYear[]>([]);
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    const now = new Date();
-    const todayKey = localDayKey(now);
+    if (!today) {
+      return;
+    }
+
+    const key = localDayKey(today);
     let isDismissed = false;
 
     try {
-      isDismissed = window.localStorage.getItem(DISMISS_KEY) === todayKey;
+      isDismissed = window.localStorage.getItem(dismissKey(userId)) === key;
     } catch {
       // Storage can be unavailable when cookies are blocked; still show the card.
     }
@@ -56,12 +62,13 @@ export function OnThisDayCard({ currentYear }: { currentYear?: number }) {
     setDismissed(isDismissed);
 
     if (isDismissed) {
+      setItems([]);
       return;
     }
 
     let cancelled = false;
 
-    loadOnThisDayAction(buildRanges(now))
+    loadOnThisDayAction(buildRanges(today))
       .then((result) => {
         if (!cancelled) {
           setItems(result);
@@ -74,11 +81,14 @@ export function OnThisDayCard({ currentYear }: { currentYear?: number }) {
     return () => {
       cancelled = true;
     };
-  }, [currentYear]);
+  }, [today, userId]);
 
   function dismiss() {
     try {
-      window.localStorage.setItem(DISMISS_KEY, localDayKey(new Date()));
+      window.localStorage.setItem(
+        dismissKey(userId),
+        localDayKey(today ?? new Date())
+      );
     } catch {
       // Dismiss for this visit even if the preference cannot be saved.
     }
@@ -86,11 +96,11 @@ export function OnThisDayCard({ currentYear }: { currentYear?: number }) {
     setDismissed(true);
   }
 
-  if (dismissed || items.length === 0) {
+  if (!today || dismissed || items.length === 0) {
     return null;
   }
 
-  const thisYear = new Date().getFullYear();
+  const thisYear = today.getFullYear();
 
   return (
     <Card

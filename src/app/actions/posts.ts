@@ -168,6 +168,11 @@ export async function togglePostLikeAction(
     }
   }
 
+  // One like, one truth: every screen that lists this post refreshes.
+  revalidatePath("/feed");
+  revalidatePath(`/feed/${cleanPostId}`);
+  revalidatePath("/me");
+  revalidatePath("/u/[username]", "page");
   return {};
 }
 
@@ -219,5 +224,7 @@ export async function deletePostAction(
   // The post can be deleted from its own page, so refresh the feed too.
   revalidatePath("/feed");
   revalidatePath(`/feed/${cleanPostId}`);
+  revalidatePath("/me");
+  revalidatePath("/u/[username]", "page");
   return {};
 }

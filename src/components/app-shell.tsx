@@ -44,11 +44,17 @@ export async function getAuthenticatedUser() {
 export async function AppShell({
   children,
   actions,
+  left,
+  title,
   userId,
   noIsland = false,
 }: {
   children: React.ReactNode;
   actions?: React.ReactNode;
+  /** Left slot of the top bar, e.g. the Post "+" button. */
+  left?: React.ReactNode;
+  /** Centered title, e.g. @username. Defaults to the Max wordmark. */
+  title?: string;
   userId?: string;
   /** Hides the island bar on full-screen screens such as conversations and composers. */
   noIsland?: boolean;
@@ -104,6 +110,8 @@ export async function AppShell({
         initial={initial}
         avatarUrl={avatarUrl}
         actions={actions}
+        left={left}
+        title={title}
         noIsland={noIsland}
       >
         {children}

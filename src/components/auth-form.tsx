@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
   signInAction,
   signUpAction,
@@ -24,6 +24,14 @@ export function AuthForm() {
   const isSignUp = mode === "signup";
   const activeState = isSignUp ? signUpState : signInState;
   const isPending = isSignUp ? signUpPending : signInPending;
+
+  // A full navigation, not a client push, so nothing cached from a previous
+  // account can be reused.
+  useEffect(() => {
+    if (activeState?.redirectTo) {
+      window.location.assign(activeState.redirectTo);
+    }
+  }, [activeState]);
 
   return (
     <div className="w-full">
@@ -67,12 +75,6 @@ export function AuthForm() {
         {activeState?.error && (
           <p role="alert" className="text-sm text-text">
             {activeState.error}
-          </p>
-        )}
-
-        {activeState?.notice && (
-          <p role="status" className="text-sm text-muted">
-            {activeState.notice}
           </p>
         )}
 
