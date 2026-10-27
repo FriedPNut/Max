@@ -15,12 +15,12 @@ export function useToday(): Date | null {
     let timer = 0;
 
     const tick = () => {
-      const next = startOfLocalDay();
+      const next = startOfLocalDay(new Date());
       setToday((current) =>
         current && current.getTime() === next.getTime() ? current : next
       );
       window.clearTimeout(timer);
-      timer = window.setTimeout(tick, msUntilNextLocalMidnight());
+      timer = window.setTimeout(tick, msUntilNextLocalMidnight(new Date()));
     };
 
     tick();

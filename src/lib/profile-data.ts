@@ -1,4 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
+import { photoThumbPath, photoUrls } from "@/lib/photo-urls";
 import {
   PROFILE_BUCKET,
   PROFILE_SIGNED_URL_SECONDS,
@@ -52,7 +53,8 @@ const LOAD_ERROR = "Couldn't load this profile. Refresh and try again.";
 export async function loadProfilePage(
   supabase: ServerClient,
   profile: ProfileRecord,
-  now = Date.now()
+  // Callers pass `await serverNow()`; the clock is never read during a render.
+  now: number
 ): Promise<ProfilePageResult> {
   const [postsResult, friendshipsResult, rsvpsResult] = await Promise.all([
     supabase
@@ -120,32 +122,35 @@ export async function loadProfilePage(
     if (/^https?:\/\//i.test(avatarPath)) {
       avatarUrl = avatarPath;
     } else {
-      const { data } = await supabase.storage
-        .from(PROFILE_BUCKET)
-        .createSignedUrl(avatarPath, PROFILE_SIGNED_URL_SECONDS);
+      const resolved = await photoUrls(
+        supabase,
+        PROFILE_BUCKET,
+        [avatarPath],
+        PROFILE_SIGNED_URL_SECONDS
+      );
 
-      avatarUrl = data?.signedUrl ?? null;
+      avatarUrl = resolved.urls.get(avatarPath) ?? null;
     }
   }
 
   const postPaths = postRows.map((post) => post.image_path);
+  const thumbPaths = postPaths.map(photoThumbPath);
   const signedByPath = new Map<string, string>();
 
   if (postPaths.length > 0) {
-    const { data } = await supabase.storage
-      .from(PROFILE_BUCKET)
-      .createSignedUrls(postPaths, PROFILE_SIGNED_URL_SECONDS);
-
-    for (const item of (data ?? []) as SignedUrlRow[]) {
-      if (item.signedUrl) {
-        signedByPath.set(item.path, item.signedUrl);
-      }
-    }
+    const resolved = await photoUrls(
+      supabase,
+      PROFILE_BUCKET,
+      [...postPaths, ...thumbPaths],
+      PROFILE_SIGNED_URL_SECONDS
+    );
+    resolved.urls.forEach((url, path) => signedByPath.set(path, url));
   }
 
   const posts: ProfilePost[] = postRows.map((post) => ({
     id: post.id,
     imageUrl: signedByPath.get(post.image_path) ?? null,
+    imageThumbUrl: signedByPath.get(photoThumbPath(post.image_path)) ?? null,
     caption: post.caption,
     createdAt: post.created_at,
     likeCount: likeCounts.get(post.id) ?? 0,
@@ -291,17 +296,16 @@ export async function resolveProfileAvatarUrls(
   const paths = [...pathOwners.keys()];
 
   if (paths.length > 0) {
-    const { data } = await supabase.storage
-      .from(PROFILE_BUCKET)
-      .createSignedUrls(paths, PROFILE_SIGNED_URL_SECONDS);
+    const resolved = await photoUrls(
+      supabase,
+      PROFILE_BUCKET,
+      paths,
+      PROFILE_SIGNED_URL_SECONDS
+    );
 
-    for (const item of (data ?? []) as SignedUrlRow[]) {
-      if (!item.signedUrl) {
-        continue;
-      }
-
-      for (const profileId of pathOwners.get(item.path) ?? []) {
-        urls.set(profileId, item.signedUrl);
+    for (const [path, signedUrl] of resolved.urls) {
+      for (const profileId of pathOwners.get(path) ?? []) {
+        urls.set(profileId, signedUrl);
       }
     }
   }

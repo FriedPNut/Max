@@ -3,6 +3,7 @@
 import { Heart, Layers, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui";
+import { readCache, writeCache } from "@/lib/cache";
 import { lockPageScroll } from "@/lib/scroll-lock";
 import type { ProfilePost } from "@/lib/profile";
 import { useIslandHidden } from "@/lib/use-island-hidden";
@@ -13,6 +14,7 @@ export function ProfilePostGrid({
   authorUsername,
   authorAvatarUrl,
   emptyState,
+  cacheUserId,
 }: {
   posts: ProfilePost[];
   authorName?: string;
@@ -20,9 +22,31 @@ export function ProfilePostGrid({
   authorAvatarUrl?: string | null;
   /** Rendered when there are no posts (own profile shows the create prompt). */
   emptyState?: React.ReactNode;
+  /** Own profile only: keeps the first page on this device for the next open. */
+  cacheUserId?: string;
 }) {
   const [selected, setSelected] = useState<ProfilePost | null>(null);
+  const [cachedPosts, setCachedPosts] = useState<ProfilePost[] | null>(null);
   useIslandHidden(selected !== null);
+
+  useEffect(() => {
+    if (!cacheUserId) {
+      return;
+    }
+
+    if (posts.length > 0) {
+      writeCache(cacheUserId, "profile-posts", posts.slice(0, 12));
+      return;
+    }
+
+    const cached = readCache<ProfilePost[]>(cacheUserId, "profile-posts");
+
+    if (cached && cached.length > 0) {
+      setCachedPosts(cached);
+    }
+  }, [cacheUserId, posts]);
+
+  const shownPosts = posts.length > 0 ? posts : cachedPosts ?? posts;
 
   useEffect(() => {
     if (!selected) {
@@ -45,7 +69,7 @@ export function ProfilePostGrid({
     };
   }, [selected]);
 
-  if (posts.length === 0) {
+  if (shownPosts.length === 0) {
     return (
       emptyState ?? (
         <p className="py-8 text-center text-sm text-muted">No posts yet.</p>
@@ -56,7 +80,7 @@ export function ProfilePostGrid({
   return (
     <>
       <div className="grid grid-cols-3 gap-px">
-        {posts.map((post) => (
+        {shownPosts.map((post) => (
           <button
             key={post.id}
             type="button"
@@ -69,11 +93,21 @@ export function ProfilePostGrid({
             {post.imageUrl ? (
               <img
                 draggable={false}
-                src={post.imageUrl}
+                src={post.imageThumbUrl ?? post.imageUrl}
                 alt=""
+                width={400}
+                height={500}
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full object-cover"
+                onError={(event) => {
+                  if (
+                    post.imageUrl &&
+                    event.currentTarget.src !== post.imageUrl
+                  ) {
+                    event.currentTarget.src = post.imageUrl;
+                  }
+                }}
+                className="h-full w-full bg-surface-2 object-cover"
               />
             ) : (
               <span className="flex h-full w-full items-center justify-center text-sm text-muted">

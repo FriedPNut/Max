@@ -76,7 +76,8 @@ export async function createHangAction(input: {
     created_by: user.id,
     message,
     location,
-    expires_at: expiresAtFor(duration).toISOString(),
+    // A Server Action is request time, so reading the clock here is fine.
+    expires_at: expiresAtFor(duration, new Date()).toISOString(),
   });
 
   if (error) {

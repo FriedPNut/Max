@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { EventsHome } from "@/components/events/events-home";
@@ -9,20 +10,31 @@ import {
 } from "@/lib/events-data";
 import { loadPollVoteNeededCount } from "@/lib/polls";
 import { getComingUpEvents } from "@/lib/coming-up";
-import { arrivalEtaLabel, isArrivalFresh, type ArrivalRecord } from "@/lib/event-arrivals";
-import { PushPrompt } from "@/components/notifications/push-prompt";
+import { isArrivalFresh, type ArrivalRecord } from "@/lib/event-arrivals";
+import { LazyPushPrompt } from "@/components/notifications/push-prompt-lazy";
 import { HangBanner, type PendingHang } from "@/components/hang/hang-banner";
 import { daysUntilBirthday } from "@/lib/birthdays";
 import type { UpcomingBirthday } from "@/components/events/events-home";
+import { logDataLoad, startDataTimer } from "@/lib/perf-server";
+import { serverNow } from "@/lib/server-now";
 
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ idea?: string }>;
+  searchParams: Promise<{ view?: string }>;
 }) {
-  const { idea: ideaParam } = await searchParams;
+  const dataStartedAt = startDataTimer();
+  const { view: viewParam } = await searchParams;
+
+  // The old Day view is gone; send saved or shared links back to Month.
+  if (viewParam === "day") {
+    redirect("/events");
+  }
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
+  // Request-time "now": never baked into a prerendered shell.
+  const now = await serverNow();
+  const nowIso = new Date(now).toISOString();
 
   // Everything that only needs the signed-in user goes out in one batch.
   const [
@@ -45,7 +57,7 @@ export default async function EventsPage({
     supabase
       .from("hangs")
       .select("id,created_by,message")
-      .gt("expires_at", new Date().toISOString())
+      .gt("expires_at", nowIso)
       .neq("created_by", user.id)
       .order("created_at", { ascending: false })
       .limit(10),
@@ -53,7 +65,7 @@ export default async function EventsPage({
   const rsvpStatuses = new Map(
     (rsvpsResult.data ?? []).map((rsvp: { event_id: string; status: string }) => [rsvp.event_id, rsvp.status])
   );
-  const comingUpEvents = getComingUpEvents(eventsResult.items, rsvpStatuses);
+  const comingUpEvents = getComingUpEvents(eventsResult.items, rsvpStatuses, now);
   const comingUpIds = comingUpEvents.map((event) => event.id);
   const birthdayFriendIds = [
     ...new Set(
@@ -104,14 +116,22 @@ export default async function EventsPage({
         : Promise.resolve({ data: [], error: null }),
     ]);
 
-  const onWayEtas: Record<string, string> = {};
+  // The rows travel to the browser, which turns them into "about 10 min" so
+  // no relative time is rendered on the server.
+  const onWayArrivals: Record<string, ArrivalRecord> = {};
 
   for (const row of (arrivalsResult.data ?? []) as ArrivalRecord[]) {
-    const label = isArrivalFresh(row.updated_at) ? arrivalEtaLabel(row) : null;
-    if (label) onWayEtas[row.event_id] = label;
+    if (
+      row.status === "on_my_way" &&
+      row.eta_minutes != null &&
+      isArrivalFresh(row.updated_at, now)
+    ) {
+      onWayArrivals[row.event_id] = row;
+    }
   }
 
   let upcomingBirthday: UpcomingBirthday | null = null;
+  let nearestBirthdayDays = Number.POSITIVE_INFINITY;
 
   if (birthdayProfilesResult.data && birthdayProfilesResult.data.length > 0) {
     for (const profile of (birthdayProfilesResult.data ?? []) as {
@@ -120,14 +140,20 @@ export default async function EventsPage({
       birth_month: number;
       birth_day: number;
     }[]) {
-      const days = daysUntilBirthday(profile.birth_month, profile.birth_day);
+      const days = daysUntilBirthday(
+        profile.birth_month,
+        profile.birth_day,
+        new Date(now)
+      );
 
-      if (days >= 0 && days <= 7 && (!upcomingBirthday || days < upcomingBirthday.days)) {
+      if (days >= 0 && days <= 7 && days < nearestBirthdayDays) {
+        // Only which birthday is picked is decided here; the countdown itself
+        // is the viewer's local day and renders in the browser.
+        nearestBirthdayDays = days;
         upcomingBirthday = {
           name: profile.display_name?.trim() || profile.username?.trim() || "A friend",
           month: profile.birth_month,
           day: profile.birth_day,
-          days,
         };
       }
     }
@@ -171,6 +197,8 @@ export default async function EventsPage({
 
   const loadError = eventsResult.error ?? ideasResult.error;
 
+  logDataLoad("/events", dataStartedAt);
+
   return (
     <AppShell actions={actions} userId={user.id}>
       {loadError ? (
@@ -179,21 +207,15 @@ export default async function EventsPage({
         </p>
       ) : (
         <div className="space-y-6">
-          {ideaParam === "restore-failed" && (
-            <p className="text-sm text-muted">
-              The event was deleted, but its idea couldn&apos;t be reopened.
-              Refresh and try again.
-            </p>
-          )}
-
           <HangBanner hang={pendingHang} />
-          <PushPrompt userId={user.id} />
+          <LazyPushPrompt userId={user.id} />
           <EventsHome
+            userId={user.id}
             initialIdeas={ideasResult.items}
             events={eventsResult.items}
             pollVoteCount={pollCountResult.count}
             comingUpEvents={comingUpEvents}
-            onWayEtas={onWayEtas}
+            onWayArrivals={onWayArrivals}
             upcomingBirthday={upcomingBirthday}
           />
         </div>

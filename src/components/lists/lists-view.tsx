@@ -1,10 +1,18 @@
 "use client";
 
-import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { CreateListSheet } from "@/components/lists/create-list-sheet";
-import { Chip } from "@/components/ui";
+import { FastLink } from "@/components/ui/fast-link";
+import { Chip, Toast } from "@/components/ui";
+
+const CreateListSheet = dynamic(
+  () =>
+    import("@/components/lists/create-list-sheet").then(
+      (m) => m.CreateListSheet
+    ),
+  { ssr: false }
+);
 import {
   LIST_KIND_LABELS,
   type ListKind,
@@ -28,13 +36,32 @@ const FILTERS: { value: "all" | ListKind; label: string }[] = [
 
 export function ListsView({
   rows,
+  creatorName = "You",
 }: {
   rows: ListRow[];
   kinds: ListKind[];
+  creatorName?: string;
 }) {
   const [filter, setFilter] = useState<"all" | ListKind>("all");
   const [sheetOpen, setSheetOpen] = useState(false);
-  const visible = rows.filter((row) => filter === "all" || row.kind === filter);
+  const [created, setCreated] = useState<ListRow[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
+  const allRows = [...created, ...rows];
+  const visible = allRows.filter(
+    (row) => filter === "all" || row.kind === filter
+  );
+
+  function handleCreated(row: { id: string; title: string; kind: ListKind }) {
+    setCreated((current) => [
+      { ...row, openCount: 0, creatorName },
+      ...current,
+    ]);
+  }
+
+  function handleFailed(id: string, message: string) {
+    setCreated((current) => current.filter((row) => row.id !== id));
+    setToast(message);
+  }
 
   return (
     <div className="space-y-6">
@@ -57,7 +84,7 @@ export function ListsView({
         <ul className="border-t border-line">
           {visible.map((row) => (
             <li key={row.id} className="border-b border-line">
-              <Link
+              <FastLink
                 href={`/lists/${row.id}`}
                 className="press-row -mx-4 flex min-h-14 items-center justify-between gap-3 px-4 py-3 transition-colors duration-200 ease-out hover:bg-surface-2"
               >
@@ -68,7 +95,7 @@ export function ListsView({
                   </p>
                 </div>
                 <span className="shrink-0 text-sm text-muted">{row.openCount} open</span>
-              </Link>
+              </FastLink>
             </li>
           ))}
         </ul>
@@ -87,7 +114,15 @@ export function ListsView({
         <Plus size={24} strokeWidth={1.75} aria-hidden="true" />
       </button>
 
-      {sheetOpen && <CreateListSheet onClose={() => setSheetOpen(false)} />}
+      {sheetOpen && (
+        <CreateListSheet
+          onClose={() => setSheetOpen(false)}
+          onCreated={handleCreated}
+          onFailed={handleFailed}
+        />
+      )}
+
+      <Toast message={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

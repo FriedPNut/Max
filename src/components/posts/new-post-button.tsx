@@ -1,9 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PostComposer } from "@/components/posts/post-composer";
-import { Button, Sheet } from "@/components/ui";
+import { Button, Sheet, Toast } from "@/components/ui";
+
+// The composer (and its image pipeline) is not needed until the sheet opens.
+const PostComposer = dynamic(
+  () => import("@/components/posts/post-composer").then((m) => m.PostComposer),
+  { ssr: false }
+);
 
 type EventOption = { id: string; title: string; startsAt: string };
 
@@ -19,6 +25,7 @@ export function NewPostButton({
   buttonLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const router = useRouter();
 
   return (
@@ -43,9 +50,12 @@ export function NewPostButton({
               setOpen(false);
               router.refresh();
             }}
+            onError={setToast}
           />
         </Sheet>
       )}
+
+      <Toast message={toast} onDone={() => setToast(null)} />
     </>
   );
 }

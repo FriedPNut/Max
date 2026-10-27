@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { EventMenu } from "@/components/event-menu";
 import { AddToCalendar } from "@/components/events/add-to-calendar";
+import { ClearNotificationsOnOpen } from "@/components/notifications/clear-notifications-on-open";
 import { BringTab } from "@/components/events/bring-tab";
 import { EventChat } from "@/components/events/event-chat";
 import { EventTabs } from "@/components/events/event-tabs";
@@ -25,6 +25,7 @@ import { loadEventChat } from "@/lib/event-chat-data";
 import { loadEventPlan } from "@/lib/event-plan-data";
 import { loadRsvpSnapshot } from "@/lib/event-rsvps";
 import { loadPollSnapshot } from "@/lib/polls";
+import { serverNow } from "@/lib/server-now";
 import { createClient } from "@/lib/supabase/server";
 import {
   EVENT_SIGNED_URL_SECONDS,
@@ -41,6 +42,7 @@ export default async function EventDetailPage({
   const { id } = await params;
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
+  const now = await serverNow();
 
   const { data: eventData, error: eventError } = await supabase
     .from("events")
@@ -95,7 +97,7 @@ export default async function EventDetailPage({
     currentUserId: user.id,
     currentUserName: displayName,
   });
-  const [planResult, costsSnapshot, photosResult, composerEventsResult] = await Promise.all([
+  const [planResult, costsSnapshot, photosResult, composerEventsResult, ideaSourceResult] = await Promise.all([
     loadEventPlan(supabase, {
       eventId: event.id,
       currentUserId: user.id,
@@ -103,8 +105,11 @@ export default async function EventDetailPage({
     }),
     loadEventCosts(supabase, { kind: "event", id: event.id }, user.id, displayName),
     loadEventPhotos(supabase, event.id, user.id, displayName),
-    supabase.from("events").select("id,title,starts_at").gte("starts_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()).order("starts_at", { ascending: true }),
+    supabase.from("events").select("id,title,starts_at").gte("starts_at", new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()).order("starts_at", { ascending: true }),
+    supabase.from("event_ideas").select("id").eq("event_id", event.id).limit(1),
   ]);
+  // Deleting this event also deletes the idea that created it.
+  const fromIdea = (ideaSourceResult.data ?? []).length > 0;
   const composerEvents = (composerEventsResult.data ?? []).map((item) => ({
     id: String(item.id), title: String(item.title), startsAt: String(item.starts_at),
   }));
@@ -134,15 +139,16 @@ export default async function EventDetailPage({
     event.location
   )}`;
   const isPast =
-    !event.poll_open && new Date(event.starts_at).getTime() < Date.now();
+    !event.poll_open && new Date(event.starts_at).getTime() < now;
 
   // Arrivals: shown only in the 2h-before to 3h-after window. Everyone signed in can read;
   // only Going or Maybe people get buttons.
-  const arrivalsVisible = !event.poll_open && isArrivalWindowOpen(event.starts_at);
+  const arrivalsVisible =
+    !event.poll_open && isArrivalWindowOpen(event.starts_at, now);
   let arrivalsContent = null;
 
   if (arrivalsVisible) {
-    const sinceIso = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const sinceIso = new Date(now - 12 * 60 * 60 * 1000).toISOString();
     const { data: arrivalRows } = await supabase
       .from("event_arrivals")
       .select("event_id,user_id,status,eta_minutes,updated_at")
@@ -230,7 +236,7 @@ export default async function EventDetailPage({
           <Link
             href={mapsUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="mt-1 inline-flex flex-col text-base text-text transition-opacity duration-200 ease-out hover:opacity-80"
           >
             <span className="selectable break-words whitespace-pre-line">
@@ -294,36 +300,28 @@ export default async function EventDetailPage({
   );
 
   return (
-    <AppShell>
+    <AppShell
+      title={event.title}
+      actions={
+        <>
+          <CopyLinkButton />
+          {isCreator && (
+            <EventMenu
+              eventId={event.id}
+              hasSeries={Boolean(event.series_id)}
+              fromIdea={fromIdea}
+            />
+          )}
+        </>
+      }
+    >
       <article key={event.id} className="space-y-6">
+        <ClearNotificationsOnOpen kind="event" id={event.id} />
+
         <header>
-          <div className="mb-6 flex items-center justify-between gap-2">
-            <Link
-              href="/events"
-              className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out"
-            >
-              <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-              Events
-            </Link>
-
-            <div className="flex items-center gap-1">
-              <CopyLinkButton />
-              {isCreator && (
-                <EventMenu
-                  eventId={event.id}
-                  hasSeries={Boolean(event.series_id)}
-                />
-              )}
-            </div>
-          </div>
-
           <p className="text-sm text-muted">
             {event.poll_open ? "Needs a time" : isPast ? "Past" : "Upcoming"}
           </p>
-
-          <h1 className="mt-1 text-[22px] font-bold leading-tight text-text break-words">
-            {event.title}
-          </h1>
 
           {event.poll_open ? (
             <p className="mt-2 text-sm text-muted">Time to be decided</p>

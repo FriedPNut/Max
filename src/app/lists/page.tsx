@@ -64,18 +64,19 @@ export default async function ListsPage() {
   }));
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title="Lists">
       <section className="space-y-8">
-        <h1 className="text-[22px] font-bold leading-tight text-text">
-          Lists
-        </h1>
 
         {listError ? (
           <p className="text-sm text-muted">
             Couldn&apos;t load lists. Refresh and try again.
           </p>
         ) : (
-          <ListsView rows={rows} kinds={[...LIST_KINDS]} />
+          <ListsView
+            rows={rows}
+            kinds={[...LIST_KINDS]}
+            creatorName={displayName}
+          />
         )}
       </section>
     </AppShell>

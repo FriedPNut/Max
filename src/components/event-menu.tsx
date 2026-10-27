@@ -15,9 +15,12 @@ import { Button, buttonStyles, Card } from "@/components/ui";
 export function EventMenu({
   eventId,
   hasSeries = false,
+  fromIdea = false,
 }: {
   eventId: string;
   hasSeries?: boolean;
+  /** The event came from an idea, which is deleted along with it. */
+  fromIdea?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -145,8 +148,16 @@ export function EventMenu({
               <p className="mt-2 text-sm text-text">
                 {hasSeries
                   ? "Choose which events to delete. This can't be undone."
+                  : fromIdea
+                  ? "Delete this event? This also deletes the idea it came from."
                   : "Delete this event? This can't be undone."}
               </p>
+
+              {hasSeries && fromIdea && (
+                <p className="mt-2 text-sm text-text">
+                  The idea it came from is deleted too.
+                </p>
+              )}
 
               {state.error && (
                 <p role="alert" className="mt-3 text-sm text-text">

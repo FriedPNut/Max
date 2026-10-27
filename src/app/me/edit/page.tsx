@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ProfileEditForm } from "@/components/profile/profile-edit-form";
 import { BirthdayForm } from "@/components/profile/birthday-form";
@@ -44,21 +43,8 @@ export default async function EditProfilePage() {
   }
 
   return (
-    <AppShell noIsland>
+    <AppShell title="Edit profile">
       <section className="space-y-8">
-        <div>
-          <Link
-            href="/me"
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-80"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            Profile
-          </Link>
-
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            Edit profile
-          </h1>
-        </div>
 
         {profileError ? (
           <p role="alert" className="text-sm text-danger">

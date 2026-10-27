@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { CHAT_BUCKET, MESSAGE_SELECT, type MessageRecord } from "@/lib/chat";
+import { photoThumbPath } from "@/lib/photo";
 
 export type MessageActionResult = {
   error?: string;
@@ -106,13 +107,41 @@ export async function deleteMessageAction(
   }
 
   if (existing.image_path) {
-    await supabase.storage.from(CHAT_BUCKET).remove([existing.image_path]);
+    await supabase
+      .storage.from(CHAT_BUCKET)
+      .remove([existing.image_path, photoThumbPath(existing.image_path)]);
   }
 
   return { message: data as unknown as MessageRecord };
 }
 
+/**
+ * Removes one message from my own view only. The row itself stays for everyone
+ * else, and the message query and Realtime handler skip hidden ids.
+ */
+export async function hideMessageForMeAction(
+  messageId: string
+): Promise<{ error?: string }> {
+  const { supabase, user } = await requireUser();
+
+  if (!messageId) {
+    return { error: "We couldn't find that message." };
+  }
+
+  const { error } = await supabase.from("message_hidden").insert({
+    message_id: messageId,
+    user_id: user.id,
+  });
+
+  if (error && error.code !== "23505") {
+    return { error: "Couldn't remove that message. Try again." };
+  }
+
+  return {};
+}
+
 export async function sendPhotoMessageAction(input: {
+  id?: string;
   conversationId: string;
   imagePath: string;
   caption: string;
@@ -120,6 +149,15 @@ export async function sendPhotoMessageAction(input: {
   const conversationId = String(input?.conversationId ?? "").trim();
   const imagePath = String(input?.imagePath ?? "").trim();
   const caption = String(input?.caption ?? "").trim();
+  // A client-generated id keeps the bubble on screen and the stored row the
+  // same row, so Realtime's echo never duplicates it.
+  const messageId =
+    typeof input?.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      input.id
+    )
+      ? input.id
+      : undefined;
   const { supabase, user } = await requireUser();
   const prefix = `chat/${user.id}/`;
 
@@ -141,6 +179,7 @@ export async function sendPhotoMessageAction(input: {
   const { data, error } = await supabase
     .from("messages")
     .insert({
+      ...(messageId ? { id: messageId } : {}),
       conversation_id: conversationId,
       user_id: user.id,
       body: caption || null,
@@ -206,33 +245,6 @@ export async function signChatImagesAction(
 
 function escapeLike(value: string) {
   return value.replace(/[\\%_]/g, (char) => `\\${char}`);
-}
-
-export async function searchConversationAction(
-  conversationId: string,
-  query: string
-): Promise<{ error?: string; results?: MessageRecord[] }> {
-  const term = String(query ?? "").trim();
-  const { supabase } = await requireUser();
-
-  if (!conversationId || term.length < 2) {
-    return { results: [] };
-  }
-
-  const { data, error } = await supabase
-    .from("messages")
-    .select(MESSAGE_SELECT)
-    .eq("conversation_id", conversationId)
-    .is("deleted_at", null)
-    .ilike("body", `%${escapeLike(term)}%`)
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  if (error) {
-    return { error: "Couldn't search this chat. Try again." };
-  }
-
-  return { results: (data ?? []) as unknown as MessageRecord[] };
 }
 
 export async function loadPinnedMessagesAction(
@@ -308,20 +320,55 @@ export async function searchAllConversationsAction(
     return { results: [] };
   }
 
-  const { data, error } = await supabase
-    .from("messages")
-    .select(MESSAGE_SELECT)
-    .in("conversation_id", ids)
-    .is("deleted_at", null)
-    .ilike("body", `%${escapeLike(term)}%`)
-    .order("created_at", { ascending: false })
-    .limit(30);
+  // Ideas shared without a note are still findable by their title.
+  const escaped = escapeLike(term);
+  const { data: ideaRows } = await supabase
+    .from("event_ideas")
+    .select("id")
+    .ilike("title", `%${escaped}%`)
+    .limit(50);
+  const ideaIds = ((ideaRows ?? []) as { id: string }[]).map((row) => row.id);
+  const baseQuery = () =>
+    supabase
+      .from("messages")
+      .select(MESSAGE_SELECT)
+      .in("conversation_id", ids)
+      .is("deleted_at", null);
+  const [bodyResult, ideaResult] = await Promise.all([
+    baseQuery()
+      .ilike("body", `%${escaped}%`)
+      .order("created_at", { ascending: false })
+      .limit(30),
+    ideaIds.length > 0
+      ? baseQuery()
+          .in("idea_id", ideaIds)
+          .order("created_at", { ascending: false })
+          .limit(30)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
 
-  if (error) {
+  if (bodyResult.error || ideaResult.error) {
     return { error: "Couldn't search your chats. Try again." };
   }
 
-  const rows = (data ?? []) as unknown as MessageRecord[];
+  const seen = new Set<string>();
+  const rows = [
+    ...((ideaResult.data ?? []) as unknown as MessageRecord[]),
+    ...((bodyResult.data ?? []) as unknown as MessageRecord[]),
+  ]
+    .filter((message) => {
+      if (seen.has(message.id)) {
+        return false;
+      }
+
+      seen.add(message.id);
+      return true;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+    .slice(0, 30);
   const convoIds = [...new Set(rows.map((r) => r.conversation_id))];
   const { data: convos } = convoIds.length
     ? await supabase

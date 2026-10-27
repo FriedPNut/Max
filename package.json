@@ -4,11 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run check:links",
     "build": "next build",
+    "check:links": "node scripts/check-links.mjs",
+    "perf:report": "node scripts/perf-report.mjs",
     "start": "next start",
-    "lint": "next lint",
     "test": "node --test tests/*.test.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:clock": "node scripts/check-clock.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

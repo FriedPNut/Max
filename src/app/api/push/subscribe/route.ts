@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { pushServerStatus } from "@/lib/push-env";
 
-export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Sign in to save this device." }, { status: 401 });
@@ -29,6 +29,15 @@ export async function POST(request: Request) {
     if (error) return NextResponse.json({ error: "Couldn't save this device." }, { status: 500 });
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Push notifications aren't configured." }, { status: 500 });
+    // Names only: never echo a secret back to the browser.
+    const { missing } = pushServerStatus();
+    return NextResponse.json(
+      {
+        error: missing.length
+          ? `The server can't save devices. Missing: ${missing.join(", ")}.`
+          : "Push notifications aren't configured.",
+      },
+      { status: 500 }
+    );
   }
 }

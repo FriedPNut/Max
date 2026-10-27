@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { FastLink } from "@/components/ui/fast-link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   useCallback,
@@ -13,6 +13,7 @@ import { LocalTime } from "@/components/local-time";
 import { Button, SegmentedControl, Skeleton } from "@/components/ui";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useToday } from "@/lib/use-today";
+import { useNow } from "@/lib/use-now";
 import {
   WEEKDAY_LABELS,
   addDaysToKey,
@@ -36,11 +37,18 @@ const VIEWS: { id: CalendarView; label: string }[] = [
   { id: "month", label: "Month" },
 ];
 
-function CalendarEventRow({ event }: { event: EventListItem }) {
-  const isPast = new Date(event.starts_at).getTime() < Date.now();
+function CalendarEventRow({
+  event,
+  now,
+}: {
+  event: EventListItem;
+  /** Browser clock, null until mounted, so the server render reads no time. */
+  now: number | null;
+}) {
+  const isPast = now !== null && new Date(event.starts_at).getTime() < now;
 
   return (
-    <Link
+    <FastLink
       href={`/events/${event.id}`}
       className="press-row -mx-4 flex min-h-14 items-center gap-3 border-b border-line px-4 py-3 transition-colors duration-200 ease-out last:border-b-0 hover:bg-surface-2"
     >
@@ -60,7 +68,7 @@ function CalendarEventRow({ event }: { event: EventListItem }) {
           {event.goingCount} going
         </span>
       </span>
-    </Link>
+    </FastLink>
   );
 }
 
@@ -108,6 +116,7 @@ function CalendarSkeleton() {
 export function CalendarSection({ events }: { events: EventListItem[] }) {
   const hydrated = useHydrated();
   const localToday = useToday();
+  const now = useNow();
   const [view, setView] = useState<CalendarView>("month");
   const [cursorKey, setCursorKey] = useState<string | null>(null);
   const initialized = useRef(false);
@@ -134,6 +143,10 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
 
       if (stored === "week" || stored === "month") {
         setView(stored);
+      } else if (stored) {
+        // Retired views such as "day" fall back to Month and are rewritten.
+        setView("month");
+        window.localStorage.setItem(VIEW_STORAGE_KEY, "month");
       }
     } catch {
       // Remembering the view is a convenience; ignore blocked storage.
@@ -278,6 +291,7 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
           cursorKey={selectedKey}
           eventsByDay={eventsByDay}
           today={currentToday}
+          now={now}
           onSelectDay={selectKey}
         />
       )}
@@ -288,6 +302,7 @@ export function CalendarSection({ events }: { events: EventListItem[] }) {
           eventsByDay={eventsByDay}
           today={currentToday}
           currentYear={currentYear}
+          now={now}
         />
       )}
     </section>
@@ -298,11 +313,14 @@ function MonthView({
   cursorKey,
   eventsByDay,
   today,
+  now,
   onSelectDay,
 }: {
   cursorKey: string;
   eventsByDay: Map<string, EventListItem[]>;
   today: string;
+  /** Browser clock, null until mounted. */
+  now: number | null;
   onSelectDay: (key: string) => void;
 }) {
   const cells = monthGridKeys(cursorKey);
@@ -379,7 +397,7 @@ function MonthView({
           ) : (
             <div>
               {selectedEvents.map((event) => (
-                <CalendarEventRow key={event.id} event={event} />
+                <CalendarEventRow key={event.id} event={event} now={now} />
               ))}
             </div>
           )}
@@ -394,11 +412,14 @@ function WeekView({
   eventsByDay,
   today,
   currentYear,
+  now,
 }: {
   cursorKey: string;
   eventsByDay: Map<string, EventListItem[]>;
   today: string;
   currentYear: number;
+  /** Browser clock, null until mounted. */
+  now: number | null;
 }) {
   const start = startOfWeekKey(cursorKey);
   const days = Array.from({ length: 7 }, (_, index) =>
@@ -432,7 +453,7 @@ function WeekView({
             ) : (
               <div className="mt-1">
                 {dayEvents.map((event) => (
-                  <CalendarEventRow key={event.id} event={event} />
+                  <CalendarEventRow key={event.id} event={event} now={now} />
                 ))}
               </div>
             )}

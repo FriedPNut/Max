@@ -6,7 +6,7 @@ import {
 
 export default function NewPostLoading() {
   return (
-    <AppShellSkeleton noIsland label="Loading composer">
+    <AppShellSkeleton label="Loading composer">
       <div className="flex items-center gap-2">
         <Skeleton className="h-11 w-11 rounded-lg" />
         <SkeletonTitle width="w-24" />

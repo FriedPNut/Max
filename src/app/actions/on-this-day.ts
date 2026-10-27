@@ -9,13 +9,13 @@ export type OnThisDayRange = {
   end: string;
 };
 
-export type OnThisDayPost = {
+type OnThisDayPost = {
   id: string;
   imageUrl: string | null;
   caption: string | null;
 };
 
-export type OnThisDayEvent = {
+type OnThisDayEvent = {
   id: string;
   title: string;
 };

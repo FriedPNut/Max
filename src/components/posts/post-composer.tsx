@@ -8,9 +8,10 @@ import { createPostAction } from "@/app/actions/posts";
 import {
   MAX_UPLOAD_BYTES,
   resizeImageFile,
-  uploadImageWithProgress,
+  uploadPhotoWithThumbnail,
 } from "@/lib/client-image";
 import { POSTS_BUCKET } from "@/lib/posts";
+import { photoThumbPath } from "@/lib/photo";
 import { createClient } from "@/lib/supabase/client";
 import { Button, buttonStyles, Textarea } from "@/components/ui";
 
@@ -28,6 +29,7 @@ export function PostComposer({
   eventId: initialEventId = "",
   events = [],
   showSheetHeader = false,
+  onError,
 }: {
   userId: string;
   onClose?: () => void;
@@ -35,6 +37,8 @@ export function PostComposer({
   eventId?: string;
   events?: EventOption[];
   showSheetHeader?: boolean;
+  /** Replaces the inline error once the sheet has closed. */
+  onError?: (message: string) => void;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -47,6 +51,7 @@ export function PostComposer({
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const submitting = useRef(false);
   const busy = phase !== "idle";
 
   useEffect(() => {
@@ -110,7 +115,7 @@ export function PostComposer({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (busy) {
+    if (submitting.current) {
       return;
     }
 
@@ -119,11 +124,36 @@ export function PostComposer({
       return;
     }
 
-    setError(null);
-    setPhase("uploading");
-    setProgress(0);
+    const blob = photo;
+    const postId = crypto.randomUUID();
+    const path = `posts/${userId}/${postId}.jpg`;
+    const text = caption;
+    const linkedEvent = eventId || null;
+    const sheetMode = Boolean(onClose);
 
-    const path = `posts/${userId}/${Date.now()}.jpg`;
+    submitting.current = true;
+    setError(null);
+
+    // In a sheet the composer is gone on this frame; on its own page it keeps
+    // showing the local preview while the upload runs.
+    if (sheetMode) {
+      onClose?.();
+    } else {
+      setPhase("uploading");
+      setProgress(0);
+    }
+
+    const fail = (message: string) => {
+      submitting.current = false;
+
+      if (sheetMode) {
+        onError?.(message);
+      } else {
+        setError(message);
+        setPhase("idle");
+        setProgress(0);
+      }
+    };
 
     try {
       const {
@@ -131,41 +161,43 @@ export function PostComposer({
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        setError("You're signed out. Refresh and try again.");
-        setPhase("idle");
+        fail("You're signed out. Refresh and try again.");
         return;
       }
 
-      await uploadImageWithProgress({
-        file: photo,
+      await uploadPhotoWithThumbnail({
+        file: blob,
         bucket: POSTS_BUCKET,
         path,
         token: session.access_token,
-        onProgress: setProgress,
+        onProgress: sheetMode ? () => {} : setProgress,
       });
     } catch {
-      setError("Couldn't upload that photo. Try again.");
-      setPhase("idle");
-      setProgress(0);
+      fail("Couldn't upload that photo. Try again.");
       return;
     }
 
-    setPhase("posting");
+    if (!sheetMode) {
+      setPhase("posting");
+    }
 
     try {
       const result = await createPostAction({
+        id: postId,
         imagePath: path,
-        caption,
-        eventId: eventId || null,
+        caption: text,
+        eventId: linkedEvent,
       });
 
       if (result.error) {
-        await supabase.storage.from(POSTS_BUCKET).remove([path]);
-        setError(result.error);
-        setPhase("idle");
-        setProgress(0);
+        await supabase.storage
+          .from(POSTS_BUCKET)
+          .remove([path, photoThumbPath(path)]);
+        fail(result.error);
         return;
       }
+
+      submitting.current = false;
 
       if (onPosted) {
         onPosted();
@@ -174,9 +206,7 @@ export function PostComposer({
 
       router.replace("/feed");
     } catch {
-      setError("Couldn't share that post. Try again.");
-      setPhase("idle");
-      setProgress(0);
+      fail("Couldn't share that post. Try again.");
     }
   }
 
@@ -211,8 +241,7 @@ export function PostComposer({
           <button
             type="button"
             onClick={onClose}
-            disabled={busy}
-            className="min-h-11 justify-self-start text-[15px] text-text transition-opacity duration-200 ease-out disabled:opacity-40"
+            className="min-h-11 justify-self-start text-[15px] text-text transition-opacity duration-200 ease-out"
           >
             Cancel
           </button>
@@ -221,7 +250,7 @@ export function PostComposer({
 
           <button
             type="submit"
-            disabled={!photo || busy}
+            disabled={!photo}
             className="min-h-11 justify-self-end text-[15px] font-semibold text-primary transition-opacity duration-200 ease-out disabled:opacity-40"
           >
             {shareLabel}
@@ -238,7 +267,6 @@ export function PostComposer({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={busy}
             aria-label={previewUrl ? "Choose another photo" : "Choose photo"}
             className={`relative flex w-full items-center justify-center overflow-hidden ${
               showSheetHeader
@@ -265,8 +293,7 @@ export function PostComposer({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={busy}
-              className="absolute bottom-3 right-3 rounded-full bg-scrim/60 px-3 py-1.5 text-xs font-semibold text-on-primary disabled:opacity-40"
+              className="absolute bottom-3 right-3 rounded-full bg-scrim/60 px-3 py-1.5 text-xs font-semibold text-on-primary"
             >
               Change
             </button>
@@ -277,7 +304,6 @@ export function PostComposer({
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            disabled={busy}
             className="hidden"
           />
         </div>
@@ -293,7 +319,6 @@ export function PostComposer({
             onChange={(event) => setCaption(event.target.value)}
             rows={3}
             maxLength={2000}
-            disabled={busy}
             placeholder="Write a caption..."
             aria-label="Caption"
             className="min-h-[88px] resize-none"
@@ -325,7 +350,6 @@ export function PostComposer({
               id="post-event"
               value={eventId}
               onChange={(event) => setEventId(event.target.value)}
-              disabled={busy}
               aria-label="Add to event"
               className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
             >
@@ -364,7 +388,7 @@ export function PostComposer({
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               type="submit"
-              disabled={!photo || busy}
+              disabled={!photo}
               className="w-full sm:w-auto"
             >
               {buttonLabel}
@@ -374,7 +398,6 @@ export function PostComposer({
               <Button
                 variant="secondary"
                 onClick={onClose}
-                disabled={busy}
                 className="w-full sm:w-auto"
               >
                 Cancel
@@ -382,17 +405,9 @@ export function PostComposer({
             ) : (
               <Link
                 href="/feed"
-                aria-disabled={busy}
-                onClick={(event) => {
-                  if (busy) {
-                    event.preventDefault();
-                  }
-                }}
                 className={`${buttonStyles({
                   variant: "secondary",
-                })} w-full text-center sm:w-auto ${
-                  busy ? "pointer-events-none opacity-40" : ""
-                }`}
+                })} w-full text-center sm:w-auto`}
               >
                 Cancel
               </Link>

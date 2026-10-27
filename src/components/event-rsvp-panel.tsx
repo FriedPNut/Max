@@ -104,10 +104,10 @@ export function EventRsvpPanel({
                 variant={isSelected ? "primary" : "secondary"}
                 onClick={() => choose(item)}
                 aria-pressed={isSelected}
-                disabled={pending !== null || isPast}
+                disabled={isPast}
                 className="w-full px-3"
               >
-                {pending === item ? "Saving..." : RSVP_LABELS[item]}
+                {RSVP_LABELS[item]}
               </Button>
             );
           })}

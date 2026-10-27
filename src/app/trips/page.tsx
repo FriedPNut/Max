@@ -1,10 +1,12 @@
-import Link from "next/link";
+import { FastLink } from "@/components/ui/fast-link";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { NewTripButton } from "@/components/trips/new-trip-button";
+import { TripCountdown } from "@/components/trips/trip-countdown";
 import { Avatar } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/server";
 import { nameInitial } from "@/lib/chat";
-import { countdownLabel, dateKey, parseDateKey, type TripRecord } from "@/lib/trips";
+import { dateKey, parseDateKey, type TripRecord } from "@/lib/trips";
+import { serverNow } from "@/lib/server-now";
 
 export default async function TripsPage() {
   const { user, displayName } = await getAuthenticatedUser();
@@ -72,12 +74,13 @@ export default async function TripsPage() {
     nameById.set(profile.id, profile.display_name?.trim() || profile.username?.trim() || "A friend");
   }
 
-  const initialsByTrip = new Map<string, string[]>();
+  // Keyed by person: the member list can change order or length.
+  const initialsByTrip = new Map<string, { id: string; initial: string }[]>();
 
   for (const row of (allMembers ?? []) as { trip_id: string; user_id: string }[]) {
     const name = nameById.get(row.user_id) ?? "A friend";
     const list = initialsByTrip.get(row.trip_id) ?? [];
-    list.push(nameInitial(name));
+    list.push({ id: row.user_id, initial: nameInitial(name) });
     initialsByTrip.set(row.trip_id, list);
   }
 
@@ -89,7 +92,7 @@ export default async function TripsPage() {
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const today = parseDateKey(dateKey(new Date()));
+  const today = parseDateKey(dateKey(new Date(await serverNow())));
   const upcoming = trips
     .filter((trip) => (parseDateKey(trip.end_date)?.getTime() ?? 0) >= (today?.getTime() ?? 0))
     .sort((a, b) => a.start_date.localeCompare(b.start_date));
@@ -99,9 +102,8 @@ export default async function TripsPage() {
   const ordered = [...upcoming, ...past];
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title="Trips">
       <section className="space-y-8">
-        <h1 className="text-[22px] font-bold leading-tight text-text">Trips</h1>
 
         {loadError ? (
           <p className="text-sm text-muted">Couldn&apos;t load trips. Refresh and try again.</p>
@@ -110,30 +112,34 @@ export default async function TripsPage() {
         ) : (
           <ul className="border-t border-line">
             {ordered.map((trip) => {
-              const countdown = countdownLabel(trip.start_date, trip.end_date);
               const isPast = past.includes(trip);
               return (
                 <li key={trip.id} className="-mx-4 border-b border-line">
-                  <Link href={`/trips/${trip.id}`} className="flex min-h-14 items-center justify-between gap-3 px-4 py-4 transition-colors duration-200 ease-out hover:bg-surface-2">
+                  <FastLink href={`/trips/${trip.id}`} className="flex min-h-14 items-center justify-between gap-3 px-4 py-4 transition-colors duration-200 ease-out hover:bg-surface-2">
                     <div className="min-w-0">
                       <p className="truncate text-base font-semibold text-text">{trip.title}</p>
                       <p className="truncate text-sm text-muted">
                         {trip.destination ? `${trip.destination} · ` : ""}
                         {formatRange(trip.start_date, trip.end_date)}
-                        {!isPast && countdown ? ` · ${countdown}` : ""}
+                        {!isPast && (
+                          <TripCountdown
+                            startKey={trip.start_date}
+                            endKey={trip.end_date}
+                          />
+                        )}
                       </p>
                     </div>
                     <span className="flex shrink-0" aria-label="Members">
-                      {(initialsByTrip.get(trip.id) ?? []).slice(0, 4).map((initial, index) => (
+                      {(initialsByTrip.get(trip.id) ?? []).slice(0, 4).map((member, index) => (
                         <Avatar
-                          key={index}
-                          initial={initial}
+                          key={member.id}
+                          initial={member.initial}
                           size={32}
                           className={index > 0 ? "-ml-2 ring-2 ring-background" : ""}
                         />
                       ))}
                     </span>
-                  </Link>
+                  </FastLink>
                 </li>
               );
             })}

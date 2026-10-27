@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { NewChatForm } from "@/components/chat/new-chat-form";
 import { buttonStyles } from "@/components/ui/button";
@@ -67,23 +66,11 @@ export default async function NewChatPage() {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <AppShell noIsland>
+    <AppShell title="New message">
       <section className="space-y-8">
-        <div>
-          <Link
-            href="/chat"
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-80"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            Chat
-          </Link>
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            New message
-          </h1>
-          <p className="mt-2 text-sm text-muted">
-            Pick one friend for a direct message, or a few for a group.
-          </p>
-        </div>
+        <p className="text-sm text-muted">
+          Pick one friend for a direct message, or a few for a group.
+        </p>
 
         {loadError ? (
           <p role="alert" className="text-sm text-danger">
@@ -93,10 +80,10 @@ export default async function NewChatPage() {
           <div className="space-y-4">
             <p className="text-sm text-muted">No friends yet.</p>
             <Link
-              href="/chat/friends"
+              href="/people"
               className={buttonStyles({ variant: "secondary" })}
             >
-              Find friends
+              Find people
             </Link>
           </div>
         ) : (

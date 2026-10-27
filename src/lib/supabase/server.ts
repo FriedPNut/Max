@@ -8,6 +8,32 @@ export function isSupabaseConfigured() {
   );
 }
 
+// Dev-only timing for every PostgREST/auth/storage call a page makes.
+function timedFetch(input: RequestInfo | URL, init?: RequestInit) {
+  if (process.env.NODE_ENV === "production") return fetch(input, init);
+
+  const started = performance.now();
+  const url =
+    typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.href
+      : input.url;
+  let pathname = url;
+
+  try {
+    pathname = new URL(url).pathname;
+  } catch {
+    // Keep the raw value for a useful log.
+  }
+
+  return fetch(input, init).finally(() => {
+    console.debug(
+      `[perf] supabase ${(performance.now() - started).toFixed(0)}ms ${pathname}`
+    );
+  });
+}
+
 export async function createClient() {
   const cookieStore = await cookies();
   const supabaseUrl =
@@ -16,6 +42,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
+    global: { fetch: timedFetch },
     cookies: {
       getAll() {
         return cookieStore.getAll();

@@ -19,7 +19,7 @@ export type HangResponseRecord = {
 
 export type HangDuration = "1h" | "3h" | "midnight";
 
-export function expiresAtFor(duration: HangDuration, now = new Date()) {
+export function expiresAtFor(duration: HangDuration, now: Date) {
   if (duration === "1h") {
     return new Date(now.getTime() + 60 * 60 * 1000);
   }
@@ -35,7 +35,7 @@ export function isHangDuration(value: string): value is HangDuration {
   return value === "1h" || value === "3h" || value === "midnight";
 }
 
-export function timeLeftLabel(expiresAt: string, now = Date.now()) {
+export function timeLeftLabel(expiresAt: string, now: number) {
   const minutes = Math.max(
     0,
     Math.round((new Date(expiresAt).getTime() - now) / 60000)

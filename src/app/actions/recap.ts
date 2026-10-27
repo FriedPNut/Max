@@ -42,7 +42,9 @@ export async function loadRecapAction(
 ): Promise<{ data?: RecapWeek; error?: string }> {
   const { supabase, userId, displayName } = await requireUser();
   const zone = String(timeZone ?? "").trim() || "UTC";
-  const thisWeek = currentWeekStartKey(zone);
+  // A Server Action is request time, so reading the clock here is fine.
+  const now = Date.now();
+  const thisWeek = currentWeekStartKey(zone, new Date(now));
   const weekStartKey = addDaysToKey(thisWeek, clampWeekOffset(Number(weekOffset)) * 7);
 
   return loadRecapWeek(supabase, {
@@ -50,6 +52,7 @@ export async function loadRecapAction(
     displayName,
     timeZone: zone,
     weekStartKey,
+    now,
   });
 }
 

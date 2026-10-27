@@ -28,6 +28,8 @@ import { loadPollSnapshot } from "@/lib/polls";
 
 export type EventFormState = {
   error?: string;
+  /** Set when someone else scheduled the idea while this form was open. */
+  conflictEventId?: string;
 };
 
 export type RsvpState = {
@@ -362,25 +364,45 @@ export async function createEventAction(
   }
 
   if (ideaId) {
+    // Any signed-in user may turn an open idea into an event; the idea itself
+    // stays the only source of truth for whether that already happened.
     const { data: idea, error: ideaError } = await supabase
       .from("event_ideas")
-      .select("id,created_by,status")
+      .select("id,status,event_id")
       .eq("id", ideaId)
       .maybeSingle();
 
-    if (
-      ideaError ||
-      !idea ||
-      idea.created_by !== user.id ||
-      idea.status !== "open"
-    ) {
+    if (ideaError) {
       if (input.values.cover_path) {
         await supabase.storage
           .from(EVENTS_BUCKET)
           .remove([input.values.cover_path]);
       }
 
-      return { error: "That idea isn't yours to schedule." };
+      return { error: "Couldn't check that idea. Try again." };
+    }
+
+    if (!idea) {
+      if (input.values.cover_path) {
+        await supabase.storage
+          .from(EVENTS_BUCKET)
+          .remove([input.values.cover_path]);
+      }
+
+      return { error: "This idea was removed." };
+    }
+
+    if (idea.status !== "open") {
+      if (input.values.cover_path) {
+        await supabase.storage
+          .from(EVENTS_BUCKET)
+          .remove([input.values.cover_path]);
+      }
+
+      return {
+        error: "Someone just made this an event.",
+        conflictEventId: (idea.event_id as string | null) ?? undefined,
+      };
     }
   }
 
@@ -441,15 +463,16 @@ export async function createEventAction(
   }
 
   if (ideaId) {
+    // Only the first writer wins: the new event is kept only if this update
+    // actually moved the idea out of "open".
     const { data: scheduled, error: scheduleError } = await supabase
       .from("event_ideas")
       .update({ status: "scheduled", event_id: firstEvent.id })
       .eq("id", ideaId)
-      .eq("created_by", user.id)
       .eq("status", "open")
       .select("id");
 
-    if (scheduleError || !scheduled || scheduled.length === 0) {
+    if (scheduleError) {
       await discardCreatedEvents(
         supabase,
         eventIds,
@@ -458,6 +481,29 @@ export async function createEventAction(
       );
 
       return { error: "Couldn't schedule that idea. Try again." };
+    }
+
+    if (!scheduled || scheduled.length === 0) {
+      // Someone else scheduled it first: drop our duplicate event and point at
+      // the event that won instead of leaving two of them behind.
+      await discardCreatedEvents(
+        supabase,
+        eventIds,
+        firstEvent.id as string,
+        input.values.cover_path
+      );
+
+      const { data: settled } = await supabase
+        .from("event_ideas")
+        .select("event_id")
+        .eq("id", ideaId)
+        .maybeSingle();
+
+      return {
+        error: "Someone just made this an event.",
+        conflictEventId:
+          (settled?.event_id as string | null) ?? undefined,
+      };
     }
   }
 
@@ -800,11 +846,17 @@ export async function pickPollTimeAction(
     return { error: "Couldn't pick that time. Try again." };
   }
 
-  await supabase
+  // The event is already closed to voting, so a failed cleanup of the unused
+  // options only leaves extra rows behind; it must not hide the picked time.
+  const { error: cleanupError } = await supabase
     .from("date_options")
     .delete()
     .eq("event_id", eventId)
     .neq("id", optionId);
+
+  if (cleanupError) {
+    console.error("pickPollTimeAction: couldn't clear unused poll options", cleanupError.message);
+  }
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/events");
@@ -878,16 +930,8 @@ export async function deleteEventAction(
   }
 
   const ids = rows.map((row) => row.id);
-  const { data: ideaRows, error: ideaLookupError } = await supabase
-    .from("event_ideas")
-    .select("id,event_id")
-    .in("event_id", ids)
-    .eq("created_by", user.id);
-
-  if (ideaLookupError) {
-    return { error: "Couldn't delete those events. Try again." };
-  }
-
+  // The database deletes the idea this event came from, so there is nothing to
+  // reopen here afterwards.
   const { data: deleted, error: deleteError } = await supabase
     .from("events")
     .delete()
@@ -903,7 +947,6 @@ export async function deleteEventAction(
     return { error: "That event isn't yours to delete." };
   }
 
-  const deletedIds = new Set(deleted.map((row) => row.id as string));
   const coverPaths = [
     ...new Set(
       rows
@@ -916,22 +959,7 @@ export async function deleteEventAction(
     await removeCoverIfUnused(supabase, path, user.id);
   }
 
-  const linkedIdeaIds = (ideaRows ?? [])
-    .filter((idea) => deletedIds.has(idea.event_id as string))
-    .map((idea) => idea.id as string);
-  let ideaRestoreFailed = false;
-
-  if (linkedIdeaIds.length > 0) {
-    const { error: restoreError } = await supabase
-      .from("event_ideas")
-      .update({ status: "open", event_id: null })
-      .in("id", linkedIdeaIds)
-      .eq("created_by", user.id);
-
-    ideaRestoreFailed = Boolean(restoreError);
-  }
-
   revalidatePath("/events");
   revalidatePath("/events/ideas");
-  redirect(ideaRestoreFailed ? "/events?idea=restore-failed" : "/events");
+  redirect("/events");
 }

@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CommentMenu } from "@/components/posts/comment-menu";
 import { PostCard } from "@/components/posts/post-card";
-import { Avatar, Button, Input } from "@/components/ui";
+import { Avatar, Button, Input, RelativeTime } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 import {
   COMMENT_MAX,
   nameInitial,
-  relativeTime,
   type FeedPost,
   type PostComment,
 } from "@/lib/posts";
@@ -66,7 +65,6 @@ export function PostDetail({
       postId: row.post_id,
       body: row.body,
       createdAt: row.created_at,
-      relativeTime: relativeTime(row.created_at),
       authorId: row.user_id,
       authorName: name,
       authorInitial: nameInitial(name),
@@ -272,9 +270,10 @@ export function PostDetail({
                         {comment.authorName}
                       </span>
                     )}
-                    <span className="shrink-0 text-sm text-muted">
-                      {comment.relativeTime}
-                    </span>
+                    <RelativeTime
+                      iso={comment.createdAt}
+                      className="shrink-0 text-sm text-muted"
+                    />
                   </div>
 
                   <p className="mt-0.5 whitespace-pre-wrap break-words text-base text-text">

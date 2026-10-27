@@ -34,6 +34,7 @@ async function requireUser() {
 }
 
 export async function createListAction(input: {
+  id?: string;
   title: string;
   kind: string;
 }): Promise<ListActionResult> {
@@ -53,9 +54,24 @@ export async function createListAction(input: {
     return { error: "Pick a kind for the list." };
   }
 
+  // The client picks the id so the row can appear in the list before this
+  // insert finishes.
+  const listId =
+    typeof input?.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      input.id
+    )
+      ? input.id
+      : undefined;
+
   const { data, error } = await supabase
     .from("lists")
-    .insert({ title, kind, created_by: user.id })
+    .insert({
+      ...(listId ? { id: listId } : {}),
+      title,
+      kind,
+      created_by: user.id,
+    })
     .select("id")
     .single();
 

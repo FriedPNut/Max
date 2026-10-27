@@ -50,14 +50,14 @@ export function Button({
     <button
       {...props}
       type={type}
-      disabled={disabled || loading}
+      disabled={disabled}
       aria-busy={loading || undefined}
       className={buttonStyles({ variant, size, className })}
     >
       {loading && (
         <span
           aria-hidden="true"
-          className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+          className="spinner-delayed h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
         />
       )}
       {children}

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ListDetailView, type DetailItem } from "@/components/lists/list-detail-view";
 import { createClient } from "@/lib/supabase/server";
@@ -98,20 +97,8 @@ export default async function ListDetailPage({
   }));
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title={list.title}>
       <section className="space-y-8">
-        <div>
-          <Link
-            href="/lists"
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            Lists
-          </Link>
-          <h1 className="text-[22px] font-bold leading-tight text-text break-words">
-            {list.title}
-          </h1>
-        </div>
 
         {itemError ? (
           <p className="text-sm text-muted">

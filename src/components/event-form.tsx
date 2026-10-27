@@ -6,7 +6,7 @@ import type { EventFormState } from "@/app/actions/events";
 import {
   MAX_UPLOAD_BYTES,
   resizeImageToWidth,
-  uploadImageWithProgress,
+  uploadPhotoWithThumbnail,
 } from "@/lib/client-image";
 import {
   EVENTS_BUCKET,
@@ -21,6 +21,7 @@ import {
   generateOccurrenceDateKeys,
 } from "@/lib/recurrence";
 import { createClient } from "@/lib/supabase/client";
+import { useNow } from "@/lib/use-now";
 import { Switch } from "@/components/ui/switch";
 import {
   Button,
@@ -122,9 +123,12 @@ export function EventForm({
   const [coverError, setCoverError] = useState<string | null>(null);
   const previewRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Browser clock: null during the server render, so this never blocks a prerender.
+  const now = useNow();
   const startsAtValue = toLocalIso(date, time);
   const startsAtMs = startsAtValue ? new Date(startsAtValue).getTime() : NaN;
-  const isPastDate = Number.isFinite(startsAtMs) && startsAtMs < Date.now();
+  const isPastDate =
+    now !== null && Number.isFinite(startsAtMs) && startsAtMs < now;
   const coverBusy = coverPhase !== "idle";
   const busy = pending || coverBusy;
   const isEditing = mode === "edit";
@@ -304,7 +308,7 @@ export function EventForm({
 
       const path = `events/${userId}/${Date.now()}.jpg`;
 
-      await uploadImageWithProgress({
+      await uploadPhotoWithThumbnail({
         file: resized,
         bucket: EVENTS_BUCKET,
         path,
@@ -773,9 +777,20 @@ export function EventForm({
       )}
 
       {error && (
-        <p role="alert" className="text-sm text-danger">
-          {error}
-        </p>
+        <div className="space-y-2">
+          <p role="alert" className="text-sm text-danger">
+            {error}
+          </p>
+
+          {state.conflictEventId && (
+            <Link
+              href={`/events/${state.conflictEventId}`}
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline underline-offset-4"
+            >
+              Open their event
+            </Link>
+          )}
+        </div>
       )}
 
       <div className="pt-1 flex flex-col sm:flex-row gap-3">

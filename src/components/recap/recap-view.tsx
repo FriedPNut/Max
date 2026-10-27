@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadRecapAction } from "@/app/actions/recap";
 import { RecapSkeleton } from "@/components/recap/skeletons";
@@ -46,7 +46,6 @@ export function RecapView() {
   if (!data) {
     return error ? (
       <section className="space-y-6">
-        <BackLink />
         <p className="text-sm text-muted">{error}</p>
       </section>
     ) : (
@@ -105,18 +104,11 @@ export function RecapView() {
   return (
     <section className="space-y-8">
       <div className="space-y-6">
-        <BackLink />
-
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-[22px] font-bold leading-tight text-text">
-              Your week
-            </h1>
-            <p className="mt-1 text-sm text-muted">
-              {data.weekLabel}
-              {data.isCurrentWeek ? " · This week" : ""}
-            </p>
-          </div>
+          <p className="text-sm text-muted">
+            {data.weekLabel}
+            {data.isCurrentWeek ? " · This week" : ""}
+          </p>
 
           <div className="flex shrink-0 items-center gap-1">
             <button
@@ -222,17 +214,5 @@ export function RecapView() {
         </p>
       )}
     </section>
-  );
-}
-
-function BackLink() {
-  return (
-    <Link
-      href="/me"
-      className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
-    >
-      <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-      Profile
-    </Link>
   );
 }

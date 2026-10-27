@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { loadMorePostsAction } from "@/app/actions/posts";
 import { useAppRefreshSignal } from "@/lib/app-refresh";
+import { readCache, writeCache } from "@/lib/cache";
 import { Button } from "@/components/ui";
 import type { FeedPost } from "@/lib/posts";
 import { PostCard } from "@/components/posts/post-card";
@@ -75,6 +76,22 @@ export function FeedView({
     };
   }, [userId]);
 
+  // The last first page is on this device already: show it when the server
+  // hasn't delivered yet, and keep the copy current whenever it has.
+  useEffect(() => {
+    if (posts.length > 0) {
+      writeCache(userId, "feed", posts.slice(0, 12));
+      return;
+    }
+
+    const cached = readCache<FeedPost[]>(userId, "feed");
+
+    if (cached && cached.length > 0) {
+      setPosts(cached);
+      setHasMore(false);
+    }
+  }, [posts, userId]);
+
   const newPosts = posts.filter(
     (post) => new Date(post.createdAt).getTime() > seenAt
   );
@@ -94,12 +111,12 @@ export function FeedView({
     setError(null);
   }, [refreshSignal, initialPosts, initialHasMore]);
 
-  function handleDeleted(postId: string) {
+  const handleDeleted = useCallback((postId: string) => {
     setPosts((current) => current.filter((post) => post.id !== postId));
     // The server list shifts up by one, so the next page starts one row earlier
     // or it would skip the post that moved into the deleted post's place.
     setOffset((current) => Math.max(0, current - 1));
-  }
+  }, []);
 
   function handleLoadMore() {
     if (pending || !hasMore) {

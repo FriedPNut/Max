@@ -6,24 +6,11 @@ export type AvailabilityRecord = {
   note: string | null;
 };
 
-export type AvailabilityPerson = {
-  id: string;
-  name: string;
-  initial: string;
-};
-
 export type AvailabilityWindow = AvailabilityRecord & {
   name: string;
   initial: string;
   isMine: boolean;
 };
-
-export function dayKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(date.getDate()).padStart(2, "0")}`;
-}
 
 export function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());

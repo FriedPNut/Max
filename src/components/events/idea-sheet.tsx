@@ -17,6 +17,8 @@ type IdeaSheetProps = {
   idea?: IdeaListItem;
   onClose: () => void;
   onCreated?: (idea: IdeaListItem) => void;
+  /** Rolls the optimistic row back if the save fails. */
+  onCreateFailed?: (ideaId: string, message: string) => void;
   onUpdated?: (patch: {
     title: string;
     description: string | null;
@@ -28,6 +30,7 @@ export function IdeaSheet({
   idea,
   onClose,
   onCreated,
+  onCreateFailed,
   onUpdated,
 }: IdeaSheetProps) {
   const [title, setTitle] = useState(idea?.title ?? "");
@@ -64,27 +67,42 @@ export function IdeaSheet({
     }
 
     setError(null);
-    setPending(true);
 
-    try {
-      if (mode === "create") {
-        const result = await createIdeaAction(cleanTitle, description);
+    if (mode === "create") {
+      // The row appears in the list and the sheet closes on this frame; the
+      // insert happens behind them.
+      const id = crypto.randomUUID();
 
+      onCreated?.({
+        id,
+        title: cleanTitle,
+        description: description.trim() || null,
+        creatorName: "You",
+        status: "open",
+        eventId: null,
+        createdAt: new Date().toISOString(),
+        voteCount: 0,
+        hasVoted: false,
+        isCreator: true,
+      });
+      onClose();
+
+      void createIdeaAction(cleanTitle, description, id).then((result) => {
         if (result.error) {
-          setError(result.error);
-          setPending(false);
+          onCreateFailed?.(id, result.error);
           return;
         }
 
         if (result.idea) {
           onCreated?.(result.idea);
         }
+      });
+      return;
+    }
 
-        setPending(false);
-        onClose();
-        return;
-      }
+    setPending(true);
 
+    try {
       if (!idea) {
         setError("Couldn't find that idea. Try again.");
         setPending(false);

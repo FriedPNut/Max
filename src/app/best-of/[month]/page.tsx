@@ -17,7 +17,7 @@ export default async function BestOfMonthPage({
   const { user } = await getAuthenticatedUser();
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title="Photo of the month">
       <BestOfResult key={month} monthKey={month} />
     </AppShell>
   );

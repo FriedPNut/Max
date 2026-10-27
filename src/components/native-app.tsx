@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { registerServiceWorker } from "@/lib/push-client";
 
 const TEXT_ENTRY_SELECTOR = "input, textarea, select, [contenteditable='true']";
 const APP_CHROME_SELECTOR = "img, a, button, svg, [role='button']";
@@ -12,6 +13,15 @@ const APP_CHROME_SELECTOR = "img, a, button, svg, [role='button']";
  * their own menu so paste and spellcheck still work.
  */
 export function NativeApp() {
+  // Registered on every visit, not only when notifications are turned on:
+  // Chrome only treats Max as an installable app, instead of a browser
+  // shortcut, while a service worker is registered for the scope.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    void registerServiceWorker().catch(() => null);
+  }, []);
+
   useEffect(() => {
     function preventDefault(event: Event) {
       event.preventDefault();

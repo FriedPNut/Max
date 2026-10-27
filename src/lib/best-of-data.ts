@@ -44,11 +44,14 @@ export async function loadBestOfMonth(
     displayName,
     timeZone,
     monthKey,
+    // Passed in by the caller, never read while a render is in flight.
+    now,
   }: {
     userId: string;
     displayName: string;
     timeZone: string;
     monthKey: string;
+    now: number;
   }
 ): Promise<{ data?: BestOfMonth; error?: string }> {
   if (!parseMonthKey(monthKey)) {
@@ -81,7 +84,7 @@ export async function loadBestOfMonth(
     monthLabel: formatMonthLabel(monthKey),
     closesLabel: formatClosesLabel(range.lastDayKey),
     lastDayKey: range.lastDayKey,
-    isCurrentMonth: monthKey === currentMonthKey(timeZone),
+    isCurrentMonth: monthKey === currentMonthKey(timeZone, new Date(now)),
     posts: [],
     topThree: [],
     totalVotes: 0,

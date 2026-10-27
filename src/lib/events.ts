@@ -141,17 +141,6 @@ export type PollSnapshot = {
   hasVoted: boolean;
 };
 
-export type RsvpRecord = {
-  user_id: string;
-  status: RsvpStatus;
-};
-
-export type ProfileSummary = {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-};
-
 export type IdeaStatus = "open" | "scheduled" | "dropped";
 
 export type IdeaRecord = {

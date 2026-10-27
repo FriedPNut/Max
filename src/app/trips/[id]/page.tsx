@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { TripPeople } from "@/components/trips/trip-people";
 import { ItineraryPanel, LinksPanel, PackingPanel } from "@/components/trips/trip-tab-panels";
 import { createClient } from "@/lib/supabase/server";
 import { nameInitial } from "@/lib/chat";
-import { countdownLabel, parseDateKey, tripDays, TRIP_TABS, type TripRecord, type TripTab } from "@/lib/trips";
+import { parseDateKey, tripDays, TRIP_TABS, type TripRecord, type TripTab } from "@/lib/trips";
+import { TripCountdown } from "@/components/trips/trip-countdown";
 
 export default async function TripPage({
   params,
@@ -91,23 +91,19 @@ export default async function TripPage({
     tabContent = <LinksPanel tripId={id} links={(data ?? []) as { id: string; kind: "lodging" | "transport" | "activity" | "other"; title: string; url: string }[]} />;
   }
 
-  const countdown = countdownLabel(record.start_date, record.end_date);
   const isCreator = record.created_by === user.id;
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title={record.title}>
       <section key={id} className="space-y-6">
-        <Link href="/trips" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out">
-          <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-          Trips
-        </Link>
-
         <div>
-          <h1 className="text-[22px] font-bold leading-tight text-text">{record.title}</h1>
           <p className="mt-2 text-sm text-muted">
             {record.destination ? `${record.destination} · ` : ""}
             {formatRange(record.start_date, record.end_date)}
-            {countdown ? ` · ${countdown}` : ""}
+            <TripCountdown
+              startKey={record.start_date}
+              endKey={record.end_date}
+            />
           </p>
         </div>
 

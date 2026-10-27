@@ -74,7 +74,7 @@ export function tripDays(startKey: string, endKey: string) {
 }
 
 // Whole days from today to the trip start, in the viewer's local calendar.
-export function countdownLabel(startKey: string, endKey: string, now = new Date()) {
+export function countdownLabel(startKey: string, endKey: string, now: Date) {
   const today = parseDateKey(dateKey(now));
   const start = parseDateKey(startKey);
   const end = parseDateKey(endKey);

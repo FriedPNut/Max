@@ -46,5 +46,7 @@ export async function loadBestOfAction(
     displayName,
     timeZone: zone,
     monthKey: key,
+    // A Server Action is request time, so reading the clock here is fine.
+    now: Date.now(),
   });
 }

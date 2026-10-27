@@ -66,6 +66,8 @@ export async function GET(
     location: event.location,
     startsAt: event.starts_at,
     eventUrl,
+    // A Route Handler is request time: the clock is read here, never in a render.
+    now: new Date(),
   });
 
   return new Response(ics, {

@@ -93,7 +93,7 @@ export function buildEventIcs({
   location,
   startsAt,
   eventUrl,
-  now = new Date(),
+  now,
 }: {
   eventId: string;
   title: string;
@@ -101,7 +101,8 @@ export function buildEventIcs({
   location: string;
   startsAt: string;
   eventUrl: string;
-  now?: Date;
+  /** Required: the caller is request-time (the .ics route handler). */
+  now: Date;
 }) {
   const { start, end } = eventCalendarDates(startsAt);
   const lines = [

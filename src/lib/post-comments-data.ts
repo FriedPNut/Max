@@ -3,14 +3,13 @@ import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 import {
   nameInitial,
   profileName,
-  relativeTime,
   type PostComment,
   type PostProfile,
 } from "@/lib/posts";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
-export type PostCommentRow = {
+type PostCommentRow = {
   id: string;
   post_id: string;
   user_id: string;
@@ -68,7 +67,6 @@ export async function loadCommentsByPost(
 
   const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
   const avatarUrls = await resolveProfileAvatarUrls(supabase, profiles);
-  const now = Date.now();
 
   for (const row of rows) {
     const profile = profilesById.get(row.user_id);
@@ -81,7 +79,6 @@ export async function loadCommentsByPost(
       postId: row.post_id,
       body: row.body,
       createdAt: row.created_at,
-      relativeTime: relativeTime(row.created_at, now),
       authorId: row.user_id,
       authorName: name,
       authorInitial: nameInitial(name),

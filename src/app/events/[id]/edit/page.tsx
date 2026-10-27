@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { EventForm } from "@/components/event-form";
 import { updateEventAction } from "@/app/actions/events";
@@ -43,20 +42,8 @@ export default async function EditEventPage({
   }
 
   return (
-    <AppShell noIsland>
+    <AppShell title="Edit event">
       <section className="space-y-8">
-        <div>
-          <Link
-            href={`/events/${event.id}`}
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out mb-6"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            Event
-          </Link>
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            Edit event
-          </h1>
-        </div>
 
         <EventForm
           key={event.id}

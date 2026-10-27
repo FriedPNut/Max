@@ -3,7 +3,7 @@ import type { EventListItem } from "@/lib/events";
 export function getComingUpEvents(
   events: EventListItem[],
   rsvpStatuses: Map<string, string>,
-  now = Date.now()
+  now: number
 ): EventListItem[] {
   const end = now + 24 * 60 * 60 * 1000;
 

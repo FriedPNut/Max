@@ -137,32 +137,12 @@ export function MoreIcon(props: IconProps) {
   );
 }
 
-/** Compose: pencil in a rounded square. */
-export function ComposeIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <rect x="3.25" y="3.25" width="17.5" height="17.5" rx="4.5" />
-      <path d="m8.5 15.5 1-3.5 5.9-5.9a1.4 1.4 0 0 1 2 2L11.5 14l-3 1.5Z" />
-    </Svg>
-  );
-}
-
 /** Person with a plus sign. */
 export function PersonPlusIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <circle cx="9.5" cy="8" r="3.75" />
       <path d="M3 20c.6-3.4 3.2-5.25 6.5-5.25S15.4 16.6 16 20M19 8v6M16 11h6" />
-    </Svg>
-  );
-}
-
-/** Camera body with a lens. */
-export function CameraIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="M3.5 8.25A2.25 2.25 0 0 1 5.75 6h1.5l1.4-2h4.7l1.4 2h1.5a2.25 2.25 0 0 1 2.25 2.25v8.5A2.25 2.25 0 0 1 18.25 19h-12.5a2.25 2.25 0 0 1-2.25-2.25v-8.5Z" />
-      <circle cx="12" cy="12.5" r="3.25" />
     </Svg>
   );
 }
@@ -174,26 +154,6 @@ export function ImageIcon(props: IconProps) {
       <rect x="3.25" y="3.25" width="17.5" height="17.5" rx="4.5" />
       <circle cx="8.75" cy="8.75" r="1.5" />
       <path d="m3.5 16.5 4.75-4.5a1.2 1.2 0 0 1 1.65 0l4.1 3.9 1.5-1.4a1.2 1.2 0 0 1 1.65 0l3.35 3.1" />
-    </Svg>
-  );
-}
-
-/** Plus inside a circle. */
-export function PlusCircleIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <circle cx="12" cy="12" r="8.75" />
-      <path d="M12 8.25v7.5M8.25 12h7.5" />
-    </Svg>
-  );
-}
-
-/** Info: circle with an i. */
-export function InfoIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <circle cx="12" cy="12" r="8.75" />
-      <path d="M12 11v5.25M12 7.9h.01" strokeWidth={2.25} />
     </Svg>
   );
 }
@@ -220,46 +180,6 @@ export function CalendarIcon(props: IconProps) {
   );
 }
 
-/** Price tag. */
-export function TagIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7a1 1 0 0 1 .7.3l7.8 7.8a1 1 0 0 1 0 1.4l-7.7 7.7a1 1 0 0 1-1.4 0L3.8 12.9a1 1 0 0 1-.3-.7Z" />
-      <circle cx="7.75" cy="7.75" r="1.25" />
-    </Svg>
-  );
-}
-
-/** Check inside a circle. */
-export function CheckCircleIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <circle cx="12" cy="12" r="8.75" />
-      <path d="m8.5 12.25 2.4 2.4 4.6-4.9" />
-    </Svg>
-  );
-}
-
-/** Magnifier. */
-export function SearchIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <circle cx="10.75" cy="10.75" r="6.5" />
-      <path d="m15.6 15.6 4.9 4.9" />
-    </Svg>
-  );
-}
-
-/** Paper plane, outline. */
-export function PaperPlaneIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="m21.5 2.5-8.1 19a.6.6 0 0 1-1.1.05L9.4 14.6 2.45 11.7a.6.6 0 0 1 .05-1.1l19-8.1a.5.5 0 0 1 .65.65Z" />
-      <path d="m9.4 14.6 4.6-4.6" />
-    </Svg>
-  );
-}
-
 export function PlusIcon(props: IconProps) {
   return (
     <Svg {...props}>
@@ -272,22 +192,6 @@ export function BackIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="M15 4.5 7.5 12l7.5 7.5" />
-    </Svg>
-  );
-}
-
-export function ChevronRightIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="m8.5 4.5 7.5 7.5-7.5 7.5" />
-    </Svg>
-  );
-}
-
-export function ChevronDownIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="m4.5 8.5 7.5 7.5 7.5-7.5" />
     </Svg>
   );
 }

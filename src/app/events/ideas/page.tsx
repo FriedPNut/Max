@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { IdeasPage } from "@/components/events/ideas-page";
 import { createClient } from "@/lib/supabase/server";
@@ -7,6 +6,7 @@ import {
   loadEventListItems,
   loadIdeaListItems,
 } from "@/lib/events-data";
+import { serverNowIso } from "@/lib/server-now";
 
 export default async function IdeasSubPage({
   searchParams,
@@ -16,6 +16,7 @@ export default async function IdeasSubPage({
   const { view } = await searchParams;
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
+  const nowIso = await serverNowIso();
 
   const [eventsResult, ideasResult] = await Promise.all([
     loadEventListItems(supabase),
@@ -30,32 +31,19 @@ export default async function IdeasSubPage({
   const loadError = eventsResult.error ?? ideasResult.error;
 
   return (
-    <AppShell>
+    <AppShell title="Ideas">
       {loadError ? (
         <section className="space-y-6">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/events"
-              aria-label="Back to events"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
-            >
-              <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            </Link>
-
-            <h1 className="text-[22px] font-bold leading-tight text-text">
-              Ideas
-            </h1>
-          </div>
-
           <p className="text-sm text-muted">
             Couldn&apos;t load ideas. Refresh and try again.
           </p>
         </section>
       ) : (
         <IdeasPage
+          userId={user.id}
           initialIdeas={ideasResult.items}
           events={eventsResult.items}
-          nowIso={new Date().toISOString()}
+          nowIso={nowIso}
           initialView={view === "events" ? "events" : "ideas"}
         />
       )}

@@ -4,15 +4,18 @@ import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { IdeaVoteButton } from "@/components/events/idea-vote-button";
 import { Button, Card } from "@/components/ui";
+import { publishIdeaUpdate } from "@/lib/idea-sync";
 import type { IdeaListItem } from "@/lib/events";
 
 export function IdeasWidget({
+  userId,
   ideas,
   onVoteChange,
   onAddIdea,
   createdIdeaId,
   newIds,
 }: {
+  userId: string;
   ideas: IdeaListItem[];
   onVoteChange: (
     ideaId: string,
@@ -95,7 +98,10 @@ export function IdeasWidget({
               title={idea.title}
               count={idea.voteCount}
               hasVoted={idea.hasVoted}
-              onChange={(next) => onVoteChange(idea.id, next)}
+              onChange={(next) => {
+                publishIdeaUpdate(userId, { id: idea.id, ...next });
+                onVoteChange(idea.id, next);
+              }}
             />
           </div>
         ))

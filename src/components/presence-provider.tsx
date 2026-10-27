@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createContext, useContext, useEffect, useState } from "react";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
 const PresenceContext = createContext<Set<string>>(new Set());
 
@@ -16,29 +16,43 @@ export function PresenceProvider({
   userId: string;
   children: React.ReactNode;
 }) {
-  const supabase = useMemo(() => createClient(), []);
   const [online, setOnline] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
-    const channel = supabase.channel("app-presence", {
-      config: { presence: { key: userId } },
-    });
+    let cancelled = false;
+    let channel: RealtimeChannel | null = null;
+    let supabase: SupabaseClient | null = null;
 
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
-        setOnline(new Set(Object.keys(state)));
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel.track({ online_at: new Date().toISOString() });
-        }
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      supabase = createClient();
+
+      if (cancelled) return;
+
+      const active = supabase.channel("app-presence", {
+        config: { presence: { key: userId } },
       });
+      channel = active;
+
+      active
+        .on("presence", { event: "sync" }, () => {
+          const state = active.presenceState();
+          setOnline(new Set(Object.keys(state)));
+        })
+        .subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            await active.track({ online_at: new Date().toISOString() });
+          }
+        });
+    })();
 
     return () => {
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      if (supabase && channel) {
+        void supabase.removeChannel(channel);
+      }
     };
-  }, [supabase, userId]);
+  }, [userId]);
 
   return (
     <PresenceContext.Provider value={online}>

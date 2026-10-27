@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { buttonStyles } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +8,7 @@ import {
   nextBirthday,
   untilLabel,
 } from "@/lib/birthdays";
+import { serverNow } from "@/lib/server-now";
 
 const WINDOW_DAYS = 60;
 
@@ -24,6 +24,8 @@ type FriendBirthday = {
 export default async function BirthdaysPage() {
   const { user } = await getAuthenticatedUser();
   const supabase = await createClient();
+  // The viewer's own day, read at request time instead of during a prerender.
+  const today = new Date(await serverNow());
 
   const { data: friendshipData } = await supabase
     .from("friendships")
@@ -62,26 +64,15 @@ export default async function BirthdaysPage() {
         username: profile.username?.trim() || null,
         month: profile.birth_month,
         day: profile.birth_day,
-        days: daysUntilBirthday(profile.birth_month, profile.birth_day),
+        days: daysUntilBirthday(profile.birth_month, profile.birth_day, today),
       }))
       .filter((person) => person.days >= 0 && person.days <= WINDOW_DAYS)
       .sort((a, b) => a.days - b.days || a.name.localeCompare(b.name));
   }
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title="Birthdays">
       <section className="space-y-8">
-        <div>
-          <Link
-            href="/events"
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            Events
-          </Link>
-          <h1 className="text-[22px] font-bold leading-tight text-text">Birthdays</h1>
-        </div>
-
         {upcoming.length === 0 ? (
           <p className="text-sm text-muted">
             No birthdays coming up. Ask friends to add theirs in their profile.
@@ -91,7 +82,9 @@ export default async function BirthdaysPage() {
             {upcoming.map((person) => {
               const dateLabel = formatBirthdayDate(person.month, person.day);
               const planTitle = `${person.name}’s birthday`;
-              const planDate = toDateKey(nextBirthday(person.month, person.day));
+              const planDate = toDateKey(
+                nextBirthday(person.month, person.day, today)
+              );
 
               return (
                 <li key={person.id} className="-mx-4 flex min-h-14 items-center justify-between gap-3 border-b border-line px-4 py-4">

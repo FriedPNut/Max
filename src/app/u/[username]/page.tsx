@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { Ellipsis } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
-import { ProfileBackButton } from "@/components/profile/profile-back-button";
 import { ProfileEvents } from "@/components/profile/profile-events";
 import { ProfileFriendButton } from "@/components/profile/profile-friend-button";
 import { ProfileHeader } from "@/components/profile/profile-header";
@@ -18,6 +17,7 @@ import {
   loadProfilePage,
   loadProfileRelationship,
 } from "@/lib/profile-data";
+import { serverNow } from "@/lib/server-now";
 
 export default async function PublicProfilePage({
   params,
@@ -28,6 +28,7 @@ export default async function PublicProfilePage({
   const username = normalizeUsername(rawUsername);
   const { user } = await getAuthenticatedUser();
   const supabase = await createClient();
+  const now = await serverNow();
 
   if (!username) {
     notFound();
@@ -41,7 +42,7 @@ export default async function PublicProfilePage({
 
   if (profileError) {
     return (
-      <AppShell left={<ProfileBackButton />}>
+      <AppShell title="Profile">
         <p className="text-sm text-muted">
           Couldn&apos;t load this profile. Refresh and try again.
         </p>
@@ -60,13 +61,13 @@ export default async function PublicProfilePage({
   }
 
   const [result, relationship] = await Promise.all([
-    loadProfilePage(supabase, profile),
+    loadProfilePage(supabase, profile, now),
     loadProfileRelationship(supabase, user.id, profile.id),
   ]);
 
   if (result.error || !result.data) {
     return (
-      <AppShell left={<ProfileBackButton />}>
+      <AppShell title="Profile">
         <p className="text-sm text-muted">
           {result.error ?? "Couldn't load this profile. Refresh and try again."}
         </p>
@@ -78,8 +79,7 @@ export default async function PublicProfilePage({
 
   return (
     <AppShell
-      left={<ProfileBackButton />}
-      title={profile.username ? `@${profile.username}` : undefined}
+      title={profile.username ? `@${profile.username}` : "Profile"}
       actions={
         <span
           aria-label="More"
@@ -94,11 +94,7 @@ export default async function PublicProfilePage({
           profile={profile}
           avatarUrl={data.avatarUrl}
           stats={data.stats}
-          friendsHref={
-            profile.username
-              ? `/u/${encodeURIComponent(profile.username)}/friends`
-              : undefined
-          }
+          friendsHref="/people?filter=added"
         >
           <ProfileFriendButton
             profileId={profile.id}

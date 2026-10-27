@@ -6,7 +6,7 @@ import {
 
 export default function NewEventLoading() {
   return (
-    <AppShellSkeleton noIsland label="Loading event form">
+    <AppShellSkeleton label="Loading event form">
       <div className="flex items-center gap-2">
         <Skeleton className="h-11 w-11 rounded-lg" />
         <SkeletonTitle />

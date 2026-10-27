@@ -11,7 +11,3 @@ export function rememberPageScroll(pathname: string, scroll: number) {
 export function pageScroll(pathname: string) {
   return positions.get(pathname) ?? 0;
 }
-
-export function forgetPageScroll(pathname: string) {
-  positions.delete(pathname);
-}

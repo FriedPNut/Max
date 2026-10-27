@@ -24,7 +24,6 @@ export type PostComment = {
   postId: string;
   body: string;
   createdAt: string;
-  relativeTime: string;
   authorId: string;
   authorName: string;
   authorInitial: string;
@@ -37,12 +36,12 @@ export type PostComment = {
 export type FeedPost = {
   id: string;
   imageUrl: string | null;
+  imageThumbUrl?: string | null;
   // One entry per photo. The current posts table stores one image, so this is
   // usually a single item, but the feed already knows how to page a carousel.
   imageUrls: string[];
   caption: string | null;
   createdAt: string;
-  relativeTime: string;
   authorId: string;
   authorName: string;
   authorInitial: string;
@@ -84,7 +83,27 @@ export function nameInitial(name: string) {
   return name.charAt(0).toUpperCase() || "?";
 }
 
-export function relativeTime(iso: string, now = Date.now()) {
+/**
+ * Absolute, timezone-stable label ("Mar 4"). Rendered on the server and for
+ * hydration so both sides agree, then swapped for a relative label once the
+ * browser has a clock.
+ */
+export function absoluteTimeLabel(iso: string) {
+  const date = new Date(iso);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+/** Callers pass a clock they got from the browser, never a render-time read. */
+export function relativeTime(iso: string, now: number) {
   const date = new Date(iso);
 
   if (Number.isNaN(date.getTime())) {

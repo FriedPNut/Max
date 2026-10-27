@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Avatar, Button } from "@/components/ui";
+import { Avatar, Button, RelativeTime } from "@/components/ui";
 import type { EventPhoto } from "@/lib/event-photos-data";
 import { useIslandHidden } from "@/lib/use-island-hidden";
 
@@ -34,7 +34,10 @@ export function PhotosTab({ photos, error }: { photos: EventPhoto[]; error?: str
             <Avatar src={selected.authorAvatarUrl} initial={selected.authorInitial} size={40} />
             <div className="min-w-0">
               {selected.authorUsername ? <Link href={`/u/${encodeURIComponent(selected.authorUsername)}`} className="text-base font-semibold text-text">{selected.authorName}</Link> : <p className="text-base font-semibold text-text">{selected.authorName}</p>}
-              <p className="text-sm text-muted">{selected.relativeTime}</p>
+              <RelativeTime
+                iso={selected.createdAt}
+                className="block text-sm text-muted"
+              />
             </div>
             <Button variant="secondary" size="sm" onClick={() => setSelected(null)} className="ml-auto">Close</Button>
           </div>

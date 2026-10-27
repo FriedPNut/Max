@@ -90,19 +90,22 @@ export async function loadRecapWeek(
     displayName,
     timeZone,
     weekStartKey,
+    // Passed in by the caller (`await serverNow()`), never read from a render.
+    now,
   }: {
     userId: string;
     displayName: string;
     timeZone: string;
     weekStartKey: string;
+    now: number;
   }
 ): Promise<{ data?: RecapWeek; error?: string }> {
   const range = weekRangeFor(weekStartKey, timeZone);
+  const nowDate = new Date(now);
   const isCurrentWeek =
-    range.weekStartKey === currentWeekStartKey(timeZone);
-  const now = new Date();
-  const nowIso = now.toISOString();
-  const nextSevenIso = new Date(now.getTime() + 7 * DAY_MS).toISOString();
+    range.weekStartKey === currentWeekStartKey(timeZone, nowDate);
+  const nowIso = nowDate.toISOString();
+  const nextSevenIso = new Date(nowDate.getTime() + 7 * DAY_MS).toISOString();
   const friendshipFilter = `requester_id.eq.${userId},addressee_id.eq.${userId}`;
 
   // Round 1: everything that does not depend on the friend list.

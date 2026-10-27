@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { EventForm } from "@/components/event-form";
 import { createEventAction } from "@/app/actions/events";
 import { createClient } from "@/lib/supabase/server";
+import { serverNow } from "@/lib/server-now";
 
 type IdeaPrefill = {
   id: string;
@@ -30,7 +30,7 @@ export default async function NewEventPage({
       .maybeSingle();
 
     if (hang && hang.created_by === hangUser.id) {
-      const startsAt = new Date(Date.now() + 60 * 60 * 1000);
+      const startsAt = new Date((await serverNow()) + 60 * 60 * 1000);
       const pad = (value: number) => String(value).padStart(2, "0");
       hangPrefill = {
         title: String(hang.message),
@@ -46,16 +46,26 @@ export default async function NewEventPage({
     : undefined;
   const { user } = await getAuthenticatedUser();
   let idea: IdeaPrefill | null = null;
+  let ideaNotice: { message: string; eventId: string | null } | null = null;
 
   if (ideaParam) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("event_ideas")
-      .select("id,title,description,created_by,status")
+      .select("id,title,description,created_by,status,event_id")
       .eq("id", ideaParam)
       .maybeSingle();
 
-    if (data && data.created_by === user.id && data.status === "open") {
+    // Any signed-in user can schedule an open idea; the status is re-read here
+    // too, so a stale link never opens a form that cannot be submitted.
+    if (!data) {
+      ideaNotice = { message: "This idea was removed.", eventId: null };
+    } else if (data.status !== "open") {
+      ideaNotice = {
+        message: "Already an event.",
+        eventId: (data.event_id as string | null) ?? null,
+      };
+    } else {
       idea = {
         id: data.id,
         title: data.title,
@@ -65,20 +75,21 @@ export default async function NewEventPage({
   }
 
   return (
-    <AppShell noIsland>
+    <AppShell title="New event">
       <section className="space-y-8">
-        <div>
-          <Link
-            href={idea ? "/events/ideas" : "/events"}
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out mb-6"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            {idea ? "Ideas" : "Events"}
-          </Link>
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            New event
-          </h1>
-        </div>
+        {ideaNotice && (
+          <div className="space-y-1">
+            <p className="text-sm text-text">{ideaNotice.message}</p>
+            {ideaNotice.eventId && (
+              <Link
+                href={`/events/${ideaNotice.eventId}`}
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-link underline underline-offset-4"
+              >
+                Open the event
+              </Link>
+            )}
+          </div>
+        )}
 
         <EventForm
           // Each prefill source gets its own form, so values never carry over.

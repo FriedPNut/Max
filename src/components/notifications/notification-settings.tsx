@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   saveNotificationPreference,
@@ -11,50 +12,83 @@ import { Button, Switch } from "@/components/ui";
 
 type Preferences = Record<NotificationPreferenceKey, boolean>;
 
-const categories: {
+type Category = {
   key: Exclude<NotificationPreferenceKey, "push_enabled">;
   label: string;
   help: string;
-}[] = [
+};
+
+// The same headings, in the same order, as the notification center.
+const groups: { label: string; items: Category[] }[] = [
   {
-    key: "push_reminders",
-    label: "Event reminders",
-    help: "The day before and an hour before events you’re going to",
+    label: "Chat",
+    items: [
+      {
+        key: "push_chat",
+        label: "Chat messages",
+        help: "When someone messages you",
+      },
+    ],
   },
   {
-    key: "push_new_events",
-    label: "New events",
-    help: "When a friend adds an event",
-  },
-  {
-    key: "push_friends",
     label: "Friends",
-    help: "Requests, accepted requests, and trip invites",
+    items: [
+      {
+        key: "push_friends",
+        label: "Friends",
+        help: "New friends and trip invites",
+      },
+    ],
   },
   {
-    key: "push_chat",
-    label: "Chat messages",
-    help: "When someone messages you",
+    label: "Posts",
+    items: [
+      {
+        key: "push_posts",
+        label: "New posts",
+        help: "When a friend posts",
+      },
+      {
+        key: "push_social",
+        label: "Comments",
+        help: "When someone comments on your post",
+      },
+    ],
   },
   {
-    key: "push_hangs",
-    label: "Hang requests",
-    help: "When a friend is down to hang",
+    label: "Events",
+    items: [
+      {
+        key: "push_reminders",
+        label: "Event reminders",
+        help: "The day before and an hour before events you’re going to",
+      },
+      {
+        key: "push_new_events",
+        label: "New events",
+        help: "When a friend adds an event",
+      },
+      {
+        key: "push_hangs",
+        label: "Hang requests",
+        help: "When a friend is down to hang",
+      },
+      {
+        key: "push_birthdays",
+        label: "Birthdays",
+        help: "The day before and the day of",
+      },
+    ],
   },
   {
-    key: "push_social",
-    label: "Comments",
-    help: "When someone comments on your post",
-  },
-  {
-    key: "push_birthdays",
-    label: "Birthdays",
-    help: "The day before and the day of",
-  },
-  {
-    key: "push_recaps",
-    label: "Recaps",
-    help: "Weekly recap, Max Wrapped, and photo of the month",
+    label: "Other",
+    items: [
+      {
+        key: "push_recaps",
+        label: "Recaps",
+        help: "Weekly recap, Max Wrapped, and photo of the month",
+      },
+    ],
   },
 ];
 
@@ -66,6 +100,7 @@ const defaultPreferences: Preferences = {
   push_chat: true,
   push_hangs: true,
   push_social: true,
+  push_posts: true,
   push_birthdays: true,
   push_recaps: true,
 };
@@ -89,6 +124,7 @@ export function NotificationSettings({
     state: deviceState,
     busy: deviceBusy,
     error: deviceError,
+    missingSetting: deviceMissingSetting,
     refresh: refreshDevice,
     turnOn: turnOnDevice,
     turnOffThisDevice,
@@ -171,7 +207,9 @@ export function NotificationSettings({
       : deviceState === "unsupported"
       ? "This browser doesn’t support push notifications."
       : deviceState === "not-configured"
-      ? "Push notifications aren’t configured yet."
+      ? `Push notifications aren’t configured yet. Missing: ${
+          deviceMissingSetting ?? "NEXT_PUBLIC_VAPID_PUBLIC_KEY"
+        }.`
       : deviceState === "loading"
       ? "Checking this device…"
       : "Notifications are off for this device.";
@@ -198,29 +236,39 @@ export function NotificationSettings({
                 onChange={() => void toggle("push_enabled")}
               />
             </div>
-
-            {categories.map((item) => (
-              <div
-                key={item.key}
-                className="flex min-h-14 items-center justify-between gap-4 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-text">
-                    {item.label}
-                  </h3>
-                  <p className="mt-1 text-sm text-muted">{item.help}</p>
-                </div>
-                <Switch
-                  checked={preferences[item.key]}
-                  disabled={!preferences.push_enabled}
-                  label={item.label}
-                  onChange={() => void toggle(item.key)}
-                />
-              </div>
-            ))}
           </div>
         </div>
       </section>
+
+      {groups.map((group) => (
+        <section key={group.label} className="space-y-2">
+          <h2 className={sectionLabel}>{group.label}</h2>
+
+          <div className="overflow-hidden rounded-card bg-surface">
+            <div className="divide-y divide-line">
+              {group.items.map((item) => (
+                <div
+                  key={item.key}
+                  className="flex min-h-14 items-center justify-between gap-4 px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-text">
+                      {item.label}
+                    </h3>
+                    <p className="mt-1 text-sm text-muted">{item.help}</p>
+                  </div>
+                  <Switch
+                    checked={preferences[item.key]}
+                    disabled={!preferences.push_enabled}
+                    label={item.label}
+                    onChange={() => void toggle(item.key)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
 
       <section className="space-y-2">
         <h2 className={sectionLabel}>This device</h2>
@@ -272,6 +320,15 @@ export function NotificationSettings({
           {error ?? deviceError}
         </p>
       )}
+
+      <div className="flex justify-center pt-1">
+        <Link
+          href="/settings/notifications/debug"
+          className="inline-flex min-h-11 items-center px-2 text-[13px] text-muted underline underline-offset-4 transition-opacity duration-200 ease-out hover:opacity-70"
+        >
+          Troubleshoot
+        </Link>
+      </div>
     </div>
   );
 }

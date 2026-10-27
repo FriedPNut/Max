@@ -10,6 +10,7 @@ import {
   isArrivalFresh,
   type ArrivalRecord,
 } from "@/lib/event-arrivals";
+import { useNow } from "@/lib/use-now";
 
 export type ArrivalPerson = { id: string; name: string };
 
@@ -28,7 +29,9 @@ export function ArrivalsPanel({
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [rows, setRows] = useState<ArrivalRecord[]>(initialRows);
-  const [now, setNow] = useState(() => Date.now());
+  // A browser clock that also refreshes every 30 seconds, so "about N min"
+  // counts down. Null until mounted: the server render reads no time.
+  const now = useNow(30_000);
   const [picking, setPicking] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,13 +60,9 @@ export function ArrivalsPanel({
     };
   }, [eventId, supabase]);
 
-  // Re-render every 30 seconds so "about N min" counts down and turns into "any minute".
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const fresh = rows.filter((row) => isArrivalFresh(row.updated_at, now));
+  // A missing clock means nothing can be judged fresh yet; rows appear on mount.
+  const fresh =
+    now === null ? [] : rows.filter((row) => isArrivalFresh(row.updated_at, now));
   const onWay = fresh.filter((row) => row.status === "on_my_way");
   const here = fresh.filter((row) => row.status === "here");
   const mine = fresh.find((row) => row.user_id === currentUserId) ?? null;
@@ -139,7 +138,9 @@ export function ArrivalsPanel({
                 {onWay.map((row) => (
                   <li key={row.user_id} className="flex min-h-11 items-center justify-between gap-3 py-2 text-base text-text">
                     <span>{row.user_id === currentUserId ? "You" : nameFor(row.user_id)}</span>
-                    <span className="text-sm text-muted">{arrivalEtaLabel(row, now)}</span>
+                    <span className="text-sm text-muted">
+                      {now === null ? null : arrivalEtaLabel(row, now)}
+                    </span>
                   </li>
                 ))}
               </ul>

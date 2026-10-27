@@ -1,9 +1,3 @@
-export type BirthdayFields = {
-  birth_month: number | null;
-  birth_day: number | null;
-  birth_year: number | null;
-};
-
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const MONTH_NAMES = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",

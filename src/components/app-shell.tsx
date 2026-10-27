@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
+import { cache, type ReactNode } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { AppShellClient } from "@/components/shell/app-shell-client";
 import { PresenceProvider } from "@/components/presence-provider";
+import { SubHeader } from "@/components/shell/headers";
+import { ShellActionsSync, ShellProfileSync } from "@/lib/shell-state";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 
-export async function getAuthenticatedUser() {
+export const getAuthenticatedUser = cache(async function getAuthenticatedUser() {
   if (!isSupabaseConfigured()) {
     redirect("/login");
   }
@@ -39,26 +41,47 @@ export async function getAuthenticatedUser() {
     displayName,
     initial,
   };
-}
+});
 
+/**
+ * A page's chrome and content. The frame itself (scroller, root header, tab
+ * bar) is mounted once in the root layout, so pages only own their own header
+ * and their content:
+ *
+ * - tab roots render no header here; the shell shows the wordmark one,
+ * - every other screen gets the compact SubHeader when it passes a `title`,
+ *   or draws its own richer header (a conversation, an event).
+ */
 export async function AppShell({
   children,
-  actions,
-  left,
   title,
+  actions,
   userId,
-  noIsland = false,
+  anonymous = false,
 }: {
-  children: React.ReactNode;
-  actions?: React.ReactNode;
-  /** Left slot of the top bar, e.g. the Post "+" button. */
-  left?: React.ReactNode;
-  /** Centered title, e.g. @username. Defaults to the Max wordmark. */
+  children: ReactNode;
+  /** Left-aligned title for the compact header. Omit to draw your own. */
   title?: string;
+  /** Right-side action icons. */
+  actions?: ReactNode;
   userId?: string;
-  /** Hides the island bar on full-screen screens such as conversations and composers. */
-  noIsland?: boolean;
+  /**
+   * Chrome only: no session read, no profile query. Used by the 404 screens,
+   * which also render while routes are prerendered.
+   */
+  anonymous?: boolean;
 }) {
+  if (anonymous) {
+    return (
+      <>
+        {title ? <SubHeader title={title} actions={actions} /> : null}
+        <div className="mx-auto w-full max-w-[560px] px-4 pt-6">
+          {children}
+        </div>
+      </>
+    );
+  }
+
   // Pages that already authenticated pass their user id, so only resolve the
   // session here when it is actually needed.
   let activeUserId = userId;
@@ -104,18 +127,14 @@ export async function AppShell({
 
   return (
     <PresenceProvider userId={activeUserId}>
-      <AppShellClient
-        userId={activeUserId}
-        name={name}
-        initial={initial}
-        avatarUrl={avatarUrl}
-        actions={actions}
-        left={left}
-        title={title}
-        noIsland={noIsland}
-      >
-        {children}
-      </AppShellClient>
+      <ShellProfileSync
+        next={{ userId: activeUserId, name, initial, avatarUrl }}
+      />
+      {actions ? <ShellActionsSync actions={actions} /> : null}
+
+      {title ? <SubHeader title={title} actions={actions} /> : null}
+
+      <div className="mx-auto w-full max-w-[560px] px-4 pt-6">{children}</div>
     </PresenceProvider>
   );
 }

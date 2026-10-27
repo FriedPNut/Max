@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { saveNotificationPreference } from "@/app/actions/notifications";
 import { createClient } from "@/lib/supabase/client";
-import { disablePush, enablePush } from "@/lib/push-client";
+import {
+  PUSH_PUBLIC_KEY_SETTING,
+  disablePush,
+  enablePush,
+  pushPublicKeyPresent,
+} from "@/lib/push-client";
 import {
   notificationSetupStateFor,
   type NotificationSetupState,
@@ -85,7 +90,8 @@ async function serverHasEndpointFor(endpoint: string) {
 }
 
 async function resolveState(): Promise<NotificationSetupState> {
-  const vapidKeyPresent = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+  // Configured on the client means exactly one thing: the public key exists.
+  const vapidKeyPresent = pushPublicKeyPresent();
   const supported =
     typeof window !== "undefined" &&
     "Notification" in window &&
@@ -184,7 +190,8 @@ export function useNotificationSetup() {
       const result = await enablePush();
 
       if (result.error) {
-        setError("That didn't work. Try again.");
+        // The subscription path already words its failures plainly.
+        setError(result.error);
         await refresh();
         return result;
       }
@@ -223,6 +230,9 @@ export function useNotificationSetup() {
     state,
     busy,
     error,
+    /** Named setting to show when the build is missing the public key. */
+    missingSetting:
+      state === "not-configured" ? PUSH_PUBLIC_KEY_SETTING : null,
     refresh,
     turnOn,
     turnOffThisDevice,

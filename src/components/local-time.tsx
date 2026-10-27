@@ -11,7 +11,8 @@ function formatValue(
   iso: string,
   format: TimeFormat,
   timeZone?: string,
-  now: Date = new Date()
+  /** Null before the browser has a clock: the year is then always shown. */
+  now: Date | null = null
 ) {
   const date = new Date(iso);
 
@@ -49,17 +50,19 @@ function formatValue(
     ...base,
     year: "numeric",
   }).format(date);
-  const currentYear = new Intl.DateTimeFormat("en-US", {
-    ...base,
-    year: "numeric",
-  }).format(now);
+  const currentYear = now
+    ? new Intl.DateTimeFormat("en-US", {
+        ...base,
+        year: "numeric",
+      }).format(now)
+    : null;
   const time = new Intl.DateTimeFormat("en-US", {
     ...base,
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
 
-  return `${day}${year === currentYear ? "" : `, ${year}`} · ${time}`;
+  return `${day}${currentYear === year ? "" : `, ${year}`} · ${time}`;
 }
 
 export function LocalTime({
@@ -79,8 +82,8 @@ export function LocalTime({
   // browser swaps in the viewer's own timezone after mount.
   const text = useSyncExternalStore(
     subscribe,
-    () => formatValue(iso, format, undefined, today ?? new Date()),
-    () => formatValue(iso, format, "UTC")
+    () => formatValue(iso, format, undefined, today),
+    () => formatValue(iso, format, "UTC", null)
   );
 
   return (

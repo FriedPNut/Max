@@ -5,7 +5,7 @@ export type TabDefinition = {
   label: string;
   /** A tab always navigates to its root, never to a remembered deep page. */
   root: string;
-  /** Pages owned by this tab; shared pages such as /u/[username] are in none. */
+  /** Pages owned by this tab. Shared pages such as /u/[username] own none. */
   matches: (pathname: string) => boolean;
 };
 
@@ -13,6 +13,11 @@ function isPath(pathname: string, path: string) {
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
+/**
+ * The one place the tab bar gets its answer from: the current pathname. There
+ * is no remembered "origin tab" any more, so the highlight can never disagree
+ * with the URL, and a shared page (/u/name, /notifications) highlights nothing.
+ */
 export const TABS: readonly TabDefinition[] = [
   {
     key: "events",
@@ -32,7 +37,8 @@ export const TABS: readonly TabDefinition[] = [
     key: "chat",
     label: "Chat",
     root: "/chat",
-    matches: (pathname) => isPath(pathname, "/chat"),
+    matches: (pathname) =>
+      isPath(pathname, "/chat") || isPath(pathname, "/people"),
   },
   {
     key: "post",
@@ -48,7 +54,6 @@ export const TABS: readonly TabDefinition[] = [
       isPath(pathname, "/me") ||
       isPath(pathname, "/settings") ||
       isPath(pathname, "/wrapped") ||
-      pathname === "/notifications" ||
       pathname === "/recap",
   },
 ];
@@ -77,32 +82,35 @@ export function tabRoot(key: TabKey): string {
   return tabDefinition(key).root;
 }
 
-export function isTabPath(key: TabKey, pathname: string): boolean {
-  return tabDefinition(key).matches(pathname);
-}
-
 /** The four pages where horizontal swipes switch tabs. */
 export function isRootTabPath(pathname: string): boolean {
   return TABS.some((tab) => tab.root === pathname);
 }
 
 /**
- * The tab a shared page should highlight: whichever tab the person was in
- * before they opened it. Module memory only, so a refresh or deep link starts
- * unknown and highlights nothing.
+ * Screens that fill the window and keep the tab bar out of the way: auth, the
+ * composers, conversations and their info screens.
  */
-let originTab: TabKey | null = null;
+const FULL_SCREEN_PATHS: readonly RegExp[] = [
+  /^\/login$/,
+  /^\/welcome$/,
+  /^\/chat\/new$/,
+  /^\/chat\/(?!friends$|new$)[^/]+(\/.*)?$/,
+  /^\/feed\/new$/,
+  /^\/events\/new$/,
+  /^\/events\/[^/]+\/edit$/,
+  /^\/me\/edit$/,
+  /^\/wrapped\/[^/]+$/,
+];
 
-export function setOriginTab(tab: TabKey | null) {
-  if (tab) {
-    originTab = tab;
-  }
+export function isFullScreenPath(pathname: string): boolean {
+  return FULL_SCREEN_PATHS.some((pattern) => pattern.test(pathname));
 }
 
-export function getOriginTab(): TabKey | null {
-  return originTab;
-}
-
-export function clearOriginTab() {
-  originTab = null;
+/**
+ * An open conversation owns the whole window: it is its own fixed, non-
+ * scrolling frame, so the page scroller steps out of the way entirely.
+ */
+export function isImmersivePath(pathname: string): boolean {
+  return /^\/chat\/(?!friends$|new$)[^/]+$/.test(pathname);
 }

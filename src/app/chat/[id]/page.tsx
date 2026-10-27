@@ -1,13 +1,15 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Info } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ChatRoom } from "@/components/chat/chat-room";
-import { DmActiveStatus } from "@/components/chat/dm-active-status";
-import { Avatar } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
+import { resolveConversationPhotoUrls } from "@/lib/chat-photo";
+import { nicknameMap } from "@/lib/chat-details";
+import { readReceiptsOn } from "@/lib/read-receipts";
+import { loadIdeaCards } from "@/lib/events-data";
+import { ideaIdsFromMessages } from "@/lib/ideas";
 import {
+  MESSAGE_SELECT,
   nameInitial,
   profileName,
   type ChatMember,
@@ -30,20 +32,27 @@ export default async function ConversationPage({
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
 
-  const { data: membership } = await supabase
+  const { data: membershipData } = await supabase
     .from("conversation_members")
-    .select("conversation_id,user_id,last_read_at")
+    .select("conversation_id,user_id,last_read_at,cleared_at")
     .eq("conversation_id", id)
     .eq("user_id", user.id)
     .maybeSingle();
+
+  const membership = membershipData as {
+    conversation_id: string;
+    cleared_at: string | null;
+  } | null;
 
   if (!membership) {
     notFound();
   }
 
+  const clearedAt = membership.cleared_at;
+
   const { data: conversationData } = await supabase
     .from("conversations")
-    .select("id,name,is_group,created_by,created_at")
+    .select("id,name,is_group,created_by,created_at,photo_path")
     .eq("id", id)
     .maybeSingle();
 
@@ -55,8 +64,9 @@ export default async function ConversationPage({
 
   const { data: memberData } = await supabase
     .from("conversation_members")
-    .select("conversation_id,user_id,last_read_at")
+    .select("conversation_id,user_id,last_read_at,seen_at")
     .eq("conversation_id", id);
+
 
   const members = (memberData ?? []) as ConversationMemberRecord[];
   const memberIds = members.map((member) => member.user_id);
@@ -65,7 +75,7 @@ export default async function ConversationPage({
   if (memberIds.length > 0) {
     const { data } = await supabase
       .from("profiles")
-      .select("id,display_name,avatar_url,username")
+      .select("id,display_name,avatar_url,username,bubble_color,read_receipts")
       .in("id", memberIds);
 
     profiles = (data ?? []) as ChatProfile[];
@@ -74,7 +84,18 @@ export default async function ConversationPage({
   const profilesById = new Map(
     profiles.map((profile) => [profile.id, profile])
   );
-  const avatarUrls = await resolveProfileAvatarUrls(supabase, profiles);
+  const [avatarUrls, nicknameResult, photoUrlByPath] = await Promise.all([
+    resolveProfileAvatarUrls(supabase, profiles),
+    supabase
+      .from("conversation_nicknames")
+      .select("user_id,nickname")
+      .eq("conversation_id", id),
+    resolveConversationPhotoUrls(supabase, [conversation.photo_path]),
+  ]);
+
+  const nicknames = nicknameMap(
+    (nicknameResult.data ?? []) as { user_id: string; nickname: string | null }[]
+  );
 
   const chatMembers: ChatMember[] = members.map((member) => {
     const profile = profilesById.get(member.user_id);
@@ -96,92 +117,96 @@ export default async function ConversationPage({
   const otherProfile = otherMember
     ? profilesById.get(otherMember.user_id)
     : undefined;
-  const otherUsername = otherProfile?.username?.trim() || null;
   const title = conversation.is_group
     ? conversation.name?.trim() || "Group chat"
-    : profileName(otherProfile);
+    : otherMember
+    ? nicknames.get(otherMember.user_id) ?? profileName(otherProfile)
+    : "Chat";
   const headerAvatarUrl = conversation.is_group
-    ? null
+    ? photoUrlByPath.get(conversation.photo_path ?? "") ?? null
     : avatarUrls.get(otherMember?.user_id ?? "") ?? null;
-  const infoHref = conversation.is_group
-    ? `/chat/${conversation.id}/members`
-    : otherUsername
-    ? `/u/${encodeURIComponent(otherUsername)}`
-    : `/chat/${conversation.id}/members`;
+  // The info icon now opens the Details screen, which also holds search.
+  const infoHref = `/chat/${conversation.id}/details`;
+  const bubbleColor = profilesById.get(user.id)?.bubble_color ?? null;
+  const nicknameRecord = Object.fromEntries(nicknames);
+  const receiptsOn = readReceiptsOn(profilesById.get(user.id));
+  const receiptMembers = members
+    .filter((member) => member.user_id !== user.id)
+    .map((member) => ({
+      id: member.user_id,
+      seenAt: member.seen_at ?? null,
+      receiptsOn: readReceiptsOn(profilesById.get(member.user_id)),
+    }));
 
   const MESSAGE_PAGE_SIZE = 30;
-  const { data: messageData, error: messageError } = await supabase
+
+  // Messages removed for me only: filtered out here and in the live handler.
+  const { data: hiddenData } = await supabase
+    .from("message_hidden")
+    .select("message_id")
+    .eq("user_id", user.id);
+  const hiddenIds = new Set(
+    ((hiddenData ?? []) as { message_id: string }[]).map((row) => row.message_id)
+  );
+
+  let messageRequest = supabase
     .from("messages")
-    .select("id,conversation_id,user_id,body,created_at,image_path,edited_at,deleted_at,mentions")
-    .eq("conversation_id", conversation.id)
+    .select(MESSAGE_SELECT)
+    .eq("conversation_id", conversation.id);
+
+  // Cleared history never comes back, even after a refresh.
+  if (clearedAt) {
+    messageRequest = messageRequest.gt("created_at", clearedAt);
+  }
+
+  const { data: messageData, error: messageError } = await messageRequest
     .order("created_at", { ascending: false })
     .limit(MESSAGE_PAGE_SIZE);
 
-  const messages = ((messageData ?? []) as MessageRecord[])
+  const latestPage = (messageData ?? []) as MessageRecord[];
+  const hasMoreMessages = latestPage.length === MESSAGE_PAGE_SIZE;
+  const messages = latestPage
+    .filter((message) => !hiddenIds.has(message.id))
     .slice()
     .reverse();
-  const hasMoreMessages = messages.length === MESSAGE_PAGE_SIZE;
+
+  // Idea cards render on the first paint instead of arriving after mount.
+  const sharedIdeaIds = ideaIdsFromMessages(messages);
+  const ideaCards =
+    sharedIdeaIds.length > 0
+      ? (await loadIdeaCards(supabase, user.id, sharedIdeaIds)).cards
+      : [];
 
   return (
-    <AppShell noIsland>
-      <section className="space-y-4">
-        <header className="flex items-center gap-2">
-          <Link
-            href="/chat"
-            aria-label="Back to messages"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-          </Link>
-
-          <Avatar
-            src={headerAvatarUrl}
-            initial={nameInitial(title)}
-            size={32}
-          />
-
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[15px] font-semibold leading-tight text-text">
-              {title}
-            </h1>
-
-            {conversation.is_group ? (
-              <p className="mt-0.5 truncate text-xs text-muted">
-                {chatMembers.length}{" "}
-                {chatMembers.length === 1 ? "member" : "members"}
-              </p>
-            ) : (
-              <DmActiveStatus userId={otherMember?.user_id ?? null} />
-            )}
-          </div>
-
-          <Link
-            href={infoHref}
-            aria-label="Chat info"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
-          >
-            <Info size={24} strokeWidth={1.75} aria-hidden="true" />
-          </Link>
-        </header>
-
-        {messageError ? (
-          <p className="text-sm text-muted">
-            Couldn&apos;t load messages. Refresh and try again.
-          </p>
-        ) : (
-          <ChatRoom
-            key={conversation.id}
-            conversationId={conversation.id}
-            currentUserId={user.id}
-            isGroup={conversation.is_group}
-            members={chatMembers}
-            initialMessages={messages}
-            initialHasMore={hasMoreMessages}
-            targetMessageId={targetMessageId}
-            dmHeaderUserId={conversation.is_group ? null : otherMember?.user_id ?? null}
-          />
-        )}
-      </section>
+    <AppShell userId={user.id}>
+      {messageError ? (
+        <div className="fixed inset-0 flex items-center justify-center bg-thread p-6 text-center text-[15px] text-muted">
+          Couldn&apos;t load messages. Refresh and try again.
+        </div>
+      ) : (
+        <ChatRoom
+          key={conversation.id}
+          conversationId={conversation.id}
+          currentUserId={user.id}
+          isGroup={conversation.is_group}
+          members={chatMembers}
+          initialMessages={messages}
+          initialHasMore={hasMoreMessages}
+          initialHiddenIds={[...hiddenIds]}
+          targetMessageId={targetMessageId}
+          title={title}
+          otherUserId={otherMember?.user_id ?? null}
+          infoHref={infoHref}
+          avatarUrl={headerAvatarUrl}
+          avatarInitial={nameInitial(title)}
+          bubbleColor={bubbleColor}
+          nicknames={nicknameRecord}
+          clearedAt={clearedAt}
+          receiptsOn={receiptsOn}
+          receiptMembers={receiptMembers}
+          initialIdeaCards={ideaCards}
+        />
+      )}
     </AppShell>
   );
 }

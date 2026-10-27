@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { MissingContent } from "@/components/shell/unavailable";
+import { ClearNotificationsOnOpen } from "@/components/notifications/clear-notifications-on-open";
 import { PostDetail } from "@/components/posts/post-detail";
 import { createClient } from "@/lib/supabase/server";
 import { loadPostDetail } from "@/lib/posts-data";
@@ -23,6 +24,8 @@ export default async function PostDetailPage({
   return (
     <AppShell userId={user.id}>
       <section key={postId} className="space-y-6">
+        <ClearNotificationsOnOpen kind="post" id={postId} />
+
         <Link
           href="/feed"
           className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { FreeView } from "@/components/free/free-view";
 import { createClient } from "@/lib/supabase/server";
 import type { AvailabilityRecord, AvailabilityWindow } from "@/lib/availability";
 import { nameInitial } from "@/lib/chat";
+import { serverNowIso } from "@/lib/server-now";
 
 type ProfileRow = {
   id: string;
@@ -15,11 +15,12 @@ type ProfileRow = {
 export default async function FreePage() {
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
+  const nowIso = await serverNowIso();
 
   const { data: windowData, error: windowError } = await supabase
     .from("availability")
     .select("id,user_id,starts_at,ends_at,note")
-    .gt("ends_at", new Date().toISOString())
+    .gt("ends_at", nowIso)
     .order("starts_at", { ascending: true })
     .limit(200);
 
@@ -56,20 +57,8 @@ export default async function FreePage() {
   });
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title="Who's free">
       <section className="space-y-8">
-        <div>
-          <Link
-            href="/events"
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted hover:text-text transition-colors duration-200 ease-out mb-6"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            Events
-          </Link>
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            Who&apos;s free
-          </h1>
-        </div>
 
         {windowError ? (
           <p className="text-sm text-muted">

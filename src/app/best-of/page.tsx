@@ -5,7 +5,7 @@ export default async function BestOfPage() {
   const { user } = await getAuthenticatedUser();
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title="Photo of the month">
       <BestOfGrid currentUserId={user.id} />
     </AppShell>
   );

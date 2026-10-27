@@ -26,6 +26,7 @@ async function requireUser() {
 }
 
 export async function addAvailabilityAction(input: {
+  id?: string;
   startsAt: string;
   endsAt: string;
   note?: string | null;
@@ -43,7 +44,16 @@ export async function addAvailabilityAction(input: {
     return { error: "That time has already passed." };
   }
 
+  const windowId =
+    typeof input?.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      input.id
+    )
+      ? input.id
+      : undefined;
+
   const { error } = await supabase.from("availability").insert({
+    ...(windowId ? { id: windowId } : {}),
     user_id: user.id,
     starts_at: new Date(startMs).toISOString(),
     ends_at: new Date(endMs).toISOString(),

@@ -100,10 +100,6 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
           This month
         </Link>
 
-        <h1 className="text-[22px] font-bold leading-tight text-text">
-          Photo of the month
-        </h1>
-
         <p className="text-sm text-muted">
           {isCurrent
             ? "Voting is still open."
@@ -116,9 +112,6 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
   if (!data) {
     return error ? (
       <section className="space-y-6">
-        <h1 className="text-[22px] font-bold leading-tight text-text">
-          Photo of the month
-        </h1>
         <p className="text-sm text-muted">{error}</p>
       </section>
     ) : (
@@ -144,10 +137,7 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-[22px] font-bold leading-tight text-text">
-              Photo of the month
-            </h1>
-            <p className="mt-1 text-sm text-muted">{data.monthLabel}</p>
+            <p className="text-sm text-muted">{data.monthLabel}</p>
           </div>
           {arrows}
         </div>
@@ -194,6 +184,7 @@ export function BestOfResult({ monthKey }: { monthKey: string }) {
                       <img draggable={false}
                         src={post.imageUrl}
                         alt=""
+                        loading="lazy"
                         className="h-12 w-12 shrink-0 rounded-[10px] bg-surface-2 object-cover"
                       />
                     ) : (

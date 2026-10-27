@@ -84,10 +84,14 @@ export function OnThisDayCard({ userId }: { userId: string }) {
   }, [today, userId]);
 
   function dismiss() {
+    if (!today) {
+      return;
+    }
+
     try {
       window.localStorage.setItem(
         dismissKey(userId),
-        localDayKey(today ?? new Date())
+        localDayKey(today)
       );
     } catch {
       // Dismiss for this visit even if the preference cannot be saved.

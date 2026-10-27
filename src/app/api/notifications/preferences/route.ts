@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
 
 export async function GET() {
   if (!isSupabaseConfigured()) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

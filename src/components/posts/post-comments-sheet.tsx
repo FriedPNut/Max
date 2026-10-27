@@ -4,12 +4,11 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CommentMenu } from "@/components/posts/comment-menu";
-import { Avatar, Button, Input, Sheet, Skeleton } from "@/components/ui";
+import { Avatar, Button, Input, RelativeTime, Sheet, Skeleton } from "@/components/ui";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 import {
   COMMENT_MAX,
   nameInitial,
-  relativeTime,
   type PostComment,
   type PostProfile,
 } from "@/lib/posts";
@@ -146,7 +145,6 @@ export function PostCommentsSheet({
               postId: row.post_id,
               body: row.body,
               createdAt: row.created_at,
-              relativeTime: relativeTime(row.created_at),
               authorId: row.user_id,
               authorName: name,
               authorInitial: nameInitial(name),
@@ -207,7 +205,6 @@ export function PostCommentsSheet({
                       postId: row.post_id,
                       body: row.body,
                       createdAt: row.created_at,
-                      relativeTime: relativeTime(row.created_at),
                       authorId: row.user_id,
                       authorName: currentUser.name,
                       authorInitial: nameInitial(currentUser.name),
@@ -241,7 +238,6 @@ export function PostCommentsSheet({
                     postId: row.post_id,
                     body: row.body,
                     createdAt: row.created_at,
-                    relativeTime: relativeTime(row.created_at),
                     authorId: row.user_id,
                     authorName: name,
                     authorInitial: nameInitial(name),
@@ -313,7 +309,6 @@ export function PostCommentsSheet({
                 postId: row.post_id,
                 body: row.body,
                 createdAt: row.created_at,
-                relativeTime: relativeTime(row.created_at),
                 authorId: row.user_id,
                 authorName: currentUser.name,
                 authorInitial: nameInitial(currentUser.name),
@@ -439,9 +434,10 @@ export function PostCommentsSheet({
                       {comment.body}
                     </p>
 
-                    <p className="mt-1 text-xs text-muted">
-                      {comment.relativeTime}
-                    </p>
+                    <RelativeTime
+                      iso={comment.createdAt}
+                      className="mt-1 block text-xs text-muted"
+                    />
 
                     {confirmingId === comment.id && (
                       <div className="mt-2 space-y-2">

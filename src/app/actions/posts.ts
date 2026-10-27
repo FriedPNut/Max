@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { loadPostPage } from "@/lib/posts-data";
+import { photoThumbPath } from "@/lib/photo";
 import {
   POSTS_BUCKET,
   type PostActionState,
@@ -62,6 +63,7 @@ export async function loadMorePostsAction(
 }
 
 export async function createPostAction(input: {
+  id?: string;
   imagePath: string;
   caption: string;
   eventId?: string | null;
@@ -74,10 +76,18 @@ export async function createPostAction(input: {
 
   if (
     !imagePath.startsWith(prefix) ||
-    !/^\d+\.jpg$/.test(imagePath.slice(prefix.length))
+    !/^(\d+|[0-9a-f-]{36})\.jpg$/i.test(imagePath.slice(prefix.length))
   ) {
     return { error: "That photo didn't upload right. Try again." };
   }
+
+  const postId =
+    typeof input?.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      input.id
+    )
+      ? input.id
+      : undefined;
 
   if (caption.length > 2000) {
     return { error: "That caption is too long." };
@@ -96,6 +106,7 @@ export async function createPostAction(input: {
   }
 
   const { error } = await supabase.from("posts").insert({
+    ...(postId ? { id: postId } : {}),
     user_id: user.id,
     image_path: imagePath,
     caption: caption || null,
@@ -218,7 +229,9 @@ export async function deletePostAction(
   }
 
   if (post.image_path) {
-    await supabase.storage.from(POSTS_BUCKET).remove([post.image_path]);
+    await supabase
+      .storage.from(POSTS_BUCKET)
+      .remove([post.image_path, photoThumbPath(post.image_path)]);
   }
 
   // The post can be deleted from its own page, so refresh the feed too.

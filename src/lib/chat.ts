@@ -3,14 +3,10 @@ export type ChatProfile = {
   display_name: string | null;
   avatar_url: string | null;
   username: string | null;
-};
-
-export type FriendshipRecord = {
-  id: string;
-  requester_id: string;
-  addressee_id: string;
-  status: string;
-  created_at: string;
+  /** My solid chat bubble color, a six-digit hex. */
+  bubble_color?: string | null;
+  /** Read receipts default to on. */
+  read_receipts?: boolean | null;
 };
 
 export type ConversationRecord = {
@@ -19,12 +15,18 @@ export type ConversationRecord = {
   is_group: boolean;
   created_by: string;
   created_at: string;
+  /** Group photo in the photos bucket; the _t.jpg thumbnail is what renders. */
+  photo_path?: string | null;
 };
 
 export type ConversationMemberRecord = {
   conversation_id: string;
   user_id: string;
   last_read_at: string | null;
+  muted?: boolean | null;
+  cleared_at?: string | null;
+  /** What other people are allowed to see of my progress. */
+  seen_at?: string | null;
 };
 
 export type MessageRecord = {
@@ -37,10 +39,12 @@ export type MessageRecord = {
   edited_at: string | null;
   deleted_at: string | null;
   mentions: string[];
+  /** A message shared from Prompt ideas; it renders as a card, not a bubble. */
+  idea_id?: string | null;
 };
 
 export const MESSAGE_SELECT =
-  "id,conversation_id,user_id,body,created_at,image_path,edited_at,deleted_at,mentions";
+  "id,conversation_id,user_id,body,created_at,image_path,edited_at,deleted_at,mentions,idea_id";
 
 export const REACTION_KEYS = [
   "like",
@@ -74,12 +78,6 @@ export const REACTION_LABELS: Record<ReactionKey, string> = {
 export function isReactionKey(value: string): value is ReactionKey {
   return (REACTION_KEYS as readonly string[]).includes(value);
 }
-
-export type ReactionRecord = {
-  message_id: string;
-  user_id: string;
-  reaction: ReactionKey;
-};
 
 export type ReactionMap = Record<
   string,
@@ -122,15 +120,6 @@ export function setReactionPresence(
 }
 
 export const CHAT_BUCKET = "photos";
-export const CHAT_SIGNED_URL_SECONDS = 60 * 60;
-export const CHAT_PAGE_SIZE = 30;
-
-export type PinnedRecord = {
-  message_id: string;
-  conversation_id: string;
-  pinned_by: string;
-  pinned_at: string;
-};
 
 export type ChatMember = {
   id: string;
@@ -147,8 +136,14 @@ export type ChatListItem = {
   isGroup: boolean;
   initial: string | null;
   avatarUrl: string | null;
+  /** Group photo thumbnail, when the group has one. */
+  photoUrl?: string | null;
+  /** Notifications are off for this chat. */
+  muted?: boolean;
   profileUsername: string | null;
   lastMessage: string | null;
+  /** "Seen" (DM) or "Seen by Elina + 4" (group) for my latest message. */
+  receipt?: string | null;
   lastMessageAt: string | null;
   createdAt: string;
   unread: boolean;

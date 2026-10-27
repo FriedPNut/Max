@@ -4,39 +4,65 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { HeartIcon } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
+import { NOTIFICATIONS_CHANGED_EVENT } from "@/lib/notification-clear";
+import {
+  notificationRowCount,
+  type NotificationLike,
+} from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/client";
 
-/** Heart entry to /notifications with a red badge for the unread count. */
-export function NotificationBell({ userId }: { userId: string }) {
-  const supabase = useMemo(() => createClient(), []);
+/** Heart entry to /notifications with a red badge for the rows still listed. */
+export function NotificationBell({ userId }: { userId: string | null }) {
   const [unread, setUnread] = useState(0);
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
     let alive = true;
-    const refresh = () =>
-      supabase
+
+    const refresh = async () => {
+      const { data } = await supabase
         .from("notifications")
-        .select("id", { count: "exact", head: true })
+        .select("id,type,title,created_at,data")
         .eq("user_id", userId)
         .is("read_at", null)
-        .then(({ count }) => {
-          if (alive) setUnread(count ?? 0);
-        });
+        .limit(100);
+
+      if (alive) {
+        setUnread(notificationRowCount((data ?? []) as NotificationLike[]));
+      }
+    };
 
     void refresh();
+
     const channel = supabase
       .channel(`notifications-unread-${userId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
         () => {
           void refresh();
         }
       )
       .subscribe();
 
+    // Clears made in this tab update the badge without a round trip.
+    const onChanged = () => {
+      void refresh();
+    };
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+
     return () => {
       alive = false;
+      window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
       void supabase.removeChannel(channel);
     };
   }, [supabase, userId]);

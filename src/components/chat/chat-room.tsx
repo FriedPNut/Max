@@ -9,10 +9,40 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
+import { ArrowLeft, Info, X } from "lucide-react";
+import { Avatar, Button, Input, Sheet, Textarea } from "@/components/ui";
 import { LocalTime } from "@/components/local-time";
-import { Button, Card, Input, Textarea } from "@/components/ui";
+import { PhotoComposer } from "@/components/chat/photo-composer";
+import { IdeaCardInChat } from "@/components/events/idea-card";
+import { DmActiveStatus } from "@/components/chat/dm-active-status";
+import { ReactionChip } from "@/components/chat/message-reactions";
+import {
+  MessageActionMenu,
+  type PressedMessage,
+} from "@/components/chat/message-actions";
 import { useKeyboardInset } from "@/lib/use-keyboard-inset";
+import { useNow } from "@/lib/use-now";
+import { applyBubbleColor } from "@/lib/bubble-colors";
+import { clearChatMessageNotifications } from "@/lib/notification-clear";
+import { loadIdeaCardsAction } from "@/app/actions/ideas";
+import {
+  applyIdeaPatch,
+  applyIdeaRemoval,
+  ideaIdsFromMessages,
+  type IdeaCard,
+} from "@/lib/ideas";
+import { useIdeaSync, type IdeaSyncDetail } from "@/lib/idea-sync";
+import {
+  RECEIPT_AVATAR_LIMIT,
+  hasSeen,
+  readReceiptPayload,
+  receiptWriteDelay,
+  receiptsByMessage,
+  seenLabel,
+  type ReceiptMember,
+} from "@/lib/read-receipts";
 import { createClient } from "@/lib/supabase/client";
 import {
   MESSAGE_SELECT,
@@ -27,94 +57,63 @@ import {
 import {
   deleteMessageAction,
   editMessageAction,
-  searchConversationAction,
+  hideMessageForMeAction,
   setMessagePinAction,
   signChatImagesAction,
 } from "@/app/actions/chat-messages";
-import { PhotoComposer } from "@/components/chat/photo-composer";
-import { ReactionBar, ReactionChip } from "@/components/chat/message-reactions";
-import { Search, Smile, X } from "lucide-react";
 
 const PAGE_SIZE = 30;
 const TIMESTAMP_GAP_MS = 30 * 60 * 1000;
+// Long histories stay in state but only the newest slice is mounted.
+const MESSAGE_WINDOW = 120;
+/** How long a finger must rest on a bubble before the menu opens. */
+const HOLD_MS = 350;
+const HOLD_TOLERANCE = 10;
 
-function MessageMenu({
-  open,
-  onToggle,
-  isPinned,
-  onPin,
-  isOwn,
-  onEdit,
-  onDelete,
-  hasBody,
-  copied,
-  onCopy,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  isPinned: boolean;
-  onPin: () => void;
-  isOwn: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-  hasBody: boolean;
-  copied: boolean;
-  onCopy: () => void;
-}) {
-  return (
-    <div className="relative" data-message-menu>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label="Message options"
-        aria-expanded={open}
-        className="min-h-11 min-w-11 rounded-full text-muted transition-colors duration-200 ease-out hover:text-text"
-      >
-        ...
-      </button>
-      {open && (
-        <Card
-          data-message-menu
-          className="absolute bottom-full right-0 z-20 mb-1 min-w-[140px] py-1"
-        >
-          {hasBody && (
-            <button
-              type="button"
-              onClick={onCopy}
-              className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-surface-2"
-            >
-              {copied ? "Copied" : "Copy"}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onPin}
-            className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-surface-2"
-          >
-            {isPinned ? "Unpin" : "Pin"}
-          </button>
-          {isOwn && (
-            <>
-              <button
-                type="button"
-                onClick={onEdit}
-                className="block min-h-11 w-full px-4 text-left text-sm text-text hover:bg-surface-2"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                className="block min-h-11 w-full px-4 text-left text-sm text-danger hover:bg-surface-2"
-              >
-                Delete
-              </button>
-            </>
-          )}
-        </Card>
-      )}
-    </div>
+function mergeMessages(
+  current: MessageRecord[],
+  incoming: MessageRecord[]
+): MessageRecord[] {
+  if (incoming.length === 0) {
+    return current;
+  }
+
+  const positions = new Map(
+    current.map((message, index) => [message.id, index] as const)
   );
+  let next = current;
+
+  for (const message of incoming) {
+    const at = positions.get(message.id);
+
+    if (at === undefined) {
+      if (next === current) {
+        next = current.slice();
+        positions.set(message.id, next.length);
+        next.push(message);
+      } else {
+        positions.set(message.id, next.length);
+        next = [...next, message];
+      }
+
+      continue;
+    }
+
+    // Same id: the server copy replaces the optimistic one in place.
+    next = next.slice();
+    next[at] = { ...next[at], ...message };
+  }
+
+  return next;
+}
+
+function omitKey(
+  record: Record<string, true>,
+  key: string
+): Record<string, true> {
+  const next = { ...record };
+  delete next[key];
+  return next;
 }
 
 function renderBody(
@@ -130,7 +129,10 @@ function renderBody(
     return body;
   }
 
-  const pattern = new RegExp(`(@(?:${usernames.map((u) => u.replace(/[^\w]/g, "")).join("|")})\\b)`, "g");
+  const pattern = new RegExp(
+    `(@(?:${usernames.map((u) => u.replace(/[^\w]/g, "")).join("|")})\\b)`,
+    "g"
+  );
 
   return body.split(pattern).map((part, index) =>
     index % 2 === 1 ? (
@@ -143,6 +145,7 @@ function renderBody(
   );
 }
 
+
 export function ChatRoom({
   conversationId,
   currentUserId,
@@ -151,6 +154,18 @@ export function ChatRoom({
   initialMessages,
   initialHasMore,
   targetMessageId,
+  title,
+  otherUserId,
+  infoHref,
+  avatarUrl,
+  avatarInitial,
+  bubbleColor,
+  nicknames,
+  initialHiddenIds,
+  clearedAt,
+  receiptsOn,
+  receiptMembers,
+  initialIdeaCards,
 }: {
   conversationId: string;
   currentUserId: string;
@@ -159,22 +174,57 @@ export function ChatRoom({
   initialMessages: MessageRecord[];
   initialHasMore: boolean;
   targetMessageId?: string | null;
-  dmHeaderUserId?: string | null;
+  title: string;
+  /** The other person in a DM; null for group chats. */
+  otherUserId?: string | null;
+  infoHref: string;
+  avatarUrl: string | null;
+  avatarInitial: string;
+  bubbleColor?: string | null;
+  /** Shared nicknames for this chat, by user id. */
+  nicknames?: Record<string, string>;
+  initialHiddenIds: string[];
+  /** Cleared history: nothing older than this may load again. */
+  clearedAt?: string | null;
+  /** My read_receipts setting; off means I record nothing and see nothing. */
+  receiptsOn: boolean;
+  /** Everyone else's seen_at and receipt preference. */
+  receiptMembers: ReceiptMember[];
+  /** Cards for the ideas already shared in this conversation. */
+  initialIdeaCards: IdeaCard[];
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const [messages, setMessages] = useState<MessageRecord[]>(initialMessages);
+  const hiddenRef = useRef<Set<string>>(
+    new Set(initialHiddenIds.filter(Boolean))
+  );
+  const [messages, setMessages] = useState<MessageRecord[]>(() =>
+    initialMessages.filter((message) => !hiddenRef.current.has(message.id))
+  );
+  // null means the idea was deleted; a missing key means it is still loading.
+  const [ideaCards, setIdeaCards] = useState<Record<string, IdeaCard | null>>(
+    () => Object.fromEntries(initialIdeaCards.map((card) => [card.id, card]))
+  );
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [olderError, setOlderError] = useState<string | null>(null);
   const [body, setBody] = useState("");
-  const [sending, setSending] = useState(false);
+  // Messages that are on screen but not saved yet, and the ones that failed.
+  const [pendingIds, setPendingIds] = useState<Record<string, true>>({});
+  const [failedIds, setFailedIds] = useState<Record<string, true>>({});
+  // Only this many messages stay in the DOM; the rest live in state only.
+  const [windowStart, setWindowStart] = useState(() =>
+    Math.max(
+      0,
+      initialMessages.filter((message) => !hiddenRef.current.has(message.id))
+        .length - MESSAGE_WINDOW
+    )
+  );
   const [error, setError] = useState<string | null>(null);
   const [typers, setTypers] = useState<Record<string, number>>({});
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [pinsOpen, setPinsOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  const [menuId, setMenuId] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [press, setPress] = useState<PressedMessage | null>(null);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [failedPhotoPaths, setFailedPhotoPaths] = useState<string[]>([]);
   const [fullscreenUrl, setFullscreenUrl] = useState<string | null>(null);
@@ -182,81 +232,203 @@ export function ChatRoom({
   const [mentionedIds, setMentionedIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<MessageRecord[]>([]);
-  const [searchPending, setSearchPending] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [reactions, setReactions] = useState<ReactionMap>({});
-  const [reactionBarId, setReactionBarId] = useState<string | null>(null);
   const [whoReacted, setWhoReacted] = useState<{
     messageId: string;
     reaction: ReactionKey;
   } | null>(null);
-  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [seenBy, setSeenBy] = useState<Record<string, string | null>>(() =>
+    Object.fromEntries(
+      receiptMembers.map((member) => [member.id, member.seenAt])
+    )
+  );
+
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(
+    null
+  );
   const openedTargetRef = useRef(false);
   const lastTypingSentRef = useRef(0);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const loadingOlderRef = useRef(false);
   const shouldScrollToBottom = useRef(true);
   const prependSnapshot = useRef<{ height: number; top: number } | null>(null);
   const fetchedReactionIds = useRef(new Set<string>());
   const loadedMessageIds = useRef(new Set<string>());
-  const holdTimer = useRef<number | null>(null);
-  const holdStart = useRef<{ x: number; y: number } | null>(null);
-  const holdFired = useRef(false);
-  const copyTimer = useRef<number | null>(null);
-  const roomRef = useRef<HTMLDivElement>(null);
+  // Sends leave the device in order, one at a time.
+  const outbox = useRef<Array<() => Promise<void>>>([]);
+  const draining = useRef(false);
+  const retries = useRef(new Map<string, () => Promise<void>>());
+  const messagesRef = useRef(messages);
+  const pinnedRef = useRef(pinnedIds);
   const keyboardInset = useKeyboardInset();
 
-  // The app shell scrolls `main` instead of the window, so measure that node.
-  function getScroller() {
-    return roomRef.current?.closest("main") ?? null;
+  messagesRef.current = messages;
+  pinnedRef.current = pinnedIds;
+
+  // The profile is the source of truth; localStorage only makes the first
+  // paint right. Reading it here never re-renders a bubble.
+  useEffect(() => {
+    if (bubbleColor) {
+      applyBubbleColor(bubbleColor);
+    }
+  }, [bubbleColor]);
+
+  function scroller() {
+    return scrollRef.current;
   }
 
-  function pageScrollHeight() {
-    const scroller = getScroller();
-    return scroller
-      ? scroller.scrollHeight
-      : document.documentElement.scrollHeight;
+  function nearBottom() {
+    const element = scroller();
+    return element
+      ? element.scrollHeight - element.clientHeight - element.scrollTop < 160
+      : true;
   }
 
-  function pageScrollTop() {
-    const scroller = getScroller();
-    return scroller ? scroller.scrollTop : window.scrollY;
-  }
+  function pinToBottom(smooth = false) {
+    const element = scroller();
 
-  function pageViewportHeight() {
-    const scroller = getScroller();
-    return scroller ? scroller.clientHeight : window.innerHeight;
-  }
-
-  function setPageScrollTop(top: number) {
-    const scroller = getScroller();
-
-    if (scroller) {
-      scroller.scrollTop = top;
-    } else {
-      window.scrollTo({ top });
+    if (element) {
+      element.scrollTo({ top: element.scrollHeight, behavior: smooth ? "smooth" : "auto" });
     }
   }
 
   const namesById = useMemo(() => {
-    return new Map(members.map((member) => [member.id, member.name]));
-  }, [members]);
+    return new Map(
+      members.map((member) => [
+        member.id,
+        nicknames?.[member.id] ?? member.name,
+      ])
+    );
+  }, [members, nicknames]);
   const usernamesById = useMemo(() => {
     return new Map(
       members.map((member) => [member.id, member.username] as const)
     );
   }, [members]);
 
-  const markRead = useCallback(async () => {
-    await supabase
+  const lastReadWrite = useRef(0);
+  const readTimer = useRef<number | null>(null);
+  const readPending = useRef(false);
+
+  const writeRead = useCallback(() => {
+    readPending.current = false;
+
+    // Hidden tabs never write, even if the timer fires.
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+
+    const now = new Date();
+    lastReadWrite.current = now.getTime();
+    void supabase
       .from("conversation_members")
-      .update({ last_read_at: new Date().toISOString() })
+      .update(readReceiptPayload(receiptsOn, now))
       .eq("conversation_id", conversationId)
       .eq("user_id", currentUserId);
+  }, [conversationId, currentUserId, receiptsOn, supabase]);
+
+  /** last_read_at always, seen_at only with receipts on, at most every 2s. */
+  const markRead = useCallback(() => {
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+
+    const delay = receiptWriteDelay(lastReadWrite.current, Date.now());
+
+    if (delay === 0) {
+      if (readTimer.current !== null) {
+        window.clearTimeout(readTimer.current);
+        readTimer.current = null;
+      }
+
+      writeRead();
+      return;
+    }
+
+    readPending.current = true;
+
+    if (readTimer.current === null) {
+      readTimer.current = window.setTimeout(() => {
+        readTimer.current = null;
+
+        if (readPending.current) {
+          writeRead();
+        }
+      }, delay);
+    }
+  }, [writeRead]);
+
+  useEffect(() => {
+    markRead();
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        markRead();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+
+      if (readTimer.current !== null) {
+        window.clearTimeout(readTimer.current);
+        readTimer.current = null;
+      }
+    };
+  }, [markRead]);
+
+  // Reading a conversation clears its chat notifications. A notification that
+  // lands while the conversation is on screen is deleted as soon as it exists.
+  useEffect(() => {
+    const clear = () => {
+      if (document.visibilityState === "visible") {
+        void clearChatMessageNotifications(conversationId);
+      }
+    };
+
+    clear();
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        clear();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const channel = supabase
+      .channel(`chat-notifications-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            type?: string;
+            data?: { conversation_id?: unknown } | null;
+          };
+
+          if (
+            row.type === "chat_message" &&
+            row.data?.conversation_id === conversationId &&
+            document.visibilityState === "visible"
+          ) {
+            void clearChatMessageNotifications(conversationId);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      void supabase.removeChannel(channel);
+    };
   }, [conversationId, currentUserId, supabase]);
 
   const latestShownRef = useRef<string | null>(null);
@@ -277,30 +449,23 @@ export function ChatRoom({
       query = query.gt("created_at", since);
     }
 
-    const { data, error } = await query;
+    const { data, error: fetchError } = await query;
 
-    if (error) {
-      console.log("[chat:recv] refetch failed", error.message);
+    if (fetchError) {
       return;
     }
 
-    const newer = (data ?? []) as unknown as MessageRecord[];
-    console.log("[chat:recv] refetch newer", newer.length);
+    const newer = ((data ?? []) as unknown as MessageRecord[]).filter(
+      (message) => !hiddenRef.current.has(message.id)
+    );
 
     if (newer.length > 0) {
-      setMessages((current) => {
-        const existingIds = new Set(current.map((message) => message.id));
-        const fresh = newer.filter((message) => !existingIds.has(message.id));
-        return fresh.length > 0 ? [...current, ...fresh] : current;
-      });
+      setMessages((current) => mergeMessages(current, newer));
       shouldScrollToBottom.current = true;
       void markRead();
     }
   }, [conversationId, markRead, supabase]);
 
-  useEffect(() => {
-    void markRead();
-  }, [markRead]);
 
   const jumpRef = useRef<(messageId: string) => Promise<void>>(async () => {});
 
@@ -376,7 +541,7 @@ export function ChatRoom({
         },
         (payload) => {
           const updated = payload.new as MessageRecord;
-          console.log("[chat:recv] realtime update", updated.id, updated.image_path);
+
           setMessages((current) =>
             current.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
           );
@@ -392,28 +557,30 @@ export function ChatRoom({
         },
         (payload) => {
           const message = payload.new as MessageRecord;
-          console.log("[chat:recv] realtime insert", message.id, message.image_path);
-          const nearBottom =
-            pageScrollTop() + pageViewportHeight() >=
-            pageScrollHeight() - 160;
 
-          if (nearBottom) {
+          // Hidden for me: never shown, even when it arrives live.
+          if (hiddenRef.current.has(message.id)) {
+            return;
+          }
+
+          if (nearBottom()) {
             shouldScrollToBottom.current = true;
           }
 
-          setMessages((current) => {
-            if (current.some((existing) => existing.id === message.id)) {
-              return current;
-            }
+          setMessages((current) => mergeMessages(current, [message]));
 
-            return [...current, message];
-          });
+          // The echo confirms the optimistic row we already show.
+          setPendingIds((current) =>
+            current[message.id] ? omitKey(current, message.id) : current
+          );
+          setFailedIds((current) =>
+            current[message.id] ? omitKey(current, message.id) : current
+          );
 
           void markRead();
         }
       )
       .subscribe((status) => {
-        console.log("[chat:recv] subscription status", status);
         if (status === "SUBSCRIBED") {
           void refetchNewer();
         }
@@ -480,17 +647,12 @@ export function ChatRoom({
 
     if (missing.length === 0) return;
 
-    console.log("[chat:recv] signing photo urls", missing.length);
     void signChatImagesAction(missing).then((result) => {
-      if (result.error) {
-        console.log("[chat:recv] signing failed", result.error);
-      }
       if (result.urls) {
         setImageUrls((current) => ({ ...current, ...result.urls }));
       }
       const failed = missing.filter((p) => !result.urls?.[p]);
       if (failed.length > 0) {
-        console.log("[chat:recv] no signed url for", failed);
         setFailedPhotoPaths((current) => [
           ...current,
           ...failed.filter((p) => !current.includes(p)),
@@ -519,8 +681,8 @@ export function ChatRoom({
       .from("message_reactions")
       .select("message_id,user_id,reaction")
       .in("message_id", requested)
-      .then(({ data, error }) => {
-        if (error) {
+      .then(({ data, error: reactionError }) => {
+        if (reactionError) {
           for (const id of requested) {
             fetchedReactionIds.current.delete(id);
           }
@@ -632,59 +794,29 @@ export function ChatRoom({
     };
   }, [conversationId, supabase]);
 
-  // Tap anywhere else to close the bar or the who-reacted line.
+  // Tap anywhere else to close the who-reacted line.
   useEffect(() => {
-    if (!reactionBarId && !whoReacted && !menuId) {
+    if (!whoReacted) {
       return;
     }
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as HTMLElement | null;
 
-      if (
-        target?.closest("[data-reaction-ui]") ||
-        target?.closest("[data-reaction-trigger]") ||
-        target?.closest("[data-message-menu]")
-      ) {
+      if (target?.closest("[data-reaction-ui]")) {
         return;
       }
 
-      setReactionBarId(null);
       setWhoReacted(null);
-      setMenuId(null);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setReactionBarId(null);
-        setWhoReacted(null);
-        setMenuId(null);
-      }
     }
 
     window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("keydown", handleKeyDown);
 
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [reactionBarId, whoReacted, menuId]);
-
-  useEffect(() => {
-    return () => {
-      if (holdTimer.current !== null) {
-        window.clearTimeout(holdTimer.current);
-      }
-
-      if (copyTimer.current !== null) {
-        window.clearTimeout(copyTimer.current);
-      }
-    };
-  }, []);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [whoReacted]);
 
   function startEdit(message: MessageRecord) {
-    setMenuId(null);
+    setPress(null);
     setEditingId(message.id);
     setEditDraft(message.body ?? "");
     setError(null);
@@ -700,12 +832,14 @@ export function ChatRoom({
     }
 
     const saved = result.message;
-    setMessages((current) => current.map((m) => (m.id === messageId ? saved : m)));
+    setMessages((current) =>
+      current.map((m) => (m.id === messageId ? { ...m, ...saved } : m))
+    );
     setEditingId(null);
   }
 
   async function removeMessage(message: MessageRecord) {
-    setMenuId(null);
+    setPress(null);
     const result = await deleteMessageAction(message.id);
 
     if (result.error || !result.message) {
@@ -714,12 +848,29 @@ export function ChatRoom({
     }
 
     const deleted = result.message;
-    setMessages((current) => current.map((m) => (m.id === message.id ? deleted : m)));
+    setMessages((current) =>
+      current.map((m) => (m.id === message.id ? { ...m, ...deleted } : m))
+    );
+  }
+
+  async function hideForMe(message: MessageRecord) {
+    setPress(null);
+    const snapshot = messagesRef.current;
+    hiddenRef.current.add(message.id);
+    setMessages((current) => current.filter((m) => m.id !== message.id));
+
+    const result = await hideMessageForMeAction(message.id);
+
+    if (result.error) {
+      hiddenRef.current.delete(message.id);
+      setMessages(snapshot);
+      setError(result.error);
+    }
   }
 
   async function togglePin(messageId: string) {
-    const pinned = pinnedIds.includes(messageId);
-    setMenuId(null);
+    const pinned = pinnedRef.current.includes(messageId);
+    setPress(null);
     const result = await setMessagePinAction(messageId, !pinned);
 
     if (result.error) {
@@ -728,7 +879,9 @@ export function ChatRoom({
   }
 
   async function copyMessage(message: MessageRecord) {
-    const text = message.body ?? "";
+    const text = message.idea_id
+      ? ideaCardsRef.current[message.idea_id]?.title ?? ""
+      : message.body ?? "";
 
     if (!text) {
       return;
@@ -754,59 +907,6 @@ export function ChatRoom({
       }
     } catch {
       setError("Couldn't copy that message.");
-      return;
-    }
-
-    setCopiedId(message.id);
-
-    if (copyTimer.current !== null) {
-      window.clearTimeout(copyTimer.current);
-    }
-
-    copyTimer.current = window.setTimeout(() => {
-      copyTimer.current = null;
-      setCopiedId(null);
-      setMenuId(null);
-    }, 1_500);
-  }
-
-  function clearMessageHold() {
-    if (holdTimer.current !== null) {
-      window.clearTimeout(holdTimer.current);
-      holdTimer.current = null;
-    }
-  }
-
-  // Long-press a bubble on touch to open the reaction bar and message menu.
-  // Scrolling cancels it.
-  function startMessageHold(
-    messageId: string,
-    event: React.TouchEvent<HTMLElement>
-  ) {
-    const touch = event.touches[0];
-    holdStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
-    holdFired.current = false;
-    clearMessageHold();
-    holdTimer.current = window.setTimeout(() => {
-      holdTimer.current = null;
-      holdFired.current = true;
-      setReactionBarId(messageId);
-      setMenuId(messageId);
-    }, 450);
-  }
-
-  function moveMessageHold(event: React.TouchEvent<HTMLElement>) {
-    const touch = event.touches[0];
-
-    if (!touch || !holdStart.current) {
-      return;
-    }
-
-    if (
-      Math.abs(touch.clientX - holdStart.current.x) > 10 ||
-      Math.abs(touch.clientY - holdStart.current.y) > 10
-    ) {
-      clearMessageHold();
     }
   }
 
@@ -815,7 +915,6 @@ export function ChatRoom({
       return;
     }
 
-    setReactionBarId(null);
     setError(null);
 
     const mine = (reactions[message.id]?.[reaction] ?? []).includes(
@@ -887,7 +986,9 @@ export function ChatRoom({
         .order("created_at", { ascending: true })
         .limit(PAGE_SIZE * 4);
 
-      const fetched = (older ?? []) as unknown as MessageRecord[];
+      const fetched = ((older ?? []) as unknown as MessageRecord[]).filter(
+        (message) => !hiddenRef.current.has(message.id)
+      );
       setMessages((current) => {
         const known = new Set(current.map((m) => m.id));
         return [...fetched.filter((m) => !known.has(m.id)), ...current].sort(
@@ -902,32 +1003,6 @@ export function ChatRoom({
     target?.scrollIntoView({ block: "center", behavior: "smooth" });
     setHighlightId(messageId);
     window.setTimeout(() => setHighlightId(null), 1500);
-  }
-
-  async function runSearch(query: string) {
-    setSearchQuery(query);
-    setSearchError(null);
-
-    if (query.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    setSearchPending(true);
-    const result = await searchConversationAction(conversationId, query);
-    setSearchPending(false);
-
-    if (result.error) {
-      setSearchError(result.error);
-      return;
-    }
-
-    setSearchResults(result.results ?? []);
-  }
-
-  async function jumpFromSearch(messageId: string) {
-    setSearchOpen(false);
-    await jumpToMessage(messageId);
   }
 
   jumpRef.current = jumpToMessage;
@@ -960,14 +1035,15 @@ export function ChatRoom({
       : "Several people are typing…";
 
   useLayoutEffect(() => {
+    const element = scroller();
     const snapshot = prependSnapshot.current;
 
     if (snapshot) {
       prependSnapshot.current = null;
-      const difference = pageScrollHeight() - snapshot.height;
+      const difference = (element?.scrollHeight ?? snapshot.height) - snapshot.height;
 
-      if (difference > 0) {
-        setPageScrollTop(snapshot.top + difference);
+      if (element && difference !== 0) {
+        element.scrollTop = snapshot.top + difference;
       }
 
       return;
@@ -975,9 +1051,21 @@ export function ChatRoom({
 
     if (shouldScrollToBottom.current) {
       shouldScrollToBottom.current = false;
-      bottomRef.current?.scrollIntoView({ block: "end" });
+      pinToBottom();
     }
-  }, [messages]);
+  }, [messages, windowStart]);
+
+  // Keeps the mounted window bounded while new messages arrive, but only
+  // trims when the newest messages are the ones in view.
+  useEffect(() => {
+    if (messages.length - windowStart <= MESSAGE_WINDOW) {
+      return;
+    }
+
+    if (nearBottom()) {
+      setWindowStart(messages.length - MESSAGE_WINDOW);
+    }
+  }, [messages, windowStart]);
 
   const loadOlder = useCallback(async () => {
     if (loadingOlderRef.current || !hasMore) {
@@ -995,11 +1083,18 @@ export function ChatRoom({
     setLoadingOlder(true);
     setOlderError(null);
 
-    const { data, error: olderLoadError } = await supabase
+    let olderRequest = supabase
       .from("messages")
-      .select("id,conversation_id,user_id,body,created_at,image_path,edited_at,deleted_at,mentions")
+      .select(MESSAGE_SELECT)
       .eq("conversation_id", conversationId)
-      .lt("created_at", oldest.created_at)
+      .lt("created_at", oldest.created_at);
+
+    // A cleared chat never pages back into history I cleared.
+    if (clearedAt) {
+      olderRequest = olderRequest.gt("created_at", clearedAt);
+    }
+
+    const { data, error: olderLoadError } = await olderRequest
       .order("created_at", { ascending: false })
       .limit(PAGE_SIZE);
 
@@ -1010,12 +1105,17 @@ export function ChatRoom({
       return;
     }
 
-    const older = ((data ?? []) as MessageRecord[]).slice().reverse();
+    const older = ((data ?? []) as unknown as MessageRecord[])
+      .filter((message) => !hiddenRef.current.has(message.id))
+      .slice()
+      .reverse();
+
+    const element = scroller();
 
     if (older.length > 0) {
       prependSnapshot.current = {
-        height: pageScrollHeight(),
-        top: pageScrollTop(),
+        height: element?.scrollHeight ?? 0,
+        top: element?.scrollTop ?? 0,
       };
 
       setMessages((current) => {
@@ -1028,388 +1128,935 @@ export function ChatRoom({
       });
     }
 
-    setHasMore(older.length === PAGE_SIZE);
+    setHasMore((data ?? []).length === PAGE_SIZE);
     loadingOlderRef.current = false;
     setLoadingOlder(false);
-  }, [conversationId, hasMore, messages, supabase]);
+  }, [clearedAt, conversationId, hasMore, messages, supabase]);
+
+  const showMoreHistory = useCallback(() => {
+    if (windowStart > 0) {
+      const element = scroller();
+      prependSnapshot.current = {
+        height: element?.scrollHeight ?? 0,
+        top: element?.scrollTop ?? 0,
+      };
+      setWindowStart((current) => Math.max(0, current - MESSAGE_WINDOW / 2));
+      return;
+    }
+
+    void loadOlder();
+  }, [loadOlder, windowStart]);
 
   useEffect(() => {
-    if (!hasMore) {
+    if (!hasMore && windowStart === 0) {
       return;
     }
 
     const node = topRef.current;
+    const root = scroller();
 
-    if (!node) {
+    if (!node || !root) {
       return;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          void loadOlder();
+          showMoreHistory();
         }
       },
-      { rootMargin: "240px 0px 0px 0px" }
+      { root, rootMargin: "240px 0px 0px 0px" }
     );
 
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, [hasMore, loadOlder]);
+  }, [hasMore, showMoreHistory, windowStart]);
 
-  async function handleSend(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text = body.trim();
-
-    if (!text || sending) {
+  // Sends drain one at a time so the order on screen is the order saved.
+  const drainOutbox = useCallback(async () => {
+    if (draining.current) {
       return;
     }
 
-    setSending(true);
-    setError(null);
+    draining.current = true;
+
+    try {
+      while (outbox.current.length > 0) {
+        const job = outbox.current[0];
+
+        try {
+          await job();
+        } finally {
+          // A retry re-queues itself; drop the finished head only once.
+          if (outbox.current[0] === job) {
+            outbox.current.shift();
+          }
+        }
+      }
+    } finally {
+      draining.current = false;
+    }
+  }, []);
+
+  const enqueue = useCallback(
+    (job: () => Promise<void>) => {
+      outbox.current.push(job);
+      void drainOutbox();
+    },
+    [drainOutbox]
+  );
+
+  const confirmMessage = useCallback((saved: MessageRecord) => {
+    setMessages((current) => mergeMessages(current, [saved]));
+    setPendingIds((current) =>
+      current[saved.id] ? omitKey(current, saved.id) : current
+    );
+    setFailedIds((current) =>
+      current[saved.id] ? omitKey(current, saved.id) : current
+    );
+    retries.current.delete(saved.id);
+  }, []);
+
+  const failMessage = useCallback((id: string, retry: () => Promise<void>) => {
+    retries.current.set(id, retry);
+    setPendingIds((current) => (current[id] ? omitKey(current, id) : current));
+    setFailedIds((current) => ({ ...current, [id]: true }));
+  }, []);
+
+  // One insert for one client-generated id, so the bubble that is already on
+  // screen is the row the server stores and Realtime echoes back.
+  const sendTextMessage = useCallback(
+    async (id: string, text: string, mentions: string[]) => {
+      setFailedIds((current) => (current[id] ? omitKey(current, id) : current));
+      setPendingIds((current) => ({ ...current, [id]: true }));
+
+      const retry = () => sendTextMessage(id, text, mentions);
+
+      try {
+        const { data, error: sendError } = await supabase
+          .from("messages")
+          .insert({
+            id,
+            conversation_id: conversationId,
+            user_id: currentUserId,
+            body: text,
+            mentions,
+          })
+          .select(MESSAGE_SELECT)
+          .single();
+
+        if (sendError || !data) {
+          failMessage(id, retry);
+          return;
+        }
+
+        confirmMessage(data as unknown as MessageRecord);
+        void markRead();
+      } catch {
+        failMessage(id, retry);
+      }
+    },
+    [confirmMessage, conversationId, currentUserId, failMessage, markRead, supabase]
+  );
+
+  function handleSend(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = body.trim();
+
+    if (!text) {
+      return;
+    }
 
     const sentMentions = mentionedIds.filter((id) =>
       text.includes(`@${members.find((m) => m.id === id)?.username ?? "\u0000"}`)
     );
-    const { data, error: sendError } = await supabase
-      .from("messages")
-      .insert({
-        conversation_id: conversationId,
-        user_id: currentUserId,
-        body: text,
-        mentions: sentMentions,
-      })
-      .select(MESSAGE_SELECT)
-      .single();
+    const id = crypto.randomUUID();
+    const optimistic: MessageRecord = {
+      id,
+      conversation_id: conversationId,
+      user_id: currentUserId,
+      body: text,
+      created_at: new Date().toISOString(),
+      image_path: null,
+      edited_at: null,
+      deleted_at: null,
+      mentions: sentMentions,
+    };
 
-    if (sendError || !data) {
-      setError("Couldn't send that message. Try again.");
-      setSending(false);
+    // The bubble, the cleared input, and the scroll all happen on this frame.
+    setBody("");
+    setMentionedIds([]);
+    setMentionQuery(null);
+    setError(null);
+    shouldScrollToBottom.current = true;
+    setMessages((current) => [...current, optimistic]);
+    setPendingIds((current) => ({ ...current, [id]: true }));
+
+    enqueue(() => sendTextMessage(id, text, sentMentions));
+  }
+
+  function retryMessage(id: string) {
+    const retry = retries.current.get(id);
+
+    if (!retry) {
       return;
     }
 
-    shouldScrollToBottom.current = true;
-    setMessages((current) => {
-      if (current.some((existing) => existing.id === data.id)) {
-        return current;
-      }
-
-      return [...current, data as MessageRecord];
-    });
-    setBody("");
-    setMentionedIds([]);
-    setSending(false);
-    void markRead();
+    setFailedIds((current) => omitKey(current, id));
+    setPendingIds((current) => ({ ...current, [id]: true }));
+    enqueue(retry);
   }
 
+  function addPendingPhoto(
+    message: MessageRecord,
+    previewUrl: string,
+    retry: () => Promise<void>
+  ) {
+    retries.current.set(message.id, retry);
+    shouldScrollToBottom.current = true;
+    setMessages((current) => [...current, message]);
+    setPendingIds((current) => ({ ...current, [message.id]: true }));
+
+    if (message.image_path) {
+      setImageUrls((current) => ({
+        ...current,
+        [message.image_path as string]: previewUrl,
+      }));
+    }
+  }
+
+  // ---------------------------------------------------------------- hold menu
+
+  const openPress = useCallback(
+    (messageId: string, rect: DOMRect) => {
+      const message = messagesRef.current.find(
+        (candidate) => candidate.id === messageId
+      );
+
+      if (!message) {
+        return;
+      }
+
+      if (navigator.vibrate && /Android/i.test(navigator.userAgent)) {
+        navigator.vibrate(8);
+      }
+
+      // An idea message copies its title, so the menu behaves like any other.
+      const ideaTitle = message.idea_id
+        ? ideaCardsRef.current[message.idea_id]?.title ?? null
+        : null;
+
+      setPress({
+        id: message.id,
+        body: message.deleted_at ? null : ideaTitle ?? message.body,
+        isIdea: Boolean(message.idea_id),
+        isOwn: message.user_id === currentUserId,
+        pinned: pinnedRef.current.includes(message.id),
+        deleted: Boolean(message.deleted_at),
+        rect: {
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+        },
+      });
+    },
+    [currentUserId]
+  );
+
+  const openPressRef = useRef(openPress);
+  openPressRef.current = openPress;
+
+  // One passive listener set for the whole list: rows never attach handlers, so
+  // scrolling stays untouched. 350ms of stillness opens the menu; moving more
+  // than 10px cancels it.
+  useEffect(() => {
+    const element = scrollRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    let origin: { x: number; y: number } | null = null;
+    let timer: number | null = null;
+
+    function clear() {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+
+      origin = null;
+    }
+
+    function start(target: Element, x: number, y: number) {
+      clear();
+      origin = { x, y };
+      timer = window.setTimeout(() => {
+        timer = null;
+        origin = null;
+        const bubble =
+          target.querySelector<HTMLElement>(".message-bubble") ?? target;
+        openPressRef.current(
+          (target as HTMLElement).dataset.messageId as string,
+          bubble.getBoundingClientRect()
+        );
+      }, HOLD_MS);
+    }
+
+    function moved(x: number, y: number) {
+      if (!origin) {
+        return false;
+      }
+
+      return (
+        Math.abs(x - origin.x) > HOLD_TOLERANCE ||
+        Math.abs(y - origin.y) > HOLD_TOLERANCE
+      );
+    }
+
+    function onTouchStart(event: TouchEvent) {
+      if (event.touches.length !== 1) {
+        clear();
+        return;
+      }
+
+      const touch = event.touches[0];
+      const target = (event.target as Element | null)?.closest(
+        "[data-message-id]"
+      );
+
+      if (!touch || !target) {
+        clear();
+        return;
+      }
+
+      start(target, touch.clientX, touch.clientY);
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      const touch = event.touches[0];
+
+      if (touch && moved(touch.clientX, touch.clientY)) {
+        clear();
+      }
+    }
+
+    function onPointerDown(event: PointerEvent) {
+      if (event.pointerType !== "mouse" || event.button !== 0) {
+        return;
+      }
+
+      const target = (event.target as Element | null)?.closest(
+        "[data-message-id]"
+      );
+
+      if (!target) {
+        return;
+      }
+
+      start(target, event.clientX, event.clientY);
+    }
+
+    function onPointerMove(event: PointerEvent) {
+      if (event.pointerType === "mouse" && moved(event.clientX, event.clientY)) {
+        clear();
+      }
+    }
+
+    function onContextMenu(event: MouseEvent) {
+      const target = (event.target as Element | null)?.closest(
+        "[data-message-id]"
+      );
+
+      if (!target) {
+        return;
+      }
+
+      event.preventDefault();
+      clear();
+      const bubble =
+        target.querySelector<HTMLElement>(".message-bubble") ?? target;
+      openPressRef.current(
+        (target as HTMLElement).dataset.messageId as string,
+        bubble.getBoundingClientRect()
+      );
+    }
+
+    element.addEventListener("touchstart", onTouchStart, { passive: true });
+    element.addEventListener("touchmove", onTouchMove, { passive: true });
+    element.addEventListener("touchend", clear, { passive: true });
+    element.addEventListener("touchcancel", clear, { passive: true });
+    element.addEventListener("pointerdown", onPointerDown);
+    element.addEventListener("pointermove", onPointerMove);
+    element.addEventListener("pointerup", clear);
+    element.addEventListener("pointercancel", clear);
+    element.addEventListener("contextmenu", onContextMenu);
+
+    return () => {
+      clear();
+      element.removeEventListener("touchstart", onTouchStart);
+      element.removeEventListener("touchmove", onTouchMove);
+      element.removeEventListener("touchend", clear);
+      element.removeEventListener("touchcancel", clear);
+      element.removeEventListener("pointerdown", onPointerDown);
+      element.removeEventListener("pointermove", onPointerMove);
+      element.removeEventListener("pointerup", clear);
+      element.removeEventListener("pointercancel", clear);
+      element.removeEventListener("contextmenu", onContextMenu);
+    };
+  }, []);
+
+  // Live receipts: the member rows are already subscribed above, so markers
+  // move in place instead of the whole thread refetching.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`receipts-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversation_members",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            user_id?: string;
+            seen_at?: string | null;
+          };
+
+          if (!row.user_id || row.user_id === currentUserId) {
+            return;
+          }
+
+          const userId = row.user_id;
+          const seenAt = row.seen_at ?? null;
+
+          setSeenBy((current) =>
+            current[userId] === seenAt
+              ? current
+              : { ...current, [userId]: seenAt }
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [conversationId, currentUserId, supabase]);
+
+  const ideaCardsRef = useRef(ideaCards);
+  ideaCardsRef.current = ideaCards;
+  const ideaMessageIds = useMemo(
+    () => ideaIdsFromMessages(messages),
+    [messages]
+  );
+  const ideaIdKey = ideaMessageIds.join(",");
+
+  // Cards the server did not seed (an older page, or a share that just landed)
+  // load once and stay in state.
+  useEffect(() => {
+    const missing = ideaIdKey
+      .split(",")
+      .filter((id) => id && !(id in ideaCardsRef.current));
+
+    if (missing.length === 0) {
+      return;
+    }
+
+    let active = true;
+
+    void loadIdeaCardsAction(missing).then((result) => {
+      if (!active || !result.cards || result.cards.length + (result.missingIds?.length ?? 0) === 0) {
+        return;
+      }
+
+      setIdeaCards((current) => {
+        const next = { ...current };
+
+        for (const card of result.cards ?? []) {
+          next[card.id] = card;
+        }
+
+        for (const id of result.missingIds ?? []) {
+          next[id] = null;
+        }
+
+        return next;
+      });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [ideaIdKey]);
+
+  const applyIdeaSync = useCallback((detail: IdeaSyncDetail) => {
+    setIdeaCards((current) =>
+      detail.kind === "remove"
+        ? applyIdeaRemoval(current, detail.ideaId)
+        : applyIdeaPatch(current, detail.idea)
+    );
+  }, []);
+  useIdeaSync(currentUserId, applyIdeaSync);
+
+  const refreshIdeaCards = useCallback(() => {
+    const ids = Object.keys(ideaCardsRef.current).filter(
+      (id) => ideaCardsRef.current[id] !== null
+    );
+
+    if (ids.length === 0) {
+      return;
+    }
+
+    void loadIdeaCardsAction(ids).then((result) => {
+      if (!result.cards && !result.missingIds?.length) {
+        return;
+      }
+
+      setIdeaCards((current) => {
+        const next = { ...current };
+
+        for (const card of result.cards ?? []) {
+          next[card.id] = card;
+        }
+
+        for (const id of result.missingIds ?? []) {
+          next[id] = null;
+        }
+
+        return next;
+      });
+    });
+  }, []);
+
+  // Live votes and conversions from other people. Realtime is the fast path;
+  // coming back to the tab re-checks the same cards, so nothing stays stale if
+  // the idea tables are not broadcast.
+  useEffect(() => {
+    let timer: number | null = null;
+
+    function schedule() {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
+
+      timer = window.setTimeout(() => {
+        timer = null;
+        refreshIdeaCards();
+      }, 400);
+    }
+
+    const channel = supabase
+      .channel(`idea-cards-${conversationId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "event_ideas" },
+        schedule
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "idea_votes" },
+        schedule
+      )
+      .subscribe();
+
+    function onVisible() {
+      if (document.visibilityState === "visible") {
+        schedule();
+      }
+    }
+
+    window.addEventListener("focus", schedule);
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
+
+      window.removeEventListener("focus", schedule);
+      document.removeEventListener("visibilitychange", onVisible);
+      void supabase.removeChannel(channel);
+    };
+  }, [conversationId, refreshIdeaCards, supabase]);
+
+  const memberInfoById = useMemo(
+    () => new Map(members.map((member) => [member.id, member])),
+    [members]
+  );
+  const liveReceiptMembers = useMemo<ReceiptMember[]>(
+    () =>
+      receiptMembers.map((member) => ({
+        ...member,
+        seenAt: seenBy[member.id] ?? null,
+      })),
+    [receiptMembers, seenBy]
+  );
+  const receiptsByMessageId = useMemo(() => {
+    if (!isGroup || !receiptsOn) {
+      return new Map<string, ReceiptMember[]>();
+    }
+
+    return receiptsByMessage(messages, liveReceiptMembers);
+  }, [isGroup, messages, receiptsOn, liveReceiptMembers]);
+  // Someone with receipts off never shows up, even if they left a seen_at
+  // behind before turning them off.
+  const otherReceiptMember = !isGroup
+    ? liveReceiptMembers.find((member) => member.id !== currentUserId) ?? null
+    : null;
+  const otherSeenAt =
+    otherReceiptMember && otherReceiptMember.receiptsOn
+      ? otherReceiptMember.seenAt
+      : null;
+  const clock = useNow(60_000);
+
+  const visible = windowStart > 0 ? messages.slice(windowStart) : messages;
+  const pressedMessage = press
+    ? messages.find((message) => message.id === press.id) ?? null
+    : null;
+
   return (
-    <div ref={roomRef}>
-      <div className="mb-3 flex justify-end">
-        <button
-          type="button"
-          onClick={() => setSearchOpen((open) => !open)}
-          aria-label="Search this chat"
-          aria-expanded={searchOpen}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
+    <div
+      data-chat-screen
+      className="fixed inset-0 flex h-[100dvh] flex-col overflow-hidden bg-thread text-text"
+      style={{ paddingBottom: keyboardInset }}
+    >
+      <header className="flex-none border-b border-line">
+        <div
+          className="flex items-center gap-1 px-2 pb-1.5"
+          style={{ paddingTop: "max(6px, env(safe-area-inset-top, 0px))" }}
         >
-          {searchOpen ? <X size={24} strokeWidth={1.75} aria-hidden="true" /> : <Search size={24} strokeWidth={1.75} aria-hidden="true" />}
-        </button>
-      </div>
+          <Link
+            href="/chat"
+            aria-label="Back to messages"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out active:bg-surface-2"
+          >
+            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
+          </Link>
 
-      {searchOpen && (
-        <div className="mb-4 space-y-3 border-b border-line pb-4">
-          <label htmlFor="chat-search" className="block text-sm text-muted">Search this chat</label>
-          <Input
-            id="chat-search"
-            type="search"
-            value={searchQuery}
-            onChange={(event) => void runSearch(event.target.value)}
-            placeholder="Find a message"
-            autoComplete="off"
-          />
-          {searchQuery.trim().length < 2 ? (
-            <p className="text-sm text-muted">Type at least two letters.</p>
-          ) : searchPending ? (
-            <p className="text-sm text-muted">Searching...</p>
-          ) : searchError ? (
-            <p role="alert" className="text-sm text-text">{searchError}</p>
-          ) : searchResults.length === 0 ? (
-            <p className="text-sm text-muted">No messages match that.</p>
-          ) : (
-            <ul>
-              {searchResults.map((result) => (
-                <li key={result.id} className="border-b border-line">
-                  <button
-                    type="button"
-                    onClick={() => void jumpFromSearch(result.id)}
-                    className="flex w-full flex-col items-start gap-1 py-3 text-left"
-                  >
-                    <span className="text-sm text-muted">
-                      {namesById.get(result.user_id) ?? "A friend"} · <LocalTime iso={result.created_at} format="card" />
-                    </span>
-                    <span className="truncate text-base text-text">{result.body}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+          <Avatar src={avatarUrl} initial={avatarInitial} size={32} />
 
-      <div ref={topRef} className="h-px" aria-hidden="true" />
-
-      {latestPin && (
-        <button
-          type="button"
-          onClick={() => setPinsOpen(true)}
-          className="mb-3 flex w-full min-h-11 items-center justify-between gap-3 border-b border-line py-2 text-left text-sm text-text cursor-pointer"
-        >
-          <span className="min-w-0 truncate">
-            {latestPin.body ?? "Pinned message"}
-          </span>
-          <span className="shrink-0 text-muted">{pinnedIds.length} pinned</span>
-        </button>
-      )}
-
-      {pinsOpen && (
-        <div className="mb-4 space-y-2 border-b border-line pb-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-text">Pinned</h2>
-            <button
-              type="button"
-              onClick={() => setPinsOpen(false)}
-              className="min-h-11 px-3 text-sm text-muted hover:text-text cursor-pointer"
-            >
-              Close
-            </button>
+          <div className="min-w-0 flex-1 px-1.5">
+            <h1 className="truncate text-[15px] font-semibold leading-tight text-text">
+              {title}
+            </h1>
+            {typingLabel ? (
+              <p className="mt-0.5 truncate text-xs text-muted">{typingLabel}</p>
+            ) : isGroup ? (
+              <p className="mt-0.5 truncate text-xs text-muted">
+                {members.length} {members.length === 1 ? "member" : "members"}
+              </p>
+            ) : (
+              <DmActiveStatus userId={otherUserId ?? null} />
+            )}
           </div>
-          <ul>
-            {pinnedMessages.map((message) => (
-              <li key={message.id}>
-                <button
-                  type="button"
-                  onClick={() => void jumpToMessage(message.id)}
-                  className="flex w-full min-h-11 items-center py-2 text-left text-base text-text cursor-pointer"
-                >
-                  <span className="min-w-0 truncate">
-                    {message.body ?? "Pinned message"}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+
+          <Link
+            href={infoHref}
+            aria-label="Chat details"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out active:bg-surface-2"
+          >
+            <Info size={24} strokeWidth={1.75} aria-hidden="true" />
+          </Link>
         </div>
-      )}
 
-      {loadingOlder && (
-        <p className="pb-2 text-center text-sm text-muted">
-          Loading older messages...
-        </p>
-      )}
+        {latestPin ? (
+          <button
+            type="button"
+            onClick={() => setPinsOpen(true)}
+            className="flex min-h-11 w-full items-center justify-between gap-3 border-t border-line px-3 py-2 text-left text-[13px]"
+          >
+            <span className="min-w-0 truncate text-text">
+              {latestPin.body ?? "Pinned message"}
+            </span>
+            <span className="shrink-0 text-muted">
+              {pinnedIds.length} pinned
+            </span>
+          </button>
+        ) : null}
+      </header>
 
-      {olderError && (
-        <p role="alert" className="pb-2 text-center text-sm text-text">
-          {olderError}
-        </p>
-      )}
+      {/*
+       * The only scroll container in the screen. Its height comes from flex,
+       * never from the message count, so the composer below cannot move.
+       */}
+      <div
+        ref={scrollRef}
+        data-chat-scroll
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
+      >
+        <div className="flex min-h-full flex-col px-3 pb-3">
+          <div className="mt-auto" aria-hidden="true" />
 
-      {messages.length === 0 ? (
-        <p className="text-sm text-muted">No messages yet.</p>
-      ) : (
-        <div>
-          {messages.map((message, index) => {
-            const previous = messages[index - 1];
-            const isOwn = message.user_id === currentUserId;
-            const startsRun = !previous || previous.user_id !== message.user_id;
-            const next = messages[index + 1];
-            const endsRun =
-              !next ||
-              next.user_id !== message.user_id ||
-              new Date(next.created_at).getTime() -
-                new Date(message.created_at).getTime() >
-                TIMESTAMP_GAP_MS;
-            const name =
-              namesById.get(message.user_id) ??
-              (isOwn ? "You" : "A friend");
-            const username = usernamesById.get(message.user_id);
-            const showTimestamp =
-              !previous ||
-              new Date(message.created_at).getTime() -
-                new Date(previous.created_at).getTime() >
-                TIMESTAMP_GAP_MS;
-            const whoUsers =
-              whoReacted?.messageId === message.id
-                ? reactions[message.id]?.[whoReacted.reaction] ?? []
-                : [];
+          <div ref={topRef} className="h-px" aria-hidden="true" />
 
-            return (
-              <Fragment key={message.id}>
-                {showTimestamp && (
-                  <p className="my-3 text-center text-xs text-muted">
-                    <LocalTime iso={message.created_at} format="card" />
-                  </p>
-                )}
+          {loadingOlder ? (
+            <p className="py-2 text-center text-[13px] text-muted">
+              Loading older messages…
+            </p>
+          ) : null}
 
-                <div
-                  className={`group flex flex-col ${
-                    isOwn ? "items-end" : "items-start"
-                  } ${index === 0 ? "" : startsRun ? "mt-3" : "mt-1"}`}
-                >
-                  {reactionBarId === message.id && !message.deleted_at && (
-                    <div className="mb-1">
-                      <ReactionBar
-                        onPick={(reaction) => toggleReaction(message, reaction)}
-                      />
-                    </div>
-                  )}
+          {olderError ? (
+            <p role="alert" className="py-2 text-center text-[13px] text-text">
+              {olderError}
+            </p>
+          ) : null}
 
-                  {isGroup && startsRun && (
-                    username ? (
-                      <Link
-                        href={`/u/${username}`}
-                        className="mb-1 text-sm font-semibold text-muted transition-colors duration-200 ease-out hover:text-text"
-                      >
-                        {name}
-                      </Link>
-                    ) : (
-                      <p className="mb-1 text-sm font-semibold text-muted">{name}</p>
-                    )
-                  )}
+          {messages.length === 0 ? (
+            <p className="py-6 text-center text-[13px] text-muted">
+              No messages yet. Say hi.
+            </p>
+          ) : (
+            visible.map((message, offset) => {
+              const index = windowStart + offset;
+              const previous = messages[index - 1];
+              const next = messages[index + 1];
+              const isOwn = message.user_id === currentUserId;
+              const startsRun =
+                !previous || previous.user_id !== message.user_id;
+              const endsRun =
+                !next ||
+                next.user_id !== message.user_id ||
+                new Date(next.created_at).getTime() -
+                  new Date(message.created_at).getTime() >
+                  TIMESTAMP_GAP_MS;
+              const name =
+                namesById.get(message.user_id) ??
+                (isOwn ? "You" : "A friend");
+              const username = usernamesById.get(message.user_id);
+              const showTimestamp =
+                !previous ||
+                new Date(message.created_at).getTime() -
+                  new Date(previous.created_at).getTime() >
+                  TIMESTAMP_GAP_MS;
+              const whoUsers =
+                whoReacted?.messageId === message.id
+                  ? reactions[message.id]?.[whoReacted.reaction] ?? []
+                  : [];
+              const hasReactions =
+                !message.deleted_at &&
+                REACTION_KEYS.some(
+                  (reaction) =>
+                    (reactions[message.id]?.[reaction]?.length ?? 0) > 0
+                );
+              const imageUrl = message.image_path
+                ? imageUrls[message.image_path] ?? null
+                : null;
+              const photoFailed = message.image_path
+                ? failedPhotoPaths.includes(message.image_path)
+                : false;
+              const mineBubble = isOwn
+                ? "bubble-mine"
+                : "bg-surface-2 text-text";
+              const corner = endsRun
+                ? isOwn
+                  ? "rounded-br-[6px]"
+                  : "rounded-bl-[6px]"
+                : "";
+              // Group receipts sit under the message each person's seen_at
+              // falls on; my own avatar never appears.
+              const seenList =
+                isGroup && receiptsOn && !message.deleted_at
+                  ? receiptsByMessageId.get(message.id) ?? []
+                  : [];
+              const lastOwnInDm =
+                !isGroup &&
+                isOwn &&
+                !message.deleted_at &&
+                // "Sent" would be a lie while it is on its way or has failed.
+                !pendingIds[message.id] &&
+                !failedIds[message.id] &&
+                index === messages.length - 1;
+              const dmSeen =
+                lastOwnInDm &&
+                receiptsOn &&
+                hasSeen(otherSeenAt, message.created_at);
 
-                  <div className="flex items-end gap-1">
-                    {!message.deleted_at && (
-                      <MessageMenu
-                        open={menuId === message.id}
-                        onToggle={() =>
-                          setMenuId(menuId === message.id ? null : message.id)
-                        }
-                        isPinned={pinnedIds.includes(message.id)}
-                        onPin={() => void togglePin(message.id)}
-                        isOwn={isOwn}
-                        onEdit={() => startEdit(message)}
-                        onDelete={() => void removeMessage(message)}
-                        hasBody={Boolean(message.body)}
-                        copied={copiedId === message.id}
-                        onCopy={() => void copyMessage(message)}
-                      />
-                    )}
-                    {!message.deleted_at && (
-                      <button
-                        type="button"
-                        data-reaction-trigger
-                        onClick={() =>
-                          setReactionBarId(
-                            reactionBarId === message.id ? null : message.id
-                          )
-                        }
-                        aria-label="Add a reaction"
-                        aria-expanded={reactionBarId === message.id}
-                        className="hidden min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-colors duration-200 ease-out hover:text-text md:inline-flex md:invisible md:group-hover:visible md:focus-visible:visible"
-                      >
-                        <Smile size={24} strokeWidth={1.75} aria-hidden="true" />
-                      </button>
-                    )}
-                    <div
-                      id={`msg-${message.id}`}
-                      onTouchStart={(event) => startMessageHold(message.id, event)}
-                      onTouchMove={moveMessageHold}
-                      onTouchEnd={clearMessageHold}
-                      onTouchCancel={clearMessageHold}
-                      onClickCapture={(event) => {
-                        // A long press opens the reaction bar instead of the photo.
-                        if (holdFired.current) {
-                          holdFired.current = false;
-                          event.preventDefault();
-                          event.stopPropagation();
-                        }
-                      }}
-                      className={`max-w-[78%] whitespace-pre-wrap break-words rounded-[22px] px-3.5 py-2 text-base leading-[1.4] transition-colors duration-200 ease-out ${
-                        isOwn
-                          ? "bubble-gradient text-on-primary"
-                          : "bg-surface-2 text-text"
-                      } ${
-                        endsRun
-                          ? isOwn
-                            ? "rounded-br-[6px]"
-                            : "rounded-bl-[6px]"
-                          : ""
-                      } ${highlightId === message.id ? "ring-2 ring-primary" : ""}`}
-                    >
-                      {message.deleted_at ? (
-                        <span className="text-sm italic text-muted">Message deleted</span>
-                      ) : editingId === message.id ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={editDraft}
-                            onChange={(event) => setEditDraft(event.target.value)}
-                            maxLength={2000}
-                            rows={2}
-                            aria-label="Edit message"
-                            className="min-w-[200px] px-2 py-2"
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => void saveEdit(message.id)}
-                              disabled={editDraft.trim().length === 0}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => setEditingId(null)}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
+              return (
+                <Fragment key={message.id}>
+                  {showTimestamp ? (
+                    <p className="my-3 text-center text-[12px] text-muted">
+                      <LocalTime iso={message.created_at} format="card" />
+                    </p>
+                  ) : null}
+
+                  <div
+                    className={`flex flex-col ${
+                      isOwn ? "items-end" : "items-start"
+                    } ${startsRun ? "mt-3" : "mt-0.5"}`}
+                  >
+                    {isGroup && startsRun && !isOwn ? (
+                      username ? (
+                        <Link
+                          href={`/u/${username}`}
+                          className="mb-1 px-1 text-[12px] font-semibold text-muted"
+                        >
+                          {name}
+                        </Link>
                       ) : (
-                        <>
-                          {message.image_path && (
-                            imageUrls[message.image_path] ? (
-                              <button type="button" onClick={() => setFullscreenUrl(imageUrls[message.image_path as string])} aria-label="Open photo" className="block cursor-pointer">
-                                <img draggable={false} src={imageUrls[message.image_path]} alt={message.body ?? "Photo"} loading="lazy" className="max-h-[320px] w-auto max-w-full rounded-lg object-cover" />
-                              </button>
-                            ) : failedPhotoPaths.includes(message.image_path) ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  console.log("[chat:recv] retry photo", message.image_path);
-                                  setFailedPhotoPaths((current) =>
-                                    current.filter((p) => p !== message.image_path)
-                                  );
-                                }}
-                                className="flex aspect-[3/4] w-40 items-center justify-center rounded-lg bg-surface-2 p-3 text-center text-sm text-muted"
-                              >
-                                Couldn't load photo. Tap to retry.
-                              </button>
-                            ) : (
-                              <span
-                                aria-label="Loading photo"
-                                className="block aspect-[3/4] w-40 animate-pulse rounded-lg bg-surface-2"
-                              />
-                            )
-                          )}
-                          {message.body && (
-                            <span className={message.image_path ? "mt-2 block" : ""}>
-                              {renderBody(message.body, message.mentions, members)}
-                            </span>
-                          )}
-                          {message.edited_at && (
-                            <span className="ml-2 text-xs text-muted">edited</span>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
+                        <p className="mb-1 px-1 text-[12px] font-semibold text-muted">
+                          {name}
+                        </p>
+                      )
+                    ) : null}
 
-                  {!message.deleted_at &&
-                    REACTION_KEYS.some(
-                      (reaction) =>
-                        (reactions[message.id]?.[reaction]?.length ?? 0) > 0
-                    ) && (
+                    {editingId === message.id ? (
+                      <div className="w-full max-w-[78%] rounded-[18px] border border-line bg-surface p-2">
+                        <Textarea
+                          value={editDraft}
+                          onChange={(event) => setEditDraft(event.target.value)}
+                          maxLength={2000}
+                          rows={2}
+                          aria-label="Edit message"
+                          className="px-2 py-2"
+                        />
+                        <div className="mt-2 flex justify-end gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => void saveEdit(message.id)}
+                            disabled={editDraft.trim().length === 0}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    ) : message.idea_id && !message.deleted_at ? (
+                      <div
+                        data-message-id={message.id}
+                        className="flex w-[78%] max-w-[78%] flex-col"
+                      >
+                        {message.body ? (
+                          <p className="mb-1 whitespace-pre-wrap break-words px-1 text-[13px] text-muted">
+                            {message.body}
+                          </p>
+                        ) : null}
+
+                        <IdeaCardInChat
+                          ideaId={message.idea_id}
+                          card={ideaCards[message.idea_id]}
+                          userId={currentUserId}
+                          onRemoved={() =>
+                            setIdeaCards((current) =>
+                              applyIdeaRemoval(current, message.idea_id as string)
+                            )
+                          }
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        data-message-id={message.id}
+                        className="flex max-w-[78%] flex-col"
+                      >
+                        {message.deleted_at ? (
+                          <div
+                            id={`msg-${message.id}`}
+                            className="message-bubble rounded-[18px] border border-line bg-surface-2 px-3.5 py-2 text-[15px] italic text-muted"
+                          >
+                            Message deleted
+                          </div>
+                        ) : (
+                          <>
+                            {message.image_path ? (
+                              <div
+                                id={`msg-${message.id}`}
+                                className={`message-bubble overflow-hidden rounded-[18px] ${
+                                  highlightId === message.id
+                                    ? "ring-2 ring-primary"
+                                    : ""
+                                }`}
+                              >
+                                {imageUrl ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setFullscreenUrl(imageUrl)}
+                                    aria-label="Open photo"
+                                    className="block"
+                                  >
+                                    <img
+                                      draggable={false}
+                                      src={imageUrl}
+                                      alt={message.body ?? "Photo"}
+                                      loading="lazy"
+                                      decoding="async"
+                                      className="block h-auto max-h-[380px] w-auto max-w-full rounded-[18px]"
+                                    />
+                                  </button>
+                                ) : photoFailed ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setFailedPhotoPaths((current) =>
+                                        current.filter(
+                                          (path) => path !== message.image_path
+                                        )
+                                      )
+                                    }
+                                    className="flex aspect-[3/4] w-44 items-center justify-center rounded-[18px] bg-surface-2 p-3 text-center text-[13px] text-muted"
+                                  >
+                                    Couldn&apos;t load photo. Tap to retry.
+                                  </button>
+                                ) : (
+                                  <span
+                                    aria-label="Loading photo"
+                                    className="skeleton block aspect-[3/4] w-44 rounded-[18px]"
+                                  />
+                                )}
+                              </div>
+                            ) : null}
+
+                            {message.body ? (
+                              <div
+                                id={message.image_path ? undefined : `msg-${message.id}`}
+                                className={`message-bubble whitespace-pre-wrap break-words rounded-[22px] px-3.5 py-2 text-base leading-[1.4] ${
+                                  message.image_path ? `mt-1 ${mineBubble}` : mineBubble
+                                } ${corner} ${
+                                  highlightId === message.id
+                                    ? "ring-2 ring-primary"
+                                    : ""
+                                }`}
+                              >
+                                {renderBody(message.body, message.mentions, members)}
+                                {message.edited_at ? (
+                                  <span className="ml-1.5 text-[11px] opacity-70">
+                                    edited
+                                  </span>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </>
+                        )}
+
+                        {pendingIds[message.id] && !message.deleted_at ? (
+                          <span className="mt-0.5 px-1 text-[11px] text-muted">
+                            Sending…
+                          </span>
+                        ) : null}
+
+                        {failedIds[message.id] && !message.deleted_at ? (
+                          <button
+                            type="button"
+                            onClick={() => retryMessage(message.id)}
+                            className="mt-0.5 px-1 text-[11px] text-muted underline"
+                          >
+                            Not sent · Tap to retry
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {hasReactions ? (
                       <div
                         className={`mt-1 flex flex-wrap gap-1 ${
                           isOwn ? "justify-end" : "justify-start"
@@ -1439,108 +2086,150 @@ export function ChatRoom({
                           );
                         })}
                       </div>
-                    )}
+                    ) : null}
 
-                  {whoUsers.length > 0 && (
-                    <p
-                      className={`mt-1 text-sm text-muted ${
-                        isOwn ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {whoUsers
-                        .map((userId) =>
-                          userId === currentUserId
-                            ? "You"
-                            : namesById.get(userId) ?? "A friend"
-                        )
-                        .join(", ")}
-                    </p>
-                  )}
-                </div>
-              </Fragment>
-            );
-          })}
+                    {whoUsers.length > 0 ? (
+                      <p
+                        className={`mt-1 px-1 text-[12px] text-muted ${
+                          isOwn ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {whoUsers
+                          .map((userId) =>
+                            userId === currentUserId
+                              ? "You"
+                              : namesById.get(userId) ?? "A friend"
+                          )
+                          .join(", ")}
+                      </p>
+                    ) : null}
+
+                    {seenList.length > 0 ? (
+                      <div className="mt-1 flex w-full items-center justify-end gap-1">
+                        <span className="flex items-center">
+                          {seenList
+                            .slice(0, RECEIPT_AVATAR_LIMIT)
+                            .map((member, position) => {
+                              const info = memberInfoById.get(member.id);
+
+                              return (
+                                <span
+                                  key={member.id}
+                                  title={info?.name ?? undefined}
+                                  className={`block h-3.5 w-3.5 overflow-hidden rounded-full bg-surface-2 ring-1 ring-background ${
+                                    position > 0 ? "-ml-1" : ""
+                                  }`}
+                                >
+                                  {info?.avatarUrl ? (
+                                    <img
+                                      src={info.avatarUrl}
+                                      alt=""
+                                      loading="lazy"
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="flex h-full w-full items-center justify-center text-[7px] font-semibold text-text">
+                                      {info?.initial ?? "?"}
+                                    </span>
+                                  )}
+                                </span>
+                              );
+                            })}
+                        </span>
+                        {seenList.length > RECEIPT_AVATAR_LIMIT ? (
+                          <span className="text-[11px] text-muted">
+                            +{seenList.length - RECEIPT_AVATAR_LIMIT}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {lastOwnInDm ? (
+                      <p className="mt-1 px-1 text-[12px] text-muted">
+                        {dmSeen
+                          ? clock === null
+                            ? "Seen"
+                            : seenLabel(otherSeenAt, clock)
+                          : "Sent"}
+                      </p>
+                    ) : null}
+                  </div>
+                </Fragment>
+              );
+            })
+          )}
         </div>
-      )}
+      </div>
 
-      {fullscreenUrl && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Photo"
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-background p-4"
-          onClick={() => setFullscreenUrl(null)}
-        >
-          <button type="button" onClick={() => setFullscreenUrl(null)} aria-label="Close photo" className="absolute right-4 top-4 min-h-11 min-w-11 rounded-full text-text">
-            <X size={24} strokeWidth={1.75} aria-hidden="true" />
-          </button>
-          <img draggable={false} src={fullscreenUrl} alt="" className="max-h-full max-w-full object-contain" />
-        </div>
-      )}
-
-      <div ref={bottomRef} className="h-36" aria-hidden="true" />
-
-      <div
-        className="fixed inset-x-0 z-30 border-t border-line bg-background"
-        style={{
-          bottom:
-            keyboardInset > 0
-              ? keyboardInset
-              : "env(safe-area-inset-bottom, 0px)",
-        }}
-      >
-        {mentionQuery !== null && (
-          <ul aria-label="Mention someone" className="mx-auto max-w-[560px] border-b border-line bg-surface px-2">
+      <div className="flex-none border-t border-line bg-thread">
+        {mentionQuery !== null ? (
+          <ul
+            aria-label="Mention someone"
+            className="border-b border-line bg-surface px-2"
+          >
             {members
-              .filter((m) => m.id !== currentUserId)
-              .filter((m) => (m.username ?? "").toLowerCase().includes(mentionQuery) || m.name.toLowerCase().includes(mentionQuery))
+              .filter((member) => member.id !== currentUserId)
+              .filter(
+                (member) =>
+                  (member.username ?? "")
+                    .toLowerCase()
+                    .includes(mentionQuery) ||
+                  member.name.toLowerCase().includes(mentionQuery)
+              )
               .slice(0, 6)
-              .map((m) => (
-                <li key={m.id}>
+              .map((member) => (
+                <li key={member.id}>
                   <button
                     type="button"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
-                      if (!m.username) return;
-                      setBody((current) => current.replace(/@\w*$/, `@${m.username} `));
-                      setMentionedIds((current) => (current.includes(m.id) ? current : [...current, m.id]));
+                      if (!member.username) return;
+                      setBody((current) =>
+                        current.replace(/@\w*$/, `@${member.username} `)
+                      );
+                      setMentionedIds((current) =>
+                        current.includes(member.id)
+                          ? current
+                          : [...current, member.id]
+                      );
                       setMentionQuery(null);
                     }}
-                    className="flex min-h-11 w-full items-center gap-2 text-left text-sm text-text cursor-pointer"
+                    className="flex min-h-11 w-full items-center gap-2 text-left text-[15px] text-text"
                   >
-                    <span>{m.name}</span>
-                    {m.username && <span className="text-muted">@{m.username}</span>}
+                    <span>{namesById.get(member.id) ?? member.name}</span>
+                    {member.username ? (
+                      <span className="text-muted">@{member.username}</span>
+                    ) : null}
                   </button>
                 </li>
               ))}
           </ul>
-        )}
-        {typingLabel && (
-          <p className="mx-auto max-w-[560px] px-4 pt-2 text-sm text-muted">
-            {typingLabel}
-          </p>
-        )}
+        ) : null}
+
         <form
           onSubmit={handleSend}
-          className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-3"
+          className="flex items-center gap-2 px-3 pt-2"
+          style={{
+            paddingBottom:
+              keyboardInset > 0
+                ? "8px"
+                : "max(8px, env(safe-area-inset-bottom, 0px))",
+          }}
         >
-          <div
-            className={
-              body.trim().length > 0 ? "hidden" : "contents"
-            }
-          >
+          <div className={body.trim().length > 0 ? "hidden" : "contents"}>
             <PhotoComposer
               conversationId={conversationId}
               userId={currentUserId}
-              onSent={(message) => {
-                shouldScrollToBottom.current = true;
-                setMessages((current) =>
-                  current.some((m) => m.id === message.id) ? current : [...current, message]
-                );
+              onOptimistic={addPendingPhoto}
+              onSent={confirmMessage}
+              onFailed={(id) => {
+                setPendingIds((current) => omitKey(current, id));
+                setFailedIds((current) => ({ ...current, [id]: true }));
               }}
               onError={setError}
             />
           </div>
+
           <Input
             type="text"
             value={body}
@@ -1559,28 +2248,95 @@ export function ChatRoom({
             className="min-w-0 flex-1 px-4 py-2.5"
           />
 
-          {body.trim().length > 0 && (
+          {body.trim().length > 0 ? (
             <Button
               type="submit"
               variant="text"
               size="sm"
-              disabled={sending}
               className="shrink-0 text-primary"
             >
-              {sending ? "Sending..." : "Send"}
+              Send
             </Button>
-          )}
+          ) : null}
         </form>
 
-        {error && (
-          <p
-            role="alert"
-            className="mx-auto max-w-[560px] px-4 pb-2 text-sm text-text"
-          >
+        {error ? (
+          <p role="alert" className="px-4 pb-2 text-[13px] text-text">
             {error}
           </p>
-        )}
+        ) : null}
       </div>
+
+      {pinsOpen ? (
+        <Sheet label="Pinned messages" onClose={() => setPinsOpen(false)}>
+          <div className="space-y-2 pb-2">
+            <h2 className="text-[20px] font-bold text-text">Pinned</h2>
+            {pinnedMessages.length === 0 ? (
+              <p className="text-[13px] text-muted">Nothing pinned here yet.</p>
+            ) : (
+              <ul>
+                {pinnedMessages.map((message) => (
+                  <li key={message.id} className="border-b border-line last:border-0">
+                    <button
+                      type="button"
+                      onClick={() => void jumpToMessage(message.id)}
+                      className="flex min-h-11 w-full items-center py-2 text-left text-[15px] text-text"
+                    >
+                      <span className="min-w-0 truncate">
+                        {message.body ?? "Pinned message"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Sheet>
+      ) : null}
+
+      {fullscreenUrl ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-background p-4"
+          onClick={() => setFullscreenUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setFullscreenUrl(null)}
+            aria-label="Close photo"
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full text-text"
+          >
+            <X size={24} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+          <img
+            draggable={false}
+            src={fullscreenUrl}
+            alt=""
+            className="max-h-full max-w-full object-contain"
+          />
+        </div>
+      ) : null}
+
+      {press && pressedMessage ? (
+        <MessageActionMenu
+          press={press}
+          onClose={() => setPress(null)}
+          onReact={(reaction) => {
+            toggleReaction(pressedMessage, reaction);
+            setPress(null);
+          }}
+          onCopy={() => {
+            void copyMessage(pressedMessage);
+            setPress(null);
+          }}
+          onPin={() => void togglePin(pressedMessage.id)}
+          onEdit={() => startEdit(pressedMessage)}
+          onUnsend={() => void removeMessage(pressedMessage)}
+          onRemoveForMe={() => void hideForMe(pressedMessage)}
+        />
+      ) : null}
     </div>
   );
 }

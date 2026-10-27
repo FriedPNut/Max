@@ -58,7 +58,7 @@ export function AddToCalendar({
               role="menuitem"
               href={googleUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               onClick={() => setOpen(false)}
               className="flex min-h-11 w-full items-center px-3 text-left text-sm text-text transition-colors duration-200 ease-out hover:bg-surface-2"
             >

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { ProfileFriendsList } from "@/components/profile/profile-friends-list";
 import { createClient } from "@/lib/supabase/server";
@@ -48,29 +47,16 @@ export default async function PublicFriendsPage({
   const profile = profileData as ProfileRecord;
 
   if (profile.id === user.id) {
-    redirect("/me/friends");
+    redirect("/people?filter=added");
   }
 
   const result = await loadProfileFriends(supabase, profile.id);
   const name = profileDisplayName(profile);
 
   return (
-    <AppShell>
+    <AppShell title="Friends">
       <section key={profile.id} className="space-y-6">
-        <div>
-          <Link
-            href={`/u/${encodeURIComponent(username)}`}
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-text transition-opacity duration-200 ease-out hover:opacity-80"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            {name}
-          </Link>
-
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            Friends
-          </h1>
-          <p className="mt-1 text-sm text-muted">@{username}</p>
-        </div>
+        <p className="text-sm text-muted">@{username}</p>
 
         {result.error ? (
           <p role="alert" className="text-sm text-danger">

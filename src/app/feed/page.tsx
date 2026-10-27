@@ -3,43 +3,28 @@ import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { FeedView } from "@/components/posts/feed-view";
 import { OnThisDayCard } from "@/components/posts/on-this-day-card";
 import { BestOfBanner } from "@/components/best-of/best-of-banner";
-import { NewPostButton } from "@/components/posts/new-post-button";
 import { CreatePostSheetButton } from "@/components/posts/create-sheet";
 import { createClient } from "@/lib/supabase/server";
 import { loadPostPage } from "@/lib/posts-data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { serverNow } from "@/lib/server-now";
+import { logDataLoad, startDataTimer } from "@/lib/perf-server";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export default async function PostPage() {
+  const dataStartedAt = startDataTimer();
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
-  const eventOptionsResult = await supabase
-    .from("events")
-    .select("id,title,starts_at")
-    .gte(
-      "starts_at",
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    )
-    .order("starts_at", { ascending: true })
-    .limit(50);
-  const eventOptions = (eventOptionsResult.data ?? []).map((event) => ({
-    id: String(event.id),
-    title: String(event.title),
-    startsAt: String(event.starts_at),
-  }));
+  const now = await serverNow();
+  logDataLoad("/feed", dataStartedAt);
 
   return (
-    <AppShell userId={user.id} left={<CreatePostSheetButton />}>
+    <AppShell
+      userId={user.id}
+      actions={<CreatePostSheetButton />}
+    >
       <section className="space-y-8">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            Post
-          </h1>
-
-          <NewPostButton userId={user.id} events={eventOptions} />
-        </div>
-
         <BestOfBanner />
 
         <OnThisDayCard userId={user.id} />

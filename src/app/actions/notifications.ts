@@ -15,12 +15,13 @@ const preferenceKeys = new Set<NotificationPreferenceKey>([
   "push_chat",
   "push_hangs",
   "push_social",
+  "push_posts",
   "push_birthdays",
   "push_recaps",
 ]);
 
 const PREFERENCE_COLUMNS =
-  "push_enabled,push_reminders,push_new_events,push_friends,push_chat,push_hangs,push_social,push_birthdays,push_recaps,timezone";
+  "push_enabled,push_reminders,push_new_events,push_friends,push_chat,push_hangs,push_social,push_posts,push_birthdays,push_recaps,timezone";
 
 type StoredPreferences = Partial<
   Record<NotificationPreferenceKey, boolean | null>
@@ -35,6 +36,7 @@ function preferenceDefaults(current: StoredPreferences | null) {
     push_chat: current?.push_chat ?? true,
     push_hangs: current?.push_hangs ?? true,
     push_social: current?.push_social ?? true,
+    push_posts: current?.push_posts ?? true,
     push_birthdays: current?.push_birthdays ?? true,
     push_recaps: current?.push_recaps ?? true,
   };

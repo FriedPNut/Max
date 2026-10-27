@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { Toast } from "@/components/ui";
 import { CreateTripSheet } from "@/components/trips/create-trip-sheet";
 
 export function NewTripButton({
@@ -12,6 +13,7 @@ export function NewTripButton({
   userId?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   return (
     <>
@@ -27,7 +29,16 @@ export function NewTripButton({
       >
         <Plus size={24} strokeWidth={1.75} aria-hidden="true" />
       </button>
-      {open && <CreateTripSheet onClose={() => setOpen(false)} friends={friends} userId={userId} />}
+      {open && (
+        <CreateTripSheet
+          onClose={() => setOpen(false)}
+          friends={friends}
+          userId={userId}
+          onError={setToast}
+        />
+      )}
+
+      <Toast message={toast} onDone={() => setToast(null)} />
     </>
   );
 }

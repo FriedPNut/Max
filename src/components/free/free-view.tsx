@@ -19,6 +19,7 @@ import {
   Input,
   SegmentedControl,
 } from "@/components/ui";
+import { useNow } from "@/lib/use-now";
 
 const labelClass = "block text-sm text-muted mb-2";
 
@@ -101,66 +102,80 @@ export function FreeView({
   const [end, setEnd] = useState("");
   const [note, setNote] = useState("");
 
+  // The window is on screen before the insert; a failure takes it back.
   async function addWindow(startsAt: Date, endsAt: Date, note: string | null) {
     setError(null);
+
+    const id = crypto.randomUUID();
+    const optimistic: AvailabilityWindow = {
+      id,
+      user_id: userId,
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      note,
+      name: "You",
+      initial: "Y",
+      isMine: true,
+    };
+
+    setWindows((current) => [...current, optimistic]);
+
     const result = await addAvailabilityAction({
+      id,
       startsAt: startsAt.toISOString(),
       endsAt: endsAt.toISOString(),
       note,
     });
 
     if (result.error) {
+      setWindows((current) => current.filter((w) => w.id !== id));
       setError(result.error);
-      return;
     }
-
-    const { data } = await supabase
-      .from("availability")
-      .select("id,user_id,starts_at,ends_at,note")
-      .eq("user_id", userId)
-      .gt("ends_at", new Date().toISOString())
-      .order("starts_at", { ascending: true });
-
-    setWindows((current) => {
-      const others = current.filter((w) => !w.isMine);
-      const mine = ((data ?? []) as AvailabilityWindow[]).map((w) => ({
-        ...w,
-        name: w.name ?? "You",
-        initial: w.initial ?? "Y",
-        isMine: true,
-      }));
-      return [...others, ...mine];
-    });
   }
 
   async function removeWindow(id: string) {
     setError(null);
+    const removed = windows.find((w) => w.id === id);
+
+    setWindows((current) => current.filter((w) => w.id !== id));
+
     const result = await removeAvailabilityAction(id);
 
     if (result.error) {
-      setError(result.error);
-      return;
-    }
+      if (removed) {
+        setWindows((current) =>
+          current.some((w) => w.id === id) ? current : [...current, removed]
+        );
+      }
 
-    setWindows((current) => current.filter((w) => w.id !== id));
+      setError(result.error);
+    }
   }
 
   const myWindows = windows.filter((w) => w.isMine);
-  const quick = quickWindows(new Date());
   const [view, setView] = useState<"today" | "week">("today");
-  const now = new Date();
-  const todayStart = startOfDay(now);
-  const todayEnd = addDays(todayStart, 1);
-  const todayList = windows
-    .filter((w) => overlapsDay(w, todayStart, todayEnd))
-    .filter((w) => new Date(w.ends_at).getTime() > now.getTime());
+  // A browser clock, null until mounted: the server render reads no time, and
+  // "today" is the viewer's own day rather than the build machine's.
+  const clock = useNow();
+  const now = clock === null ? null : new Date(clock);
+  const quick = now ? quickWindows(now) : null;
+  const todayStart = now ? startOfDay(now) : null;
+  const todayEnd = todayStart ? addDays(todayStart, 1) : null;
+  const todayList =
+    now && todayStart && todayEnd
+      ? windows
+          .filter((w) => overlapsDay(w, todayStart, todayEnd))
+          .filter((w) => new Date(w.ends_at).getTime() > now.getTime())
+      : [];
 
-  const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const dayStart = addDays(todayStart, index);
-    const dayEnd = addDays(dayStart, 1);
-    const people = windows.filter((w) => overlapsDay(w, dayStart, dayEnd));
-    return { dayStart, people };
-  });
+  const weekDays = todayStart
+    ? Array.from({ length: 7 }, (_, index) => {
+        const dayStart = addDays(todayStart, index);
+        const dayEnd = addDays(dayStart, 1);
+        const people = windows.filter((w) => overlapsDay(w, dayStart, dayEnd));
+        return { dayStart, people };
+      })
+    : [];
   const maxCount = Math.max(0, ...weekDays.map((d) => d.people.length));
 
   function planForDay(dayStart: Date) {
@@ -176,19 +191,28 @@ export function FreeView({
         <div className="flex flex-wrap gap-2">
           <Button
             variant="secondary"
-            onClick={() => void addWindow(quick.tonight.startsAt, quick.tonight.endsAt, null)}
+            disabled={!quick}
+            onClick={() =>
+              quick && void addWindow(quick.tonight.startsAt, quick.tonight.endsAt, null)
+            }
           >
             Tonight
           </Button>
           <Button
             variant="secondary"
-            onClick={() => void addWindow(quick.tomorrow.startsAt, quick.tomorrow.endsAt, null)}
+            disabled={!quick}
+            onClick={() =>
+              quick && void addWindow(quick.tomorrow.startsAt, quick.tomorrow.endsAt, null)
+            }
           >
             Tomorrow
           </Button>
           <Button
             variant="secondary"
-            onClick={() => void addWindow(quick.weekend.startsAt, quick.weekend.endsAt, null)}
+            disabled={!quick}
+            onClick={() =>
+              quick && void addWindow(quick.weekend.startsAt, quick.weekend.endsAt, null)
+            }
           >
             This weekend
           </Button>

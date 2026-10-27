@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { HangView, type HangCard } from "@/components/hang/hang-view";
 import { createClient } from "@/lib/supabase/server";
 import type { HangRecord, HangResponseRecord } from "@/lib/hangs";
+import { serverNowIso } from "@/lib/server-now";
 
 type ProfileRow = {
   id: string;
@@ -14,7 +14,7 @@ type ProfileRow = {
 export default async function HangPage() {
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
-  const nowIso = new Date().toISOString();
+  const nowIso = await serverNowIso();
 
   const { data: hangData, error: hangError } = await supabase
     .from("hangs")
@@ -85,20 +85,8 @@ export default async function HangPage() {
   }));
 
   return (
-    <AppShell userId={user.id}>
+    <AppShell userId={user.id} title="Hang now">
       <section className="space-y-8">
-        <div>
-          <Link
-            href="/events"
-            className="mb-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-muted transition-colors duration-200 ease-out hover:text-text"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-            Events
-          </Link>
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            Hang now
-          </h1>
-        </div>
 
         {hangError ? (
           <p className="text-sm text-muted">

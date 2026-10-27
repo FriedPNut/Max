@@ -7,7 +7,7 @@ import { Button, Input, Sheet, Textarea } from "@/components/ui";
 import {
   MAX_UPLOAD_BYTES,
   resizeImageToWidth,
-  uploadImageWithProgress,
+  uploadPhotoWithThumbnail,
 } from "@/lib/client-image";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -27,10 +27,13 @@ export function CreateTripSheet({
   onClose,
   friends = [],
   userId = "",
+  onError,
 }: {
   onClose: () => void;
   friends?: FriendOption[];
   userId?: string;
+  /** Reported outside the sheet, which is already gone by then. */
+  onError?: (message: string) => void;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -123,38 +126,40 @@ export function CreateTripSheet({
     }
 
     setError(null);
+
+    // The sheet closes on this frame. The cover upload and the insert run
+    // behind it, then the trip's page opens.
+    const tripId = crypto.randomUUID();
+    const coverBlob = cover;
+    onClose();
+
     let coverPath: string | null = null;
 
-    if (cover) {
-      setPhase("uploading");
-      setProgress(0);
-
+    if (coverBlob) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session?.access_token) {
-          setError("You're signed out. Refresh and try again.");
-          setPhase("idle");
+          onError?.("You're signed out. Refresh and try again.");
           return;
         }
 
-        coverPath = `trips/${userId}/${Date.now()}.jpg`;
-        await uploadImageWithProgress({
-          file: cover,
+        coverPath = `trips/${userId}/${tripId}.jpg`;
+        await uploadPhotoWithThumbnail({
+          file: coverBlob,
           bucket: TRIP_COVER_BUCKET,
           path: coverPath,
           token: session.access_token,
-          onProgress: setProgress,
+          onProgress: () => {},
         });
       } catch {
-        setError("Couldn't upload that cover. Try again.");
-        setPhase("idle");
+        onError?.("Couldn't upload that cover. Try again.");
         return;
       }
     }
 
-    setPhase("saving");
     const result = await createTripAction({
+      id: tripId,
       title: cleanTitle,
       destination,
       startDate,
@@ -168,12 +173,10 @@ export function CreateTripSheet({
       if (coverPath) {
         await supabase.storage.from(TRIP_COVER_BUCKET).remove([coverPath]);
       }
-      setError(result.error ?? "Couldn't create that trip. Try again.");
-      setPhase("idle");
+      onError?.(result.error ?? "Couldn't create that trip. Try again.");
       return;
     }
 
-    onClose();
     router.push(`/trips/${result.id}`);
   }
 

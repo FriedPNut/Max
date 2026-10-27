@@ -95,7 +95,6 @@ export const PostLikeButton = forwardRef<
         liked={liked}
         count={count}
         onToggle={handleToggle}
-        disabled={pending}
         showCount={showCount}
         label={`${liked ? "Unlike" : "Like"} post. ${count} ${
           count === 1 ? "like" : "likes"

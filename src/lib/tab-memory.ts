@@ -81,18 +81,16 @@ export function rememberTabScroll(key: TabKey, scroll: number) {
   persist(false);
 }
 
-export function resetTabScroll(key: TabKey) {
-  const memory = readCache();
-  memory[key] = 0;
-  persist(true);
-}
-
 export function setPendingNavigation(
   path: string,
   scroll: number,
   direction: -1 | 0 | 1
 ) {
   pending = { path, scroll: Math.max(0, scroll), direction, at: Date.now() };
+}
+
+export function clearPendingNavigation() {
+  pending = null;
 }
 
 export function consumePendingNavigation(
@@ -114,8 +112,4 @@ export function consumePendingNavigation(
   const next = pending;
   pending = null;
   return next;
-}
-
-export function flushTabMemory() {
-  persist(true);
 }

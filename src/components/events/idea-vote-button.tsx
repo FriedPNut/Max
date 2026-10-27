@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toggleIdeaVoteAction } from "@/app/actions/ideas";
 import { LikeButton } from "@/components/ui/like-button";
 
@@ -23,6 +23,17 @@ export function IdeaVoteButton({
   const [value, setValue] = useState(count);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // A vote from another surface (or another person, live) replaces what this
+  // button is showing. An in-flight press owns the value until it settles.
+  useEffect(() => {
+    if (pending) {
+      return;
+    }
+
+    setVoted(hasVoted);
+    setValue(count);
+  }, [count, hasVoted, ideaId, pending]);
 
   function apply(nextVoted: boolean, nextCount: number) {
     setVoted(nextVoted);
@@ -73,7 +84,7 @@ export function IdeaVoteButton({
         variant="chip"
         liked={voted}
         count={value}
-        disabled={pending || disabled}
+        disabled={disabled}
         onToggle={() => void handleClick()}
         label={
           voted

@@ -1,6 +1,6 @@
 import type { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
-import { nameInitial, profileName, relativeTime } from "@/lib/posts";
+import { nameInitial, profileName } from "@/lib/posts";
 import { POSTS_BUCKET } from "@/lib/posts";
 
  type ServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -25,7 +25,6 @@ export type EventPhoto = {
   imageUrl: string;
   caption: string | null;
   createdAt: string;
-  relativeTime: string;
   authorName: string;
   authorInitial: string;
   authorUsername: string | null;
@@ -71,7 +70,6 @@ export async function loadEventPhotos(
       .filter((item) => item.signedUrl)
       .map((item) => [item.path, item.signedUrl as string])
   );
-  const now = Date.now();
 
   return {
     photos: rows.flatMap((row) => {
@@ -87,7 +85,6 @@ export async function loadEventPhotos(
         imageUrl,
         caption: row.caption,
         createdAt: row.created_at,
-        relativeTime: relativeTime(row.created_at, now),
         authorName,
         authorInitial: nameInitial(authorName),
         authorUsername: profile?.username?.trim() || null,

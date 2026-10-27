@@ -7,7 +7,7 @@ import {
 
 export default function NewChatLoading() {
   return (
-    <AppShellSkeleton noIsland label="Loading new chat">
+    <AppShellSkeleton label="Loading new chat">
       <div className="flex items-center gap-2">
         <Skeleton className="h-11 w-11 rounded-lg" />
         <SkeletonTitle />

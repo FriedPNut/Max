@@ -1,18 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, Heart, MessageCircle } from "lucide-react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { memo, useEffect, useRef, useState, useTransition } from "react";
 import { deletePostAction } from "@/app/actions/posts";
 import { DeletePostMenu } from "@/components/posts/delete-post-menu";
-import { PostCommentsSheet } from "@/components/posts/post-comments-sheet";
 import { PostCopyLinkButton } from "@/components/posts/post-copy-link-button";
 import { PostLikeButton } from "@/components/posts/post-like-button";
-import { Avatar, Button } from "@/components/ui";
+import { Avatar, Button, RelativeTime } from "@/components/ui";
 import type { LikeButtonHandle } from "@/components/ui/like-button";
 import type { FeedPost } from "@/lib/posts";
 
-export function PostCard({
+// Comments, reactions and the Supabase client load only when a post is opened.
+const PostCommentsSheet = dynamic(
+  () =>
+    import("@/components/posts/post-comments-sheet").then(
+      (module) => module.PostCommentsSheet
+    ),
+  { ssr: false }
+);
+
+// Memoized: a like or a comment on one card never re-renders the whole feed.
+export const PostCard = memo(function PostCard({
   post,
   onDeleted,
   showComments = true,
@@ -135,19 +145,27 @@ export function PostCard({
   }
 
   function handleDelete() {
+    if (pending) {
+      return;
+    }
+
     setDeleteError(null);
+    // The confirm bar goes away on this frame; the card follows when it lands.
+    setConfirming(false);
 
     startTransition(async () => {
       try {
         const result = await deletePostAction(post.id);
 
         if (result.error) {
+          setConfirming(true);
           setDeleteError(result.error);
           return;
         }
 
         onDeleted(post.id);
       } catch {
+        setConfirming(true);
         setDeleteError("Couldn't delete that post. Try again.");
       }
     });
@@ -160,7 +178,7 @@ export function PostCard({
   );
 
   return (
-    <article className="space-y-2.5">
+    <article className="cv-auto space-y-2.5">
       <div className="flex items-center gap-3 px-1">
         <Avatar
           src={post.authorAvatarUrl}
@@ -222,9 +240,8 @@ export function PostCard({
               variant="destructive"
               size="sm"
               onClick={handleDelete}
-              disabled={pending}
             >
-              {pending ? "Deleting..." : "Delete"}
+              Delete
             </Button>
 
             <Button
@@ -234,7 +251,6 @@ export function PostCard({
                 setConfirming(false);
                 setDeleteError(null);
               }}
-              disabled={pending}
             >
               Cancel
             </Button>
@@ -252,12 +268,24 @@ export function PostCard({
             <div className="w-full">
               <img
                 draggable={false}
-                src={images[0]}
+                src={post.imageThumbUrl ?? images[0]}
                 alt={alt}
+                width={1080}
+                height={1350}
                 loading="lazy"
                 decoding="async"
-                onError={() => setImageFailed(true)}
-                className="aspect-[4/5] w-full select-none object-cover"
+                onError={(event) => {
+                  if (
+                    post.imageThumbUrl &&
+                    images[0] &&
+                    event.currentTarget.src !== images[0]
+                  ) {
+                    event.currentTarget.src = images[0];
+                    return;
+                  }
+                  setImageFailed(true);
+                }}
+                className="aspect-[4/5] w-full select-none bg-surface-2 object-cover"
                 style={{ WebkitUserDrag: "none" } as React.CSSProperties}
               />
             </div>
@@ -461,7 +489,10 @@ export function PostCard({
         </ul>
       )}
 
-      <p className="px-1 text-xs text-muted">{post.relativeTime}</p>
+      <RelativeTime
+        iso={post.createdAt}
+        className="block px-1 text-xs text-muted"
+      />
 
       {commentsOpen && (
         <PostCommentsSheet
@@ -474,4 +505,4 @@ export function PostCard({
       )}
     </article>
   );
-}
+});

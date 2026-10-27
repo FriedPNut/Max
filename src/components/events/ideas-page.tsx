@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Plus } from "lucide-react";
-import { useState } from "react";
+import { Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { EventRow } from "@/components/events/event-row";
 import { IdeaRow } from "@/components/events/idea-row";
 import { IdeaSheet } from "@/components/events/idea-sheet";
-import { Button, Chip, SegmentedControl } from "@/components/ui";
+import { Button, Chip, SegmentedControl, Toast } from "@/components/ui";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useNewIds } from "@/lib/use-new-ids";
+import { writeCache } from "@/lib/cache";
+import { publishIdeaUpdate, useIdeaSync, type IdeaSyncDetail } from "@/lib/idea-sync";
 import type { EventListItem, IdeaListItem, IdeaStatus } from "@/lib/events";
 
 type IdeaView = "ideas" | "events";
@@ -20,11 +22,13 @@ type SheetState =
   | null;
 
 export function IdeasPage({
+  userId,
   initialIdeas,
   events,
   nowIso,
   initialView = "ideas",
 }: {
+  userId: string;
   initialIdeas: IdeaListItem[];
   events: EventListItem[];
   nowIso: string;
@@ -34,10 +38,32 @@ export function IdeasPage({
   const [view, setView] = useState<IdeaView>(initialView);
   const [filter, setFilter] = useState<IdeaFilter>("open");
   const [sheet, setSheet] = useState<SheetState>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const newIds = useNewIds(
     ideas.map((idea) => idea.id),
     initialIdeas.map((idea) => idea.id)
   );
+
+  // Votes, conversions and deletes from a chat card land here too.
+  const applySync = useCallback((detail: IdeaSyncDetail) => {
+    if (detail.kind === "remove") {
+      setIdeas((current) => current.filter((idea) => idea.id !== detail.ideaId));
+      return;
+    }
+
+    setIdeas((current) =>
+      current.map((idea) =>
+        idea.id === detail.idea.id ? { ...idea, ...detail.idea } : idea
+      )
+    );
+  }, []);
+  useIdeaSync(userId, applySync);
+
+  // The same "ideas" cache key the widget writes, so a vote in a chat card and
+  // this page always describe the same list.
+  useEffect(() => {
+    writeCache(userId, "ideas", ideas.slice(0, 10));
+  }, [ideas, userId]);
 
   const visibleIdeas = ideas
     .filter((idea) => idea.status === filter)
@@ -52,15 +78,31 @@ export function IdeasPage({
     });
 
   function handleCreated(idea: IdeaListItem) {
-    setIdeas((current) => [...current, idea]);
+    setIdeas((current) => {
+      const at = current.findIndex((row) => row.id === idea.id);
+
+      if (at === -1) {
+        return [...current, idea];
+      }
+
+      const next = current.slice();
+      next[at] = idea;
+      return next;
+    });
     setFilter("open");
     setView("ideas");
+  }
+
+  function handleCreateFailed(ideaId: string, message: string) {
+    setIdeas((current) => current.filter((idea) => idea.id !== ideaId));
+    setToast(message);
   }
 
   function handleUpdated(
     ideaId: string,
     patch: { title: string; description: string | null }
   ) {
+    publishIdeaUpdate(userId, { id: ideaId, ...patch });
     setIdeas((current) =>
       current.map((idea) =>
         idea.id === ideaId
@@ -101,21 +143,7 @@ export function IdeasPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/events"
-            aria-label="Back to events"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text transition-colors duration-200 ease-out hover:bg-surface-2"
-          >
-            <ArrowLeft size={24} strokeWidth={1.75} aria-hidden="true" />
-          </Link>
-
-          <h1 className="text-[22px] font-bold leading-tight text-text">
-            Ideas
-          </h1>
-        </div>
-
+      <div className="flex items-center justify-end gap-2">
         <Button
           variant="secondary"
           onClick={() => setSheet({ mode: "create" })}
@@ -166,12 +194,14 @@ export function IdeasPage({
                 <IdeaRow
                   key={idea.id}
                   idea={idea}
+                  userId={userId}
                   onEdit={(selected) =>
                     setSheet({ mode: "edit", idea: selected })
                   }
                   onDropped={handleDropped}
                   onDeleted={handleDeleted}
                   onVoteChange={handleVoteChange}
+                  onShared={setToast}
                   animateIn={newIds.has(idea.id)}
                 />
               ))}
@@ -187,6 +217,7 @@ export function IdeasPage({
           mode="create"
           onClose={() => setSheet(null)}
           onCreated={handleCreated}
+          onCreateFailed={handleCreateFailed}
         />
       )}
 
@@ -198,6 +229,8 @@ export function IdeasPage({
           onUpdated={(patch) => handleUpdated(sheet.idea.id, patch)}
         />
       )}
+
+      <Toast message={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

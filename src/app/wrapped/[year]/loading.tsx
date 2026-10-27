@@ -3,7 +3,7 @@ import { WrappedSkeleton } from "@/components/recap/skeletons";
 
 export default function WrappedLoading() {
   return (
-    <AppShellSkeleton noIsland label="Loading wrapped">
+    <AppShellSkeleton label="Loading wrapped">
       <WrappedSkeleton />
     </AppShellSkeleton>
   );

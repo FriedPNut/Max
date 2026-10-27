@@ -444,9 +444,7 @@ export function EventChat({
 
                   <div
                     className={`max-w-[78%] whitespace-pre-wrap break-words rounded-[22px] px-3.5 py-2 text-base leading-relaxed ${
-                      isOwn
-                        ? "bubble-gradient text-on-primary"
-                        : "bg-surface-2 text-text"
+                      isOwn ? "bubble-mine" : "bg-surface-2 text-text"
                     }`}
                   >
                     {message.body}

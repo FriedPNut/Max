@@ -28,7 +28,7 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
     }
 
     let cancelled = false;
-    const monthKey = currentMonthKey(timeZone);
+    const monthKey = currentMonthKey(timeZone, new Date());
 
     void loadBestOfAction(monthKey, timeZone).then((result) => {
       if (cancelled) {
@@ -121,9 +121,6 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-[22px] font-bold leading-tight text-text">
-          Photo of the month
-        </h1>
         <p className="text-sm text-muted">
           {data.monthLabel} · Voting closes {data.closesLabel}
         </p>
@@ -143,6 +140,7 @@ export function BestOfGrid({ currentUserId }: { currentUserId: string }) {
                   <img draggable={false}
                     src={post.imageUrl}
                     alt=""
+                    loading="lazy"
                     className="h-10 w-10 shrink-0 rounded-[10px] bg-surface-2 object-cover"
                   />
                 ) : (

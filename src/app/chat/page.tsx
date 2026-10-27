@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Search, SquarePen, Users } from "lucide-react";
+import { BellOff, Search, SquarePen, Users } from "lucide-react";
+import { FastLink } from "@/components/ui/fast-link";
 import { AppShell, getAuthenticatedUser } from "@/components/app-shell";
 import { LocalTime } from "@/components/local-time";
 import { Avatar } from "@/components/ui/avatar";
@@ -7,6 +8,14 @@ import { Input } from "@/components/ui/input";
 import { OnlineDot } from "@/components/presence-provider";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
+import { resolveConversationPhotoUrls } from "@/lib/chat-photo";
+import { chatHiddenAfterClear } from "@/lib/chat-details";
+import {
+  hasSeen,
+  readReceiptsOn,
+  seenByLabel,
+} from "@/lib/read-receipts";
+import { messagePreview } from "@/lib/ideas";
 import {
   nameInitial,
   profileName,
@@ -20,6 +29,8 @@ import {
 type MyMembership = {
   conversation_id: string;
   last_read_at: string | null;
+  muted?: boolean | null;
+  cleared_at?: string | null;
 };
 
 export default async function ChatPage({
@@ -36,15 +47,16 @@ export default async function ChatPage({
 
   const { data: membershipData, error: membershipError } = await supabase
     .from("conversation_members")
-    .select("conversation_id,last_read_at")
+    .select("conversation_id,last_read_at,muted,cleared_at")
     .eq("user_id", user.id);
 
   const myMemberships = (membershipData ?? []) as MyMembership[];
   const { data: ownProfile } = await supabase
     .from("profiles")
-    .select("username")
+    .select("username,read_receipts")
     .eq("id", user.id)
     .maybeSingle();
+  const myReceiptsOn = readReceiptsOn(ownProfile);
   const ownTitle = ownProfile?.username ? `@${ownProfile.username}` : "Messages";
   const conversationIds = myMemberships.map((row) => row.conversation_id);
 
@@ -59,9 +71,9 @@ export default async function ChatPage({
         <SquarePen size={24} strokeWidth={1.75} aria-hidden="true" />
       </Link>
       <Link
-        href="/chat/friends"
-        aria-label="Friends"
-        title="Friends"
+        href="/people"
+        aria-label="People"
+        title="People"
         className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 ease-out hover:bg-surface-2"
       >
         <Users size={24} strokeWidth={1.75} aria-hidden="true" />
@@ -71,9 +83,9 @@ export default async function ChatPage({
 
   if (conversationIds.length === 0) {
     return (
-      <AppShell actions={actions} title={ownTitle}>
-      <section className="space-y-6">
-          <h1 className="text-[22px] font-bold leading-tight text-text">
+      <AppShell actions={actions}>
+        <section className="space-y-6">
+          <h1 className="text-[20px] font-bold leading-tight text-text">
             Messages
           </h1>
 
@@ -112,21 +124,61 @@ export default async function ChatPage({
   const [conversationsResult, membersResult, searchRowsResult] = await Promise.all([
     supabase
       .from("conversations")
-      .select("id,name,is_group,created_by,created_at")
+      .select("id,name,is_group,created_by,created_at,photo_path")
       .in("id", conversationIds),
     supabase
       .from("conversation_members")
-      .select("conversation_id,user_id,last_read_at")
+      .select("conversation_id,user_id,last_read_at,seen_at")
       .in("conversation_id", conversationIds),
     query.length >= 2
-      ? supabase
-          .from("messages")
-          .select("id,conversation_id,body,created_at")
-          .in("conversation_id", conversationIds)
-          .is("deleted_at", null)
-          .ilike("body", `%${escapedQuery}%`)
-          .order("created_at", { ascending: false })
-          .limit(20)
+      ? (async () => {
+          // Shared ideas are findable by title, not only by their note.
+          const { data: ideaRows } = await supabase
+            .from("event_ideas")
+            .select("id")
+            .ilike("title", `%${escapedQuery}%`)
+            .limit(20);
+          const ideaIds = ((ideaRows ?? []) as { id: string }[]).map(
+            (row) => row.id
+          );
+          const baseQuery = () =>
+            supabase
+              .from("messages")
+              .select("id,conversation_id,body,created_at,image_path,idea_id")
+              .in("conversation_id", conversationIds)
+              .is("deleted_at", null);
+          const [bodyResult, ideaResult] = await Promise.all([
+            baseQuery()
+              .ilike("body", `%${escapedQuery}%`)
+              .order("created_at", { ascending: false })
+              .limit(20),
+            ideaIds.length > 0
+              ? baseQuery()
+                  .in("idea_id", ideaIds)
+                  .order("created_at", { ascending: false })
+                  .limit(20)
+              : Promise.resolve({ data: [], error: null }),
+          ]);
+          const seen = new Set<string>();
+          const rows = [
+            ...((bodyResult.data ?? []) as {
+              id: string;
+            }[]),
+            ...((ideaResult.data ?? []) as { id: string }[]),
+          ].filter((row) => {
+            if (seen.has(row.id)) {
+              return false;
+            }
+
+            seen.add(row.id);
+            return true;
+          });
+
+          return {
+            data: rows,
+            error: bodyResult.error ?? ideaResult.error,
+          };
+        })()
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -153,11 +205,16 @@ export default async function ChatPage({
   );
   // Avatars, last message per chat and unread mentions all need the same ids,
   // so they run together instead of one after another.
-  const [avatarUrls, lastMessageByConversation, mentionedByConversation] = await Promise.all([
-    resolveProfileAvatarUrls(supabase, profiles),
-    loadLatestMessages(supabase, conversationIds),
-    loadMentionedConversations(supabase, myMemberships, user.id),
-  ]);
+  const [avatarUrls, photoUrlByPath, lastMessageByConversation, mentionedByConversation] =
+    await Promise.all([
+      resolveProfileAvatarUrls(supabase, profiles),
+      resolveConversationPhotoUrls(
+        supabase,
+        conversations.map((conversation) => conversation.photo_path)
+      ),
+      loadLatestMessages(supabase, conversationIds),
+      loadMentionedConversations(supabase, myMemberships, user.id),
+    ]);
 
   const membersByConversation = new Map<string, ConversationMemberRecord[]>();
 
@@ -205,6 +262,16 @@ export default async function ChatPage({
   }
 
   const items: ChatListItem[] = conversations
+    .filter((conversation) => {
+      const membership = membershipByConversation.get(conversation.id);
+      const lastMessage = lastMessageByConversation.get(conversation.id);
+
+      // A cleared chat stays gone until something newer arrives.
+      return !chatHiddenAfterClear(
+        lastMessage?.created_at ?? null,
+        membership?.cleared_at ?? null
+      );
+    })
     .map((conversation) => {
       const conversationMembers =
         membersByConversation.get(conversation.id) ?? [];
@@ -217,15 +284,43 @@ export default async function ChatPage({
       const name = conversation.is_group
         ? conversation.name?.trim() || "Group chat"
         : profileName(otherProfile);
+      const membership = membershipByConversation.get(conversation.id);
       const lastMessage = lastMessageByConversation.get(conversation.id);
-      const lastReadAt =
-        membershipByConversation.get(conversation.id)?.last_read_at ?? null;
+      const lastReadAt = membership?.last_read_at ?? null;
       const unread = Boolean(
         lastMessage &&
           (!lastReadAt ||
             new Date(lastMessage.created_at).getTime() >
               new Date(lastReadAt).getTime())
       );
+      // A receipt only exists for my latest message, and only when my own
+      // receipts are on: everyone else hides theirs from me too.
+      let receipt: string | null = null;
+
+      if (myReceiptsOn && lastMessage && lastMessage.user_id === user.id) {
+        const seen = conversationMembers
+          .filter(
+            (member) =>
+              member.user_id !== user.id &&
+              readReceiptsOn(profilesById.get(member.user_id)) &&
+              hasSeen(member.seen_at, lastMessage.created_at)
+          )
+          .sort(
+            (a, b) =>
+              (Date.parse(b.seen_at ?? "") || 0) -
+              (Date.parse(a.seen_at ?? "") || 0)
+          );
+
+        if (seen.length > 0) {
+          receipt = conversation.is_group
+            ? seenByLabel(
+                seen.map((member) =>
+                  profileName(profilesById.get(member.user_id))
+                )
+              )
+            : "Seen";
+        }
+      }
 
       return {
         id: conversation.id,
@@ -238,20 +333,30 @@ export default async function ChatPage({
           : otherMember
           ? avatarUrls.get(otherMember.user_id) ?? null
           : null,
+        photoUrl: conversation.is_group
+          ? photoUrlByPath.get(conversation.photo_path ?? "") ?? null
+          : null,
+        muted: Boolean(membership?.muted),
         profileUsername: conversation.is_group
           ? null
           : otherProfile?.username?.trim() || null,
         mentionsMe: mentionedByConversation.get(conversation.id) ?? false,
         lastMessage: lastMessage
-          ? lastMessage.image_path
-            ? lastMessage.user_id === user.id
-              ? "You sent a photo"
-              : "Sent a photo"
-            : lastMessage.body ?? null
+          ? lastMessage.body ??
+            (lastMessage.idea_id
+              ? lastMessage.user_id === user.id
+                ? "You shared an idea"
+                : "Shared an idea"
+              : lastMessage.image_path
+              ? lastMessage.user_id === user.id
+                ? "You sent a photo"
+                : "Sent a photo"
+              : null)
           : null,
         lastMessageAt: lastMessage?.created_at ?? null,
         createdAt: conversation.created_at,
         unread,
+        receipt,
       };
     })
     .sort((a, b) => {
@@ -267,6 +372,8 @@ export default async function ChatPage({
       conversation_id: string;
       body: string | null;
       created_at: string;
+      image_path: string | null;
+      idea_id?: string | null;
     }[]
   ).map((row) => ({
     ...row,
@@ -274,9 +381,9 @@ export default async function ChatPage({
   }));
 
   return (
-    <AppShell actions={actions} title={ownTitle}>
+    <AppShell actions={actions}>
       <section className="space-y-6">
-        <h1 className="text-[22px] font-bold leading-tight text-text">
+        <h1 className="text-[20px] font-bold leading-tight text-text">
           Messages
         </h1>
 
@@ -317,7 +424,9 @@ export default async function ChatPage({
                       <span className="text-xs text-muted">
                         {hit.conversation_name} · <LocalTime iso={hit.created_at} format="card" />
                       </span>
-                      <span className="truncate text-[14px] text-text">{hit.body}</span>
+                      <span className="truncate text-[14px] text-text">
+                        {messagePreview(hit) ?? ""}
+                      </span>
                     </Link>
                   </li>
                 ))}
@@ -343,7 +452,7 @@ export default async function ChatPage({
                   key={conversation.id}
                   className="press-row relative flex items-center gap-3 rounded-lg py-2 transition-colors duration-200 ease-out hover:bg-surface-2"
                 >
-                  <Link
+                  <FastLink
                     href={`/chat/${conversation.id}`}
                     aria-label={`Open ${conversation.name}`}
                     className="absolute inset-0 z-0 rounded-lg"
@@ -351,7 +460,14 @@ export default async function ChatPage({
 
                   {conversation.isGroup ? (
                     <span className="pointer-events-none relative z-10 block h-14 w-14 shrink-0">
-                      {groupAvatars.length >= 2 ? (
+                      {conversation.photoUrl ? (
+                        <Avatar
+                          src={conversation.photoUrl}
+                          initial={nameInitial(conversation.name)}
+                          name={conversation.name}
+                          size={64}
+                        />
+                      ) : groupAvatars.length >= 2 ? (
                         <>
                           <span className="absolute left-0 top-0 block rounded-full ring-2 ring-background">
                             <Avatar
@@ -435,6 +551,14 @@ export default async function ChatPage({
                       )}
 
                       <span className="flex shrink-0 items-center gap-2">
+                        {conversation.muted ? (
+                          <BellOff
+                            size={14}
+                            strokeWidth={1.75}
+                            aria-label="Muted"
+                            className="text-muted"
+                          />
+                        ) : null}
                         <LocalTime
                           iso={conversation.lastMessageAt ?? conversation.createdAt}
                           format="time"
@@ -459,6 +583,11 @@ export default async function ChatPage({
                       >
                         {conversation.lastMessage ?? "No messages yet."}
                       </p>
+                      {conversation.receipt ? (
+                        <span className="shrink-0 text-[12px] text-muted">
+                          {conversation.receipt}
+                        </span>
+                      ) : null}
                       {conversation.mentionsMe && (
                         <span
                           aria-label="Mentioned you"
@@ -491,7 +620,7 @@ async function loadLatestMessages(
   if (conversationIds.length === 0) return byConversation;
 
   const { data } = await supabase
-    .from("messages")      .select("id,conversation_id,user_id,body,created_at,image_path,mentions")
+    .from("messages")      .select("id,conversation_id,user_id,body,created_at,image_path,mentions,idea_id")
       .in("conversation_id", conversationIds)
     .order("created_at", { ascending: false })
     .limit(Math.min(conversationIds.length * 4, 400));
@@ -509,7 +638,7 @@ async function loadLatestMessages(
       missing.map(async (conversationId) => {
         const { data: latest } = await supabase
           .from("messages")
-          .select("id,conversation_id,user_id,body,created_at,image_path,mentions")
+          .select("id,conversation_id,user_id,body,created_at,image_path,mentions,idea_id")
           .eq("conversation_id", conversationId)
           .order("created_at", { ascending: false })
           .limit(1)

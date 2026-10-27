@@ -18,6 +18,7 @@ export type ProfileRecord = {
 export type ProfilePost = {
   id: string;
   imageUrl: string | null;
+  imageThumbUrl?: string | null;
   caption: string | null;
   createdAt: string;
   likeCount: number;
@@ -46,7 +47,7 @@ export type ProfileStats = {
   events: number;
 };
 
-export type ProfilePageData = {
+type ProfilePageData = {
   profile: ProfileRecord;
   avatarUrl: string | null;
   stats: ProfileStats;

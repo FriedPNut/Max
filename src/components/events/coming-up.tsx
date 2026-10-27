@@ -1,10 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { FastLink } from "@/components/ui/fast-link";
 import { LocalTime } from "@/components/local-time";
 import { Card } from "@/components/ui";
 import type { EventListItem } from "@/lib/events";
+import { arrivalEtaLabel, type ArrivalRecord } from "@/lib/event-arrivals";
 import { localDayKey } from "@/lib/local-day";
+import { useNow } from "@/lib/use-now";
 import { useToday } from "@/lib/use-today";
 
 /** Hydration-safe: nothing until the viewer's own day is known. */
@@ -23,11 +25,14 @@ function LocalDayLabel({ iso }: { iso: string }) {
 
 export function ComingUp({
   items,
-  onWayEtas = {},
+  onWayArrivals = {},
 }: {
   items: EventListItem[];
-  onWayEtas?: Record<string, string>;
+  /** The rows themselves; the ETA counts down on the viewer's clock. */
+  onWayArrivals?: Record<string, ArrivalRecord>;
 }) {
+  const now = useNow(30_000);
+
   if (items.length === 0) return null;
 
   return (
@@ -37,9 +42,13 @@ export function ComingUp({
         Coming up
       </h2>
       <ul className="mt-2 divide-y divide-line">
-        {items.map((event) => (
+        {items.map((event) => {
+          const arrival = onWayArrivals[event.id];
+          const eta = arrival && now !== null ? arrivalEtaLabel(arrival, now) : null;
+
+          return (
           <li key={event.id}>
-            <Link
+            <FastLink
               href={`/events/${event.id}`}
               className="flex min-h-11 items-center justify-between gap-3 py-2"
             >
@@ -47,8 +56,8 @@ export function ComingUp({
                 {event.title}
               </span>
               <span className="shrink-0 text-sm text-muted">
-                {onWayEtas[event.id] ? (
-                  <>On my way · {onWayEtas[event.id]}</>
+                {arrival ? (
+                  <>On my way{eta ? ` · ${eta}` : ""}</>
                 ) : (
                   <>
                     <LocalDayLabel iso={event.starts_at} />
@@ -56,9 +65,10 @@ export function ComingUp({
                   </>
                 )}
               </span>
-            </Link>
+            </FastLink>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
     </Card>

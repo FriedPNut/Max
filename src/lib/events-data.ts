@@ -1,4 +1,6 @@
 import type { createClient } from "@/lib/supabase/server";
+import { photoUrls } from "@/lib/photo-urls";
+import { uniqueIdeaIds, type IdeaCard } from "@/lib/ideas";
 import {
   EVENT_SIGNED_URL_SECONDS,
   EVENTS_BUCKET,
@@ -86,15 +88,13 @@ export async function loadEventListItems(
   const coverUrls = new Map<string, string>();
 
   if (coverPaths.length > 0) {
-    const { data: signedData } = await supabase.storage
-      .from(EVENTS_BUCKET)
-      .createSignedUrls(coverPaths, EVENT_SIGNED_URL_SECONDS);
-
-    for (const signed of signedData ?? []) {
-      if (signed.path && signed.signedUrl) {
-        coverUrls.set(signed.path, signed.signedUrl);
-      }
-    }
+    const resolved = await photoUrls(
+      supabase,
+      EVENTS_BUCKET,
+      coverPaths,
+      EVENT_SIGNED_URL_SECONDS
+    );
+    resolved.urls.forEach((url, path) => coverUrls.set(path, url));
   }
 
   return {
@@ -105,6 +105,72 @@ export async function loadEventListItems(
         ? coverUrls.get(event.cover_path) ?? null
         : null,
     })),
+  };
+}
+
+/**
+ * The card shown in a chat: no creator name, but the live vote state and
+ * whether the idea has already become an event.
+ */
+export async function loadIdeaCards(
+  supabase: ServerClient,
+  currentUserId: string,
+  ideaIds: readonly unknown[]
+): Promise<{ cards: IdeaCard[]; missingIds: string[]; error?: string }> {
+  const ids = uniqueIdeaIds(ideaIds);
+
+  if (ids.length === 0) {
+    return { cards: [], missingIds: [] };
+  }
+
+  const [ideasResult, votesResult] = await Promise.all([
+    supabase
+      .from("event_ideas")
+      .select("id,title,description,created_by,status,event_id")
+      .in("id", ids),
+    supabase.from("idea_votes").select("idea_id,user_id").in("idea_id", ids),
+  ]);
+
+  if (ideasResult.error || votesResult.error) {
+    return {
+      cards: [],
+      missingIds: [],
+      error: "Couldn't load ideas. Refresh and try again.",
+    };
+  }
+
+  const rows = (ideasResult.data ?? []) as {
+    id: string;
+    title: string;
+    description: string | null;
+    created_by: string;
+    status: string;
+    event_id: string | null;
+  }[];
+  const found = new Set(rows.map((row) => row.id));
+  const voteCounts = new Map<string, number>();
+  const votedIds = new Set<string>();
+
+  for (const vote of (votesResult.data ?? []) as IdeaVoteRecord[]) {
+    voteCounts.set(vote.idea_id, (voteCounts.get(vote.idea_id) ?? 0) + 1);
+
+    if (vote.user_id === currentUserId) {
+      votedIds.add(vote.idea_id);
+    }
+  }
+
+  return {
+    cards: rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      status: row.status as IdeaStatus,
+      eventId: row.event_id,
+      voteCount: voteCounts.get(row.id) ?? 0,
+      hasVoted: votedIds.has(row.id),
+      isCreator: row.created_by === currentUserId,
+    })),
+    missingIds: ids.filter((id) => !found.has(id)),
   };
 }
 

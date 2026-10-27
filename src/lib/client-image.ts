@@ -1,5 +1,7 @@
 "use client";
 
+import { photoThumbPath } from "@/lib/photo";
+
 export const MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
 
 type LoadedImage = {
@@ -9,7 +11,7 @@ type LoadedImage = {
   cleanup: () => void;
 };
 
-async function loadImageSource(file: File): Promise<LoadedImage> {
+async function loadImageSource(file: Blob): Promise<LoadedImage> {
   if (typeof createImageBitmap === "function") {
     try {
       const bitmap = await createImageBitmap(file, {
@@ -56,7 +58,7 @@ async function loadImageSource(file: File): Promise<LoadedImage> {
 }
 
 export async function resizeImageFile(
-  file: File,
+  file: Blob,
   maxDimension: number,
   quality: number
 ) {
@@ -100,7 +102,7 @@ export async function resizeImageFile(
 }
 
 export async function resizeImageToWidth(
-  file: File,
+  file: Blob,
   width: number,
   quality: number
 ) {
@@ -141,7 +143,7 @@ export async function resizeImageToWidth(
 }
 
 export async function resizeImageSquare(
-  file: File,
+  file: Blob,
   size: number,
   quality: number
 ) {
@@ -203,6 +205,57 @@ const EXTENSIONS: Record<string, string> = {
 // Original files keep a file extension that matches their real content type.
 export function extensionFor(contentType: string) {
   return EXTENSIONS[contentType] ?? "jpg";
+}
+
+/**
+ * Upload the full JPEG and a 400px thumbnail in parallel. The thumbnail path
+ * is derived from the full path, so no database column changes.
+ */
+export async function uploadPhotoWithThumbnail({
+  file,
+  bucket,
+  path,
+  token,
+  contentType = "image/jpeg",
+  onProgress,
+}: {
+  file: Blob;
+  bucket: string;
+  path: string;
+  token: string;
+  contentType?: string;
+  onProgress: (percent: number) => void;
+}) {
+  let thumbnail: Blob | null = null;
+
+  try {
+    thumbnail = await resizeImageToWidth(file, 400, 0.7);
+  } catch {
+    // Older formats may not decode; the full photo still uploads.
+  }
+
+  await Promise.all([
+    uploadImageWithProgress({
+      file,
+      bucket,
+      path,
+      contentType,
+      token,
+      onProgress,
+    }),
+    thumbnail
+      ? uploadImageWithProgress({
+          file: thumbnail,
+          bucket,
+          path: photoThumbPath(path),
+          contentType: "image/jpeg",
+          token,
+          onProgress: () => {},
+        }).catch(() => {
+          // A missing thumbnail silently falls back to the full photo.
+        })
+      : Promise.resolve(),
+  ]);
 }
 
 export function uploadImageWithProgress({

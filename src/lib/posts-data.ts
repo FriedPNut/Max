@@ -1,13 +1,13 @@
 import type { createClient } from "@/lib/supabase/server";
 import { resolveProfileAvatarUrls } from "@/lib/profile-data";
 import { loadCommentsByPost } from "@/lib/post-comments-data";
+import { photoThumbPath, photoUrls } from "@/lib/photo-urls";
 import {
   COMMENT_PREVIEW_COUNT,
   POSTS_BUCKET,
   POSTS_PAGE_SIZE,
   nameInitial,
   profileName,
-  relativeTime,
   type FeedPost,
   type PostComment,
   type PostPageResult,
@@ -22,12 +22,6 @@ type LikeRow = {
   user_id: string;
 };
 
-type SignedUrlRow = {
-  path: string;
-  signedUrl: string;
-  error: string | null;
-};
-
 const SIGNED_URL_SECONDS = 60 * 60 * 24;
 
 type BaseFeedPost = Omit<FeedPost, "commentCount" | "previewComments">;
@@ -38,22 +32,22 @@ function buildBaseFeedPost({
   currentUserId,
   currentDisplayName,
   imageUrl,
+  imageThumbUrl,
   authorAvatarUrl,
   likeCount,
   hasLiked,
   eventTitle,
-  now,
 }: {
   post: PostRecord;
   profile: PostProfile | undefined;
   currentUserId: string;
   currentDisplayName: string;
   imageUrl: string | null;
+  imageThumbUrl: string | null;
   authorAvatarUrl: string | null;
   likeCount: number;
   hasLiked: boolean;
   eventTitle: string | null;
-  now: number;
 }): BaseFeedPost {
   const name = profileName(
     profile,
@@ -63,10 +57,10 @@ function buildBaseFeedPost({
   return {
     id: post.id,
     imageUrl,
+    imageThumbUrl,
     imageUrls: imageUrl ? [imageUrl] : [],
     caption: post.caption,
     createdAt: post.created_at,
-    relativeTime: relativeTime(post.created_at, now),
     authorId: post.user_id,
     authorName: name,
     authorInitial: nameInitial(name),
@@ -157,12 +151,18 @@ export async function loadPostPage(
     ((eventsResult.data ?? []) as { id: string; title: string }[]).map((event) => [event.id, event.title])
   );
   const paths = pageRows.map((post) => post.image_path);
+  const thumbPaths = paths.map(photoThumbPath);
 
-  // Avatar URLs and post photo URLs are separate storage calls, so ask for
-  // both at once instead of one after the other.
+  // Avatar URLs and both photo sizes are separate storage calls, so ask for
+  // all of them at once instead of one after the other.
   const [avatarUrls, signedResult] = await Promise.all([
     resolveProfileAvatarUrls(supabase, profiles),
-    supabase.storage.from(POSTS_BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS),
+    photoUrls(
+      supabase,
+      POSTS_BUCKET,
+      [...paths, ...thumbPaths],
+      SIGNED_URL_SECONDS
+    ),
   ]);
 
   const likeCounts = new Map<string, number>();
@@ -176,25 +176,16 @@ export async function loadPostPage(
     }
   }
 
-  const { data: signedData, error: signedError } = signedResult;
-
-  if (signedError) {
+  if (signedResult.error) {
     return {
       posts: [],
       hasMore: false,
-      error: "Couldn't load photos. Refresh and try again.",
+      error: signedResult.error,
     };
   }
 
-  const signedByPath = new Map<string, string>();
+  const signedByPath = signedResult.urls;
 
-  for (const item of (signedData ?? []) as SignedUrlRow[]) {
-    if (item.signedUrl) {
-      signedByPath.set(item.path, item.signedUrl);
-    }
-  }
-
-  const now = Date.now();
   const basePosts = pageRows.map((post) =>
     buildBaseFeedPost({
       post,
@@ -202,11 +193,11 @@ export async function loadPostPage(
       currentUserId,
       currentDisplayName,
       imageUrl: signedByPath.get(post.image_path) ?? null,
+      imageThumbUrl: signedByPath.get(photoThumbPath(post.image_path)) ?? null,
       authorAvatarUrl: avatarUrls.get(post.user_id) ?? null,
       likeCount: likeCounts.get(post.id) ?? 0,
       hasLiked: likedByMe.has(post.id),
       eventTitle: post.event_id ? eventTitles.get(post.event_id) ?? null : null,
-      now,
     })
   );
 
@@ -288,12 +279,17 @@ export async function loadPostDetail(
   const likes = (likesResult.data ?? []) as LikeRow[];
   const avatarUrls = await resolveProfileAvatarUrls(supabase, profile ? [profile] : []);
   let imageUrl: string | null = null;
+  let imageThumbUrl: string | null = null;
 
   if (post.image_path) {
-    const { data: signed } = await supabase.storage
-      .from(POSTS_BUCKET)
-      .createSignedUrl(post.image_path, SIGNED_URL_SECONDS);
-    imageUrl = signed?.signedUrl ?? null;
+    const signed = await photoUrls(
+      supabase,
+      POSTS_BUCKET,
+      [post.image_path, photoThumbPath(post.image_path)],
+      SIGNED_URL_SECONDS
+    );
+    imageUrl = signed.urls.get(post.image_path) ?? null;
+    imageThumbUrl = signed.urls.get(photoThumbPath(post.image_path)) ?? null;
   }
 
   const eventTitle =
@@ -304,11 +300,11 @@ export async function loadPostDetail(
     currentUserId,
     currentDisplayName,
     imageUrl,
+    imageThumbUrl,
     authorAvatarUrl: avatarUrls.get(post.user_id) ?? null,
     likeCount: likes.length,
     hasLiked: likes.some((like) => like.user_id === currentUserId),
     eventTitle,
-    now: Date.now(),
   });
   const newestFirst = commentsResult.byPost.get(post.id) ?? [];
 

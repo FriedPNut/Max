@@ -7,9 +7,10 @@ import {
   respondToHangAction,
 } from "@/app/actions/hangs";
 import { AnyoneDownSheet } from "@/components/hang/anyone-down-sheet";
-import { Button, Chip } from "@/components/ui";
+import { Button, Chip, Toast } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { timeLeftLabel, type HangResponse } from "@/lib/hangs";
+import { useNow } from "@/lib/use-now";
 
 export type HangCard = {
   id: string;
@@ -40,13 +41,10 @@ export function HangView({
   const supabase = useMemo(() => createClient(), []);
   const [hangs, setHangs] = useState(initialHangs);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const tick = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(tick);
-  }, []);
+  // Null until the browser has a clock, so the server render is stable.
+  const now = useNow(30_000);
 
   useEffect(() => {
     const channel = supabase
@@ -187,7 +185,7 @@ export function HangView({
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-sm font-semibold text-text">{hang.creatorName}</p>
                 <p className="shrink-0 text-sm text-muted">
-                  {timeLeftLabel(hang.expiresAt, now)}
+                  {now === null ? null : timeLeftLabel(hang.expiresAt, now)}
                 </p>
               </div>
               <p className="whitespace-pre-wrap break-words text-base text-text">
@@ -246,7 +244,14 @@ export function HangView({
         </ul>
       )}
 
-      {sheetOpen && <AnyoneDownSheet onClose={() => setSheetOpen(false)} />}
+      {sheetOpen && (
+        <AnyoneDownSheet
+          onClose={() => setSheetOpen(false)}
+          onError={setToast}
+        />
+      )}
+
+      <Toast message={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

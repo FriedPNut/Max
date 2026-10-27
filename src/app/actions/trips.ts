@@ -70,6 +70,7 @@ function validateTripFields(input: {
 }
 
 export async function createTripAction(input: {
+  id?: string;
   title: string;
   destination: string;
   startDate: string;
@@ -92,9 +93,19 @@ export async function createTripAction(input: {
   }
 
   const { supabase, user } = await requireTripUser();
+  // A client-generated id means the trip exists on screen before this insert
+  // finishes, and the same id is used for its members.
+  const tripId =
+    typeof input?.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      input.id
+    )
+      ? input.id
+      : undefined;
   const { data: trip, error } = await supabase
     .from("trips")
     .insert({
+      ...(tripId ? { id: tripId } : {}),
       title: fields.title,
       destination: fields.destination || null,
       start_date: fields.startDate,
@@ -112,11 +123,17 @@ export async function createTripAction(input: {
 
   // Creator is always a member. Friends are added only if they are accepted friends.
   const friendIds = [...new Set(input.friendIds ?? [])].filter((id) => id !== user.id);
-  const { data: friendships } = await supabase
+  const { data: friendships, error: friendshipsError } = await supabase
     .from("friendships")
     .select("requester_id,addressee_id")
     .eq("status", "accepted")
     .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+
+  if (friendshipsError) {
+    await supabase.from("trips").delete().eq("id", trip.id);
+    return { error: "Couldn't set up that trip. Try again." };
+  }
+
   const accepted = new Set(
     ((friendships ?? []) as { requester_id: string; addressee_id: string }[]).map((row) =>
       row.requester_id === user.id ? row.addressee_id : row.requester_id

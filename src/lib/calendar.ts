@@ -134,10 +134,6 @@ export function formatDayLong(key: string) {
   }).format(new Date(Date.UTC(year, month, day)));
 }
 
-export function yearOfKey(key: string) {
-  return parseDateKey(key).year;
-}
-
 export function eventDateKey(iso: string) {
   const date = new Date(iso);
 

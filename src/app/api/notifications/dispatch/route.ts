@@ -7,6 +7,8 @@ import {
   notificationTitle,
   type NotificationRecord,
 } from "@/lib/notifications";
+import { notificationDestination } from "@/lib/routes";
+import { pushDispatchSecret } from "@/lib/push-env";
 
 type PreferenceRow = {
   user_id: string;
@@ -18,6 +20,7 @@ type PreferenceRow = {
   push_chat: boolean | null;
   push_hangs: boolean | null;
   push_social: boolean | null;
+  push_posts: boolean | null;
   push_birthdays: boolean | null;
   push_recaps: boolean | null;
 };
@@ -34,7 +37,6 @@ const MAX_AGE_MS = 3 * 60 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
 
 
-export const runtime = "nodejs";
 export const maxDuration = 10;
 
 function isEnabled(preferences: PreferenceRow | undefined, type: string) {
@@ -54,19 +56,22 @@ function notificationTag(row: NotificationRecord) {
     : row.id;
 }
 
-function safeUrl(value: string | null, siteUrl: string) {
-  const fallback = new URL("/notifications", siteUrl).toString();
-  if (!value) return fallback;
+function relativeUrl(value: string | null, siteUrl: string) {
+  if (!value) return null;
   try {
     const parsed = new URL(value, siteUrl);
-    return parsed.origin === new URL(siteUrl).origin ? parsed.toString() : fallback;
+    if (parsed.origin !== new URL(siteUrl).origin) return null;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
-    return fallback;
+    return null;
   }
 }
 
 export async function POST(request: Request) {
-  const secret = process.env.CRON_SECRET;
+  // NOTIFICATION_DISPATCH_SECRET is the name this app documents; CRON_SECRET
+  // stays accepted so an older scheduler keeps working.
+  const secret = pushDispatchSecret();
+
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
@@ -98,7 +103,7 @@ export async function POST(request: Request) {
         admin
           .from("notification_preferences")
           .select(
-            "user_id,timezone,push_enabled,push_reminders,push_new_events,push_friends,push_chat,push_hangs,push_social,push_birthdays,push_recaps"
+            "user_id,timezone,push_enabled,push_reminders,push_new_events,push_friends,push_chat,push_hangs,push_social,push_posts,push_birthdays,push_recaps"
           )
           .in("user_id", userIds),
         admin
@@ -160,11 +165,15 @@ export async function POST(request: Request) {
     } catch {
       timezone = "UTC";
     }
-    const body = pushBody(row, timezone);
+    const body = pushBody(row, timezone) || notificationTitle(row);
+    const destination = notificationDestination({
+      ...row,
+      url: relativeUrl(row.url, siteUrl),
+    });
     const payload = {
       title: notificationTitle(row),
       body,
-      url: safeUrl(row.url, siteUrl),
+      url: new URL(destination, siteUrl).toString(),
       tag: notificationTag(row),
     };
     const results = await Promise.allSettled(

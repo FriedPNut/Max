@@ -53,7 +53,7 @@ export function monthKeyForDateKey(dateKey: string) {
   return dateKey.slice(0, 7);
 }
 
-export function currentMonthKey(timeZone: string, now = new Date()) {
+export function currentMonthKey(timeZone: string, now: Date) {
   return monthKeyForDateKey(zonedDateKey(now, timeZone));
 }
 
@@ -124,7 +124,7 @@ export type BestOfBanner = { href: string; label: string };
 
 // The slim Post-tab banner: vote during a month's last 7 days, results during
 // the first 3 days of the next month, nothing otherwise.
-export function bestOfBannerFor(now = new Date()): BestOfBanner | null {
+export function bestOfBannerFor(now: Date): BestOfBanner | null {
   const day = now.getDate();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 

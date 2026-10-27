@@ -1,26 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, Send } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
+  checkIdeaStatusAction,
   deleteIdeaAction,
   dropIdeaAction,
 } from "@/app/actions/ideas";
 import { IdeaVoteButton } from "@/components/events/idea-vote-button";
+import { SendIdeaSheet } from "@/components/events/send-idea-sheet";
 import { LocalTime } from "@/components/local-time";
 import { Button, buttonStyles, Card } from "@/components/ui";
+import { publishIdeaRemoval, publishIdeaUpdate } from "@/lib/idea-sync";
+import { makeEventHref } from "@/lib/ideas";
 import type { IdeaListItem } from "@/lib/events";
 
 export function IdeaRow({
   idea,
+  userId,
   onEdit,
   onDropped,
   onDeleted,
   onVoteChange,
+  onShared,
   animateIn = false,
 }: {
   idea: IdeaListItem;
+  userId: string;
   onEdit: (idea: IdeaListItem) => void;
   onDropped: (ideaId: string) => void;
   onDeleted: (ideaId: string) => void;
@@ -28,14 +36,20 @@ export function IdeaRow({
     ideaId: string,
     next: { voteCount: number; hasVoted: boolean }
   ) => void;
+  onShared: (message: string) => void;
   animateIn?: boolean;
 }) {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"drop" | "delete" | null>(
-    null
-  );
+  const [pendingAction, setPendingAction] = useState<
+    "drop" | "delete" | "check" | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
+  const [alreadyEvent, setAlreadyEvent] = useState<{
+    eventId: string | null;
+  } | null>(null);
   const isOpen = idea.status === "open";
 
   async function handleDrop() {
@@ -55,6 +69,7 @@ export function IdeaRow({
         return;
       }
 
+      publishIdeaUpdate(userId, { id: idea.id, status: "dropped" });
       onDropped(idea.id);
     } catch {
       setError("Couldn't drop that idea. Try again.");
@@ -79,9 +94,54 @@ export function IdeaRow({
         return;
       }
 
+      publishIdeaRemoval(userId, idea.id);
       onDeleted(idea.id);
     } catch {
       setError("Couldn't delete that idea. Try again.");
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  /**
+   * Anyone can turn an open idea into an event, so the status is re-read right
+   * before the form opens. If it was scheduled a moment ago, the row says so
+   * and links to the event that exists instead of opening a duplicate form.
+   */
+  async function makeEvent() {
+    if (pendingAction) {
+      return;
+    }
+
+    setMenuOpen(false);
+    setError(null);
+    setAlreadyEvent(null);
+    setPendingAction("check");
+
+    try {
+      const result = await checkIdeaStatusAction(idea.id);
+
+      if (result.removed) {
+        publishIdeaRemoval(userId, idea.id);
+        onDeleted(idea.id);
+        return;
+      }
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      if (result.status === "open") {
+        router.push(makeEventHref(idea.id));
+        return;
+      }
+
+      // The row stays put so the message is readable; moving it to Scheduled
+      // on this frame would hide the explanation.
+      setAlreadyEvent({ eventId: result.eventId ?? null });
+    } catch {
+      setError("Couldn't check that idea. Try again.");
     } finally {
       setPendingAction(null);
     }
@@ -98,6 +158,8 @@ export function IdeaRow({
     ) : (
       <p className="text-base font-semibold text-text break-words">{idea.title}</p>
     );
+
+  const activeEventId = alreadyEvent?.eventId ?? idea.eventId;
 
   return (
     <article
@@ -129,13 +191,32 @@ export function IdeaRow({
             </Link>
           )}
 
-          {idea.isCreator && isOpen && (
-            <Link
-              href={`/events/new?idea=${idea.id}`}
+          {isOpen && (
+            <button
+              type="button"
+              onClick={() => void makeEvent()}
+              disabled={pendingAction !== null}
               className={`mt-2 ${buttonStyles({ variant: "secondary", size: "sm" })}`}
             >
-              Make it an event
-            </Link>
+              {pendingAction === "check" ? "Checking..." : "Make it an event"}
+            </button>
+          )}
+
+          {alreadyEvent && (
+            <p className="mt-2 text-sm text-text">
+              Already an event
+              {activeEventId ? (
+                <>
+                  {" · "}
+                  <Link
+                    href={`/events/${activeEventId}`}
+                    className="font-semibold text-link underline underline-offset-4"
+                  >
+                    View it
+                  </Link>
+                </>
+              ) : null}
+            </p>
           )}
         </div>
 
@@ -146,10 +227,27 @@ export function IdeaRow({
             count={idea.voteCount}
             hasVoted={idea.hasVoted}
             disabled={!isOpen || pendingAction !== null}
-            onChange={(next) => onVoteChange(idea.id, next)}
+            onChange={(next) => {
+              publishIdeaUpdate(userId, {
+                id: idea.id,
+                voteCount: next.voteCount,
+                hasVoted: next.hasVoted,
+              });
+              onVoteChange(idea.id, next);
+            }}
           />
 
-          {idea.isCreator && (
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              aria-label="Send to chat"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-text transition-[background-color,opacity,scale] duration-100 ease-out hover:bg-surface-2 cursor-pointer"
+            >
+              <Send size={20} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+
+            {idea.isCreator && (
             <div className="relative">
               <button
                 type="button"
@@ -213,7 +311,8 @@ export function IdeaRow({
                 </>
               )}
             </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -251,6 +350,15 @@ export function IdeaRow({
             </Button>
           </div>
         </Card>
+      )}
+
+      {shareOpen && (
+        <SendIdeaSheet
+          ideaId={idea.id}
+          ideaTitle={idea.title}
+          onClose={() => setShareOpen(false)}
+          onSent={onShared}
+        />
       )}
     </article>
   );

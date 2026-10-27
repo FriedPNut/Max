@@ -4,17 +4,18 @@ import { CreatePostSheetButton } from "@/components/posts/create-sheet";
 import { ProfileEvents } from "@/components/profile/profile-events";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { ProfilePostGrid } from "@/components/profile/profile-post-grid";
-import { ProfileShareButton } from "@/components/profile/profile-share-button";
 import { ProfileTabs } from "@/components/profile/profile-tabs";
 import { buttonStyles } from "@/components/ui/button";
 import { PersonPlusIcon, PlusIcon, PostIcon, MoreIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 import { loadProfilePage } from "@/lib/profile-data";
 import { profileDisplayName, type ProfileRecord } from "@/lib/profile";
+import { serverNow } from "@/lib/server-now";
 
 export default async function MePage() {
   const { user, displayName } = await getAuthenticatedUser();
   const supabase = await createClient();
+  const now = await serverNow();
 
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
@@ -42,28 +43,28 @@ export default async function MePage() {
     bio: profileData?.bio ?? null,
   };
 
-  const result = await loadProfilePage(supabase, profile);
+  const result = await loadProfilePage(supabase, profile, now);
 
   if (result.error || !result.data) {
     return errorShell;
   }
 
   const data = result.data;
-  const title = profile.username ? `@${profile.username}` : undefined;
 
   return (
     <AppShell
       userId={user.id}
-      left={<CreatePostSheetButton />}
-      title={title}
       actions={
-        <Link
-          href="/settings"
-          aria-label="Settings"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 hover:bg-surface-2"
-        >
-          <MoreIcon size={24} strokeWidth={1.75} aria-hidden="true" />
-        </Link>
+        <>
+          <CreatePostSheetButton />
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text transition-colors duration-200 hover:bg-surface-2"
+          >
+            <MoreIcon size={24} strokeWidth={1.75} aria-hidden="true" />
+          </Link>
+        </>
       }
     >
       <div className="space-y-6">
@@ -71,7 +72,7 @@ export default async function MePage() {
           profile={profile}
           avatarUrl={data.avatarUrl}
           stats={data.stats}
-          friendsHref="/me/friends"
+          friendsHref="/people?filter=added"
         >
           <Link
             href="/me/edit"
@@ -82,11 +83,10 @@ export default async function MePage() {
           >
             Edit profile
           </Link>
-          <ProfileShareButton username={profile.username} />
           <Link
-            href="/chat/friends"
-            aria-label="Find friends"
-            className="inline-flex h-10 w-10 shrink-0 flex-none items-center justify-center rounded-xl bg-surface-2 text-text transition-colors duration-200 hover:bg-surface-2/80"
+            href="/people"
+            aria-label="Find people"
+            className="inline-flex h-10 w-10 shrink-0 !flex-none items-center justify-center rounded-xl bg-surface-2 text-text transition-colors duration-200 hover:bg-surface-2/80"
           >
             <PersonPlusIcon size={20} strokeWidth={1.75} aria-hidden="true" />
           </Link>
@@ -96,6 +96,7 @@ export default async function MePage() {
           postsContent={
             <ProfilePostGrid
               posts={data.posts}
+              cacheUserId={user.id}
               authorName={profileDisplayName(profile)}
               authorUsername={profile.username}
               authorAvatarUrl={data.avatarUrl}

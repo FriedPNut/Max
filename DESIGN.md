@@ -1,3 +1,6 @@
+> Speed rules: act first, load after. Optimistic updates, cached-first data, instant shells, lazy-loaded heavy code, thumbnails in lists.
+> Time rule: Cache Components is off. Display-only time logic still goes in client components with useToday and RelativeTime to avoid hydration mismatches.
+
 # Max Design System (Instagram-based)
 
 ## 1. Principles
@@ -13,7 +16,7 @@ Usage: primary blue for main buttons, links, toggles, and selected RSVP. Todayâ€
 
 ## 3. Typography
 System font stack only: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif. No web fonts.
-Sizes: page title 22px/700, section heading 16px/600, body 15px/400 (line-height 1.4), secondary 13px/400 muted, meta 12px/400 muted, button 15px/600. Inputs are at least 16px. Names and usernames are 600 weight. Sentence case. No uppercase labels, no letter-spacing except the Max wordmark (-0.03em).
+Sizes: page title 20px/700, section heading 16px/600, body 15px/400 (line-height 1.4), secondary 13px/400 muted, meta 12px/400 muted, button 15px/600. Inputs are at least 16px. Names and usernames are 600 weight. Sentence case. No uppercase labels, no letter-spacing except the Max wordmark (-0.03em).
 
 ## 4. Shape
 Radius: buttons 10px, inputs 10px, cards and widgets 14px, sheets 20px (top corners), chips and the island bar fully rounded (pill), avatars fully round, photos 0px when edge-to-edge or 10px inside a card. Hairlines are 1px.
@@ -33,9 +36,22 @@ Radius: buttons 10px, inputs 10px, cards and widgets 14px, sheets 20px (top corn
 - Calendar: Month view: selected day is a rounded box (radius 10, surface-2). Week view: no selection box. Today is the today-colored number in both.
 
 ## 6. Navigation
-- Top bar: sticky, glass background, 48px plus safe area, "Max" wordmark left (system font, 800 weight, 24px, -0.03em), page actions right as 24px icons with 44px tap areas. A hairline appears only after scrolling.
-- Island bar: a floating pill at the bottom, 16px from each side (max width 420px, centered), 12px above the bottom safe area, 60px tall, glass background with a 1px hairline border and a very soft shadow (light: 0 8px 32px rgba(0,0,0,0.12); dark: 0 8px 32px rgba(0,0,0,0.5)). Four icon-only tabs: Events, Chat, Post, Profile (the avatar). Inactive icons are outline, the active one is filled and in the text color, with a soft pill highlight that slides under the active tab. A red badge slot sits on each icon. It hides when scrolling down and returns when scrolling up, and is hidden on full-screen screens (open conversations, composers, login).
-- Content gets bottom padding so nothing is hidden behind the island bar.
+- There is exactly one tab bar. It is mounted once in the root shell and never inside a page, a loading screen or a skeleton, so it stays on screen while a page loads.
+- Both shapes are one component with one markup. CSS picks the shape from html[data-platform]; no JavaScript state chooses the variant, so the first paint is already right.
+  - iOS: a floating glass island, 16px from each side (max width 420px, centered), 12px above the bottom safe area, 60px tall, hairline border, soft shadow (light: 0 8px 32px rgba(0,0,0,0.12); dark: 0 8px 32px rgba(0,0,0,0.5)). It hides while scrolling down and comes back at the top or when scrolling up.
+  - Android and other: a docked full-width bar, 56px tall plus the safe area, page-background color, 1px top line. It stays put except on full-screen screens.
+- Four icon-only tabs: Events, Chat, Post, Profile (the avatar). Inactive icons are outline and muted; the active one is filled and in the text color. One soft pill (64x36, radius 18, surface-2) slides under the active tab with a CSS transform on the active or pending index. A red badge slot sits on each icon.
+- The bar steps aside only on full-screen screens: auth, composers, open conversations and their info screens.
+- The active tab is a pure function of the pathname. Nothing is remembered and stale state cannot disagree with the URL.
+  - Events: /events*, /lists*, /trips*, /hang, /free, /birthdays, /best-of*, and /
+  - Chat: /chat*, /people*
+  - Post: /feed*
+  - Profile: /me*, /settings*, /recap, /wrapped*
+  - Shared pages (/u/*, /notifications) belong to no tab and highlight nothing.
+- One tap always works. Press (pointerdown) moves the highlight and the pill at once through a local pending tab, cleared when the pathname changes or after 1.5s. The tap handler reads the live pathname: already on that tab's root scrolls to the top, anywhere else follows a plain Link to the tab root (/events, /chat, /feed, /me). A tap is never ignored because a tab looks active, no gesture handler sits above the bar, and a tab switch is never wrapped in a transition that can be interrupted.
+- Top bar: on the four tab roots only, 56px plus safe area, glass background, "Max" wordmark left (system font, 800 weight, 20px, -0.03em), then the notification heart and the page's action icons on the right. A hairline appears only after scrolling.
+- Every other screen uses a compact SubHeader: a back arrow on the left, a left-aligned title (20px/700), and optional right-side actions. No wordmark and no heart. An open conversation keeps only its own chat header (back, avatar, name, info icon) and has no SubHeader.
+- Page content pays --bar-h of bottom padding (set per platform), so nothing hides behind the bar and skeleton content lines up with the real chrome.
 
 ## 7. Motion
 Easing: --ease-out cubic-bezier(0.22, 1, 0.36, 1), --ease-spring cubic-bezier(0.32, 0.72, 0, 1). Durations: 100ms press, 200ms standard, 320ms sheets and page pushes, 500ms hearts.
@@ -45,7 +61,7 @@ Press: scale 0.97 with slight opacity drop. Tab switch: slide or crossfade match
 Photos are edge-to-edge in feeds with a 4:5 crop. Profile grid is 3 columns with 1px gaps, 4:5 tiles. Icons are 24px with outline for inactive and filled for active, in one consistent custom SVG set, stroke about 1.75. No emoji as icons, except the chat reaction set.
 
 ## 9. Chat
-Own messages: purple-to-blue gradient bubble (linear-gradient(135deg, #7A3FF2, #3797F0)) with white text. Others: surface-2 bubble. Bubble radius 22px, tight spacing inside a run of messages from one person, timestamps centered in 12px muted. Input is a pill with a surface-2 fill, a photo icon on the left, and a blue "Send" text button that appears once there's text.
+Own messages: one solid bubble in the color from profiles.bubble_color (default #8B3BEB, never a gradient), with white or black text picked by contrast. Others: surface-2 bubble. Photos have no bubble at all: the image alone, 18px radius, natural aspect ratio, with a caption bubble underneath. Bubble radius 22px, 78% max width, 12px side padding, 2px inside a run of messages from one person and 12px between runs, timestamps centered in 12px muted. The composer is pinned to the bottom in its own fixed frame, never positioned by the message count. Pressing and holding a message opens one menu: reactions, Copy, Pin, Edit, and the destructive action last. Input is a pill with a surface-2 fill, a photo icon on the left, and a blue "Send" text button that appears once there's text.
 
 ## 10. Voice
 Short, friendly, plain. Sentence case. Tagline: "Maximum potential. Maximum fun. Maximum productivity." Errors are plain and human.
@@ -60,13 +76,14 @@ Source: four Instagram Android dark-mode screenshots (home feed, messages inbox,
 ### Colors (match by eye)
 Dark: background #0C1014 (feed, inbox, profile), thread #000000 (open chat only), surface #12171C, surface-2 #262B32 (search pill, secondary buttons, nav pill, note bubbles), received bubble #262626, text #F5F5F5, muted #A8ADB3, line #1E242B, primary #4A5DFF (Create buttons, Send, unread dots, camera button), link #7C8CFF (Requests, Older posts, links in bios), danger #FF3040 (badges, red dots, likes).
 Light mode keeps the existing soft light tokens, with primary and link #3F51F5 and surface-2 #EAECEF.
-Sent chat bubbles: gradient from #A81BE0 (top of the screen) to #5A55F5 (bottom of the screen), anchored to the viewport (background-attachment: fixed) so bubbles change color as they scroll; if that janks or misbehaves, fall back to a fixed #8B3BEB. Received bubbles #262626.
+Sent chat bubbles: one solid color from profiles.bubble_color (default #8B3BEB) with contrast-picked text; no gradient. Received bubbles #262626.
 
 ### Navigation
 - Android and other: a docked full-width bottom bar, 56 tall plus the safe area, page-background color, 1px top line. Four icon-only tabs. The active tab has a filled icon and a rounded pill behind it (64x36, radius 18, surface-2) that slides between tabs. Inactive icons are outline. Red badges on icons, and the Profile tab shows my avatar. Always visible except in open chats and composers.
 - iOS: keep the floating glass island bar with hide-on-scroll.
-- Top bar: 56 tall, solid page background, 24px icons with 44px tap areas. Post and Events show a centered "Max" wordmark (system font, 800, 26px, -0.03em). Chat and Profile show my @username centered, bold 22sp. Notifications use an outline heart icon with a red count badge. "More" menus use the two-line icon (a long line over a shorter one).
+- Top bar (the four tab roots only): 56 tall, 24px icons with 44px tap areas. The "Max" wordmark sits on the left for all four roots (system font, 800, 20px, -0.03em); no title is ever centered and no @username is shown there. Notifications use an outline heart icon with a red count badge. "More" menus use the two-line icon (a long line over a shorter one).
+- Every other screen uses a compact SubHeader: back arrow left, left-aligned 20px/700 title, optional actions right, no wordmark and no heart.
 
 ### Layout rules
-Feed: posts edge-to-edge. Inbox: search pill, a notes/friends row, "Messages" heading with a "Requests" link, rows without dividers. Profile: avatar left, name and stats right, bio, two secondary buttons, tab strip, content. Thread: pure black, bubbles with a 22 radius, input pill pinned to the bottom.
+Feed: posts edge-to-edge. Inbox: search pill, a notes/friends row, "Messages" heading, rows without dividers. Profile: avatar left, name and stats right, bio, two secondary buttons, tab strip, content. Thread: pure black, bubbles with a 22 radius, input pill pinned to the bottom.
 

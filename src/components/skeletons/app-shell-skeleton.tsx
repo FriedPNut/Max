@@ -2,68 +2,26 @@ import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * The chrome is static, so a navigation shows it (and a soft gray skeleton)
- * immediately instead of waiting on the page's data.
+ * A loading screen only draws the content area. The real chrome — the top bar
+ * and the one tab bar — is already on screen because it lives in the root
+ * shell, so a skeleton never draws a bar, an island or a header silhouette.
+ * The bottom padding comes from --bar-h so nothing jumps when the page lands.
  */
 export function AppShellSkeleton({
   children,
   label = "Loading",
-  noIsland = false,
 }: {
   children: ReactNode;
   label?: string;
-  noIsland?: boolean;
 }) {
   return (
-    <div className="h-dvh w-full overflow-hidden bg-background text-text">
-      <div className="h-full w-full overflow-x-hidden overflow-y-auto overscroll-contain">
-        <header
-          className="glass sticky top-0 z-40"
-          style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
-        >
-          <div className="mx-auto flex h-14 w-full max-w-[560px] items-center justify-between gap-2 px-4">
-            <Skeleton className="h-6 w-14 rounded" />
-            <Skeleton className="h-6 w-6 rounded-full" />
-          </div>
-          <div aria-hidden="true" className="h-px bg-line opacity-0" />
-        </header>
-
-        <div
-          className="mx-auto w-full max-w-[560px] px-4 pt-6"
-          style={{
-            paddingBottom:
-              "calc(60px + 12px + env(safe-area-inset-bottom, 0px))",
-          }}
-          aria-busy="true"
-          aria-label={label}
-        >
-          <div className="space-y-6">{children}</div>
-        </div>
-      </div>
-
-      {!noIsland && (
-        <div
-          aria-hidden="true"
-          className="glass fixed left-1/2 z-40 rounded-full border border-line shadow-pop"
-          style={{
-            bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
-            width: "min(calc(100% - 32px), 420px)",
-            height: 60,
-            transform: "translateX(-50%)",
-          }}
-        >
-          <div className="grid h-full grid-cols-4">
-            {[0, 1, 2, 3].map((index) => (
-              <div
-                key={index}
-                className="flex items-center justify-center"
-              >
-                <Skeleton className="h-6 w-6 rounded-full" />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+    <div
+      className="mx-auto w-full max-w-[560px] px-4 pt-6"
+      style={{ paddingBottom: "var(--bar-h)" }}
+      aria-busy="true"
+      aria-label={label}
+    >
+      <div className="space-y-6">{children}</div>
     </div>
   );
 }

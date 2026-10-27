@@ -206,3 +206,27 @@ export async function updateBirthdayAction(input: {
   revalidatePath("/events");
   return { success: true };
 }
+
+/**
+ * Read receipts are reciprocal: with them off, seen_at stops being written and
+ * nobody else's markers are shown.
+ */
+export async function setReadReceiptsAction(
+  enabled: boolean
+): Promise<{ error?: string; enabled?: boolean }> {
+  const { supabase, user } = await requireUser();
+  const next = Boolean(enabled);
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ read_receipts: next })
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: "Couldn't save that. Try again." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/chat");
+  return { enabled: next };
+}

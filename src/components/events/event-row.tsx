@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { FastLink } from "@/components/ui/fast-link";
 import { LocalTime } from "@/components/local-time";
 import type { EventListItem } from "@/lib/events";
 
@@ -10,7 +10,7 @@ export function EventRow({
   muted?: boolean;
 }) {
   return (
-    <Link
+    <FastLink
       href={`/events/${event.id}`}
       className="press-row -mx-4 flex min-h-14 items-center gap-3 border-b border-line px-4 py-3 transition-colors duration-200 ease-out last:border-b-0 hover:bg-surface-2"
     >
@@ -46,6 +46,6 @@ export function EventRow({
       <span className="shrink-0 text-sm text-muted">
         {event.poll_open ? "Poll" : `${event.goingCount} going`}
       </span>
-    </Link>
+    </FastLink>
   );
 }

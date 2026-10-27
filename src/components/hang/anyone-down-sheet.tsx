@@ -11,31 +11,45 @@ const DURATIONS: { value: HangDuration; label: string }[] = [
   { value: "midnight", label: "Tonight until midnight" },
 ];
 
-export function AnyoneDownSheet({ onClose }: { onClose: () => void }) {
+export function AnyoneDownSheet({
+  onClose,
+  onError,
+}: {
+  onClose: () => void;
+  onError?: (message: string) => void;
+}) {
   const [message, setMessage] = useState("");
   const [location, setLocation] = useState("");
   const [duration, setDuration] = useState<HangDuration>("3h");
-  const [pending, setPending] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (pending) {
+    if (sending) {
       return;
     }
 
-    setPending(true);
+    const text = message.trim();
+
+    if (!text) {
+      setError("Say what you're up for.");
+      return;
+    }
+
+    setSending(true);
     setError(null);
-    const result = await createHangAction({ message, location, duration });
-    setPending(false);
+    // The sheet closes on this frame; the post lands behind it.
+    onClose();
+
+    const result = await createHangAction({ message: text, location, duration });
+
+    setSending(false);
 
     if (result.error) {
-      setError(result.error);
-      return;
+      onError?.(result.error);
     }
-
-    onClose();
   }
 
   return (
@@ -108,12 +122,7 @@ export function AnyoneDownSheet({ onClose }: { onClose: () => void }) {
           </p>
         )}
 
-        <Button
-          type="submit"
-          loading={pending}
-          disabled={pending || message.trim().length === 0}
-          className="w-full"
-        >
+        <Button type="submit" className="w-full">
           Post
         </Button>
       </form>

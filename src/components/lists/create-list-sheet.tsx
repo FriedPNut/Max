@@ -11,31 +11,50 @@ import {
   type ListKind,
 } from "@/lib/lists";
 
-export function CreateListSheet({ onClose }: { onClose: () => void }) {
+export function CreateListSheet({
+  onClose,
+  onCreated,
+  onFailed,
+}: {
+  onClose: () => void;
+  /** Adds the row to the list and closes the sheet before the save lands. */
+  onCreated?: (row: { id: string; title: string; kind: ListKind }) => void;
+  onFailed?: (id: string, message: string) => void;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<ListKind>("general");
-  const [pending, setPending] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (pending) {
+    if (saving) {
       return;
     }
 
-    setPending(true);
+    const cleanTitle = title.trim();
+
+    if (!cleanTitle) {
+      setError("Give the list a name.");
+      return;
+    }
+
+    setSaving(true);
     setError(null);
-    const result = await createListAction({ title, kind });
-    setPending(false);
+    const id = crypto.randomUUID();
+
+    onCreated?.({ id, title: cleanTitle, kind });
+    onClose();
+
+    const result = await createListAction({ id, title: cleanTitle, kind });
 
     if (result.error || !result.id) {
-      setError(result.error ?? "Couldn't create that list. Try again.");
+      onFailed?.(id, result.error ?? "Couldn't create that list. Try again.");
       return;
     }
 
-    onClose();
     router.push(`/lists/${result.id}`);
   }
 
@@ -85,12 +104,7 @@ export function CreateListSheet({ onClose }: { onClose: () => void }) {
           </p>
         )}
 
-        <Button
-          type="submit"
-          loading={pending}
-          disabled={pending || title.trim().length === 0}
-          className="w-full"
-        >
+        <Button type="submit" className="w-full">
           Create list
         </Button>
       </form>

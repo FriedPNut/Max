@@ -59,7 +59,10 @@ export type WrappedYear = {
 
 function safeTimeZone(timeZone: string) {
   try {
-    new Intl.DateTimeFormat("en-US", { timeZone }).format(new Date());
+    // A fixed reference date: validating a timezone never needs the clock.
+    new Intl.DateTimeFormat("en-US", { timeZone }).format(
+      new Date(Date.UTC(2020, 0, 1))
+    );
     return timeZone;
   } catch {
     return "UTC";
@@ -196,7 +199,7 @@ export function weekRangeFor(weekStartKey: string, timeZone: string): WeekRange 
   };
 }
 
-export function currentWeekStartKey(timeZone: string, now = new Date()) {
+export function currentWeekStartKey(timeZone: string, now: Date) {
   return startOfWeekKey(zonedDateKey(now, timeZone));
 }
 
@@ -204,11 +207,12 @@ export function currentWeekStartKey(timeZone: string, now = new Date()) {
 // and ?preview=1 opens the current year early for testing.
 export function isWrappedAvailable({
   year,
-  now = new Date(),
+  now,
   preview = false,
 }: {
   year: number;
-  now?: Date;
+  /** Required: a render never reads the clock to decide this. */
+  now: Date;
   preview?: boolean;
 }) {
   const currentYear = now.getFullYear();
@@ -276,11 +280,4 @@ export function monthIndex(iso: string, timeZone: string) {
       month: "numeric",
     }).format(new Date(iso))
   );
-}
-
-export function weekdayLabel(iso: string, timeZone: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: safeTimeZone(timeZone),
-    weekday: "long",
-  }).format(new Date(iso));
 }
